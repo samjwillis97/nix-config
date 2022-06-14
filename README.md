@@ -14,6 +14,7 @@ This flake is configured with the use of [digga][digga].
 ## TODO
 
 - Workout what overlays do lol
+- Make i3status-rs work
 - Investigate using nix for building node programs
 - Change i3 + alacritty + rofi one dark theme
 - Fix tmux and vim interactions, currently need C-w + direction to move within vim when in tmux
