@@ -8,6 +8,7 @@
       nodejs
       nodePackages.npm
       nodePackages.typescript
+      nodePackages.node2nix
 
       # Go
       go

@@ -228,7 +228,7 @@ in {
 
     window = {
       border = 2;
-      hideEdgeBorders = "smart";
+      hideEdgeBorders = "none";
       titlebar = false;
     } // extraWindowOptions;
 

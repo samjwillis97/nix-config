@@ -1,4 +1,4 @@
-{ configs, pkgs, ... }:
+{ configs, pkgs, lib, ... }:
 let
   initExtraBeforeCompInit = ''
     HYPHEN_INSENSITIVE="true"
@@ -9,6 +9,11 @@ let
 in {
   programs.zsh = {
     inherit initExtraBeforeCompInit;
+    initExtra = lib.strings.concatStrings [
+      ''
+        eval "$(direnv hook zsh)"
+      ''
+    ];
     enable = true;
     history = {
       size = 10000;
