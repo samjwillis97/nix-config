@@ -9,32 +9,29 @@ This flake is configured with the use of [digga][digga].
 ## Inspiration
 
 - https://github.com/thiagokokada/nix-configs
-- https://github.com/JayRovacsek/nix-configs
+- https://github.com/JayRovacsek/nix-config
 
 ## TODO
 
-- Change to a one dark theme
-- Fix tmux and vim interactions
-- check tmux bar
-- get backgrounds in i3..
-- get firefox bookmarks working
-- get webstorm config
-
-## Concepts
-
-### Profiles
-Shorthand for the definition of options in contrast to their declaration.
-
-Current thoughts for profiles include:
-  - CLI
-  - Desktop
-    - Audio
-    - Fonts
-  - Dev
-  - Games (Desktop)
-
-### Suites
-Provide a mechanism for users to easily combine and name collections of profiles.
+- Change i3 + alacritty + rofi one dark theme
+- Fix tmux and vim interactions, currently need C-w + direction to move within vim when in tmux
+- Remove tmux theme
+- Setup Feh for backgrounds in i3
+- Determine why Firefox Bookmarks don't work
+- Workout how to apply configurations to the likes of PyCharm and WebStorm
+- Modify the root setup to my likings:
+  - Remove Starship
+- Look into storing secrets - agenix?
+- nnn Configuration
+- Doom Emacs
+- Notifications with Dunst
+- Get Steam/Runelite working
+- Picom
+- Nvidia
+- Pipewire
+- Test working on Darwin
+- Test working on aarch64
+- Better Theming
 
 [digga]: https://github.com/divnix/digga
 
