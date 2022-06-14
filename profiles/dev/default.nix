@@ -21,4 +21,6 @@
       jetbrains.webstorm
     ];
   };
+
+  virtualisation.docker.enable = true;
 }
