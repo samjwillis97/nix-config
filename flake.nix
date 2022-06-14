@@ -119,13 +119,17 @@
           hosts = {
             /* set host-specific properties here */
             NixOS = { };
+            dev-vm = { };
           };
           importables = rec {
             profiles = digga.lib.rakeLeaves ./profiles // {
               users = digga.lib.rakeLeaves ./users;
             };
             suites = with profiles; rec {
-              base = [ core.nixos users.nixos users.root ];
+              base = [ core.nixos core-cli users.nixos users.root users.sam];
+	            desktopBase = base ++ [ dev core-gui fonts ];
+              gnomeBase = desktopBase ++ [ gnome-desktop ];
+              i3Base = desktopBase ++ [ i3-desktop ];
             };
           };
         };
@@ -165,33 +169,21 @@
             profiles = digga.lib.rakeLeaves ./users/profiles;
             suites = with profiles; rec {
               base = [ direnv git ];
+              baseGUI = [ firefox alacritty];
+              baseCLI = [ zsh vim tmux ];
+              baseDesktop = baseGUI ++ baseCLI;
+              i3Desktop = baseDesktop ++ [ i3 rofi ];
             };
           };
           users = {
-            # TODO: does this naming convention still make sense with darwin support?
-            #
-            # - it doesn't make sense to make a 'nixos' user available on
-            #   darwin, and vice versa
-            #
-            # - the 'nixos' user might have special significance as the default
-            #   user for fresh systems
-            #
-            # - perhaps a system-agnostic home-manager user is more appropriate?
-            #   something like 'primaryuser'?
-            #
-            # all that said, these only exist within the `hmUsers` attrset, so
-            # it could just be left to the developer to determine what's
-            # appropriate. after all, configuring these hm users is one of the
-            # first steps in customizing the template.
             nixos = { suites, ... }: { imports = suites.base; };
+            sam = { suites, ... }: { imports = suites.i3Desktop; };
             darwin = { suites, ... }: { imports = suites.base; };
           }; # digga.lib.importers.rakeLeaves ./users/hm;
         };
 
         devshell = ./shell;
 
-        # TODO: similar to the above note: does it make sense to make all of
-        # these users available on all systems?
         homeConfigurations = digga.lib.mergeAny
           (digga.lib.mkHomeConfigurations self.darwinConfigurations)
           (digga.lib.mkHomeConfigurations self.nixosConfigurations)
