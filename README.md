@@ -6,11 +6,17 @@ Nix allows for easy to manage, collaborative, reproducible deployments. This mea
 
 This flake is configured with the use of [digga][digga].
 
+## Inspiration
+
+- https://github/thiagokokada/nix-configs
+- https://github/JayRovacsek/nix-configs
+
 ## TODO
 
 - Change to a one dark theme
 - Fix tmux and vim interactions
 - check tmux bar
+- get backgrounds in i3..
 
 ## Concepts
 
