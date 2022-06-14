@@ -17,6 +17,7 @@ This flake is configured with the use of [digga][digga].
 - Fix tmux and vim interactions
 - check tmux bar
 - get backgrounds in i3..
+- theme firefox
 
 ## Concepts
 
