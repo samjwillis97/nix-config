@@ -127,7 +127,7 @@
             };
             suites = with profiles; rec {
               base = [ core.nixos core-cli users.nixos users.root users.sam];
-	            desktopBase = base ++ [ dev core-gui fonts social ];
+	            desktopBase = base ++ [ dev audio core-gui fonts social ];
               gnomeBase = desktopBase ++ [ gnome-desktop ];
               i3Base = desktopBase ++ [ i3-desktop ];
             };
