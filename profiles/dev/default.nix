@@ -15,10 +15,6 @@
       go-outline
       go-tools
       gopls
-
-      # IDE
-      jetbrains.pycharm-community
-      jetbrains.webstorm
     ];
   };
 

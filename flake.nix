@@ -172,7 +172,8 @@
               baseGUI = [ firefox alacritty];
               baseCLI = [ zsh vim tmux ];
               baseDesktop = baseGUI ++ baseCLI;
-              i3Desktop = baseDesktop ++ [ i3 rofi ];
+              baseDev = [ jetbrains ];
+              i3Desktop = baseDesktop ++ baseDev ++ [ i3 rofi ];
             };
           };
           users = {

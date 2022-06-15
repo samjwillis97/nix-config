@@ -1,0 +1,89 @@
+
+"" Minimum Settings
+set number
+set showmode
+set so=5
+inoremap jk <Esc>
+
+"" MAKE NUMBERING RELATIVE
+set relativenumber
+
+"" SEARCHING
+set incsearch
+"" set ignorecase
+"" set smartcase
+set hlsearch
+nnoremap <leader><space> :nohlsearch<CR>
+
+"" FOLDING
+set foldenable
+set foldlevelstart=10
+set foldnestmax=10
+set foldmethod=indent
+
+"" MOVEMENT
+nnoremap j gj
+nnoremap k gk
+
+"" SPLIT NAVIGATIONS
+nnoremap <C-J> <C-W><C-J>
+nnoremap <C-K> <C-W><C-K>
+nnoremap <C-L> <C-W><C-L>
+nnoremap <C-H> <C-W><C-H>
+
+nnoremap <C-w>q :q<CR>
+
+set splitbelow
+set splitright
+
+"" K - show Documentation
+"" gd - Go to Definition - DEFAULT
+"" Ctrl + N - Toggle Tree
+"" Leader + f - Search Files
+"" Leader + F - Search in Files
+"" Leader + b - Search opened Buffers
+"" Leader + T - Search tags
+
+"" File Nav
+nnoremap <TAB> :action PreviousTab<CR>
+nnoremap <s-TAB> :action NextTab<CR>
+
+"" Finding
+nnoremap <leader>f :action FindUsages<CR>
+nnoremap <leader>h :action CallHierarchy<CR>
+
+nnoremap <C-o> :action Back<CR>
+nnoremap gb :action Back<CR>
+nnoremap gf :action Forward<CR>
+
+"" NerdTree
+map <C-n> :NERDTreeToggle<CR>
+
+"" IdeaVIM
+map <leader>e :e ~/.ideavimrc<CR>
+map <leader>r :action IdeaVim.ReloadVimRc.reload<CR>
+map <leader>z <Action>(ToggleDistractionFreeMode)
+map <leader>b <Action>(ToggleLineBreakpoint)
+
+map <leader>d <Action>(Debug)
+map <leader>r <Action>(RenameElement)
+
+"" Navigate Linting Errors etc with [e [g
+
+
+"" Plugins ----
+Plug 'tpope/vim-surround'
+Plug 'tpope/vim-commentary'
+Plug 'preservim/nerdtree'
+
+"" -- Map IDE actions to IdeaVim -- https://jb.gg/abva4t
+"" Map \r to the Reformat Code action
+"map \r <Action>(ReformatCode)
+
+"" Map <leader>d to start debug
+"map <leader>d <Action>(Debug)
+
+"" Map \b to toggle the breakpoint on the current line
+
+
+" Find more examples here: https://jb.gg/share-ideavimrc
