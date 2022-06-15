@@ -74,7 +74,7 @@ in {
           memoryBlock
           cpuBlock
           loadBlock
-          soundBlock
+          # soundBlock
           timeBlock
         ];
       };

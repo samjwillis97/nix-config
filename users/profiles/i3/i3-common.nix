@@ -12,6 +12,8 @@
 , statusCommand
 , mod ? "Mod1"
 , bars ? [{
+    inherit statusCommand;
+
     position = "top";
     colors = {
       background = "#282A36";
@@ -214,6 +216,7 @@ in {
       };
       rofi = {
         "s" = "exec ${menu} ssh";
+        "e" = "exec ${menu} emoji";
         "f" = "exec ${menu} filebrowser";
         "c" = "exec ${menu} calc";
         "Return" = "mode default";
