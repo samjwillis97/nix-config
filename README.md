@@ -13,6 +13,10 @@ This flake is configured with the use of [digga][digga].
 
 ## TODO
 
+- Add i3 lock
+- Add Nvidia
+- Add Logitech
+- Add Gaming
 - Workout what overlays do lol
 - Re add sound block to i3status-rs
 - Fix i3status-rs look
