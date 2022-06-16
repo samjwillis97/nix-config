@@ -597,6 +597,23 @@
         "type": "indirect"
       }
     },
+    "nnn-plugins": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1637672625,
+        "narHash": "sha256-g9GaCc/IWKtih0/A2AZEPImjj7ymJIdYwC5I/6GUh5c=",
+        "owner": "jarun",
+        "repo": "nnn",
+        "rev": "65eddfe7b9f02f685145005a8ffd3feb8d102ced",
+        "type": "github"
+      },
+      "original": {
+        "owner": "jarun",
+        "ref": "v4.4",
+        "repo": "nnn",
+        "type": "github"
+      }
+    },
     "nur": {
       "locked": {
         "lastModified": 1654732593,
@@ -667,6 +684,7 @@
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_6",
         "nixpkgs-darwin-stable": "nixpkgs-darwin-stable",
+        "nnn-plugins": "nnn-plugins",
         "nur": "nur",
         "nvfetcher": "nvfetcher"
       }

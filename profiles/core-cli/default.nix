@@ -3,7 +3,7 @@
     systemPackages = with pkgs; [
       ag
       vim
-      nnn
+      # nnn
       tmux
       zsh
       unzip

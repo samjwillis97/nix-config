@@ -22,6 +22,7 @@
 
   networking.useDHCP = false;
   networking.interfaces.ens33.useDHCP = true;
+  networking.nameservers = [ "1.1.1.1" "8.8.8.8" ];
 
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";

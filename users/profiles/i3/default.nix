@@ -20,42 +20,6 @@ let
           "${pkgs.xterm}/bin/xterm";
       areaScreenShot = "${pkgs.flameshot}/bin/flameshot gui";
 
-      # bars = [{
-      #   position = "top";
-      #   command = with config;
-      #     "${programs.i3status-rust.package}/bin/i3status-rs ${xdg.configHome}/i3status-rust/config-i3.toml";
-      #   colors = {
-      #     background = "#282A36";
-      #     statusline = "#F8F8F2";
-      #     separator = "#44475A";
-      #     focusedWorkspace = {
-      #       background = "#44475A";
-      #       border = "#44475A";
-      #       text = "#F8F8F2";
-      #     };
-      #     activeWorkspace = {
-      #       background = "#282A36";
-      #       border = "#44475A";
-      #       text = "#F8F8F2";
-      #     };
-      #     inactiveWorkspace = {
-      #       background = "#282A36";
-      #       border = "#282A36";
-      #       text = "#BFBFBF";
-      #     };
-      #     urgentWorkspace = {
-      #       background = "#FF5555";
-      #       border = "#FF5555";
-      #       text = "#F8F8F2";
-      #     };
-      #     bindingMode = {
-      #       background = "#FF5555";
-      #       border = "#FF5555";
-      #       text = "#F8F8F2";
-      #     };
-      #   };
-      # }];
-
       extraBindings = {
 
       };

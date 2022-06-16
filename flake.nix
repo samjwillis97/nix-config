@@ -49,6 +49,9 @@
       nixos-hardware.url = "github:nixos/nixos-hardware";
 
       nixos-generators.url = "github:nix-community/nixos-generators";
+
+      nnn-plugins.url = "github:jarun/nnn/v4.4";
+      nnn-plugins.flake= false;
     };
 
   outputs =
@@ -127,7 +130,7 @@
             };
             suites = with profiles; rec {
               base = [ core.nixos core-cli users.nixos users.root users.sam];
-	            desktopBase = base ++ [ dev audio core-gui fonts social ];
+	            desktopBase = base ++ [ dev office audio core-gui fonts social ];
               gnomeBase = desktopBase ++ [ gnome-desktop ];
               i3Base = desktopBase ++ [ i3-desktop ];
             };
@@ -170,9 +173,9 @@
             suites = with profiles; rec {
               base = [ direnv git ];
               baseGUI = [ firefox alacritty];
-              baseCLI = [ zsh vim tmux ];
+              baseCLI = [ zsh vim tmux nnn ];
               baseDesktop = baseGUI ++ baseCLI;
-              baseDev = [ jetbrains ];
+              baseDev = [ dev ];
               i3Desktop = baseDesktop ++ baseDev ++ [ i3 rofi ];
             };
           };
