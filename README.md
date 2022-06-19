@@ -17,6 +17,7 @@ This flake is configured with the use of [digga][digga].
 - Add i3 lock
 - Add Nvidia
 - Add Gaming
+- Try get wallpaper to stretch on resize? (for VM)
 - Workout what overlays do lol
 - Re add sound block to i3status-rs
 - Fix i3status-rs look
