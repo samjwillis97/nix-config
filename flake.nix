@@ -123,6 +123,7 @@
             /* set host-specific properties here */
             NixOS = { };
             dev-vm = { };
+            desktop = { };
           };
           importables = rec {
             profiles = digga.lib.rakeLeaves ./profiles // {
