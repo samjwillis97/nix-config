@@ -13,9 +13,9 @@ This flake is configured with the use of [digga][digga].
 
 ## TODO
 
+- Add Picom
 - Add i3 lock
 - Add Nvidia
-- Add Logitech
 - Add Gaming
 - Workout what overlays do lol
 - Re add sound block to i3status-rs
