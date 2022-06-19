@@ -10,6 +10,7 @@
       htop
       wget
       bitwarden-cli
+      jless
     ];
   };
 }

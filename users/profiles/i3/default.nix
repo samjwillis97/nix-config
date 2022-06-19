@@ -52,6 +52,25 @@ in {
     config = commonOptions.config;
   };
 
+  systemd.user.services = {
+    wallpaper = {
+      Unit = {
+        Description = "Set Wallpaper";
+        After = [ "graphical-session-pre.target" ];
+        PartOf = [ "graphical-session.target" ];
+      };
+
+      Install = { WantedBy = [ "graphical-session.target" ]; };
+
+      Service = {
+        ExecStart = "${pkgs.feh}/bin/feh --bg-scale ~/.wallpaper.png";
+        Type = "oneshot";
+      };
+    };
+  };
+
+  home.file.".wallpaper.jpg".source = ./wallpaper.png;
+
   home.file.".xinitrc".source = config.lib.file.mkOutOfStoreSymlink xsession;
   xdg.configFile."sx/sxrc".source = config.lib.file.mkOutOfStoreSymlink xsession;
 
