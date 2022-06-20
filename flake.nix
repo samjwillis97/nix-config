@@ -177,7 +177,7 @@
               baseCLI = [ zsh vim tmux nnn ];
               baseDesktop = baseGUI ++ baseCLI;
               baseDev = [ dev ];
-              i3Desktop = baseDesktop ++ baseDev ++ [ i3 rofi ];
+              i3Desktop = baseDesktop ++ baseDev ++ [ i3 rofi picom ];
             };
           };
           users = {

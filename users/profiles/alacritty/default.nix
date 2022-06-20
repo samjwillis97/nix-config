@@ -12,6 +12,7 @@
         dynamic_padding = false;
         decorations = "full";
         startup_mode = "Windowed";
+        opacity = 0.85;
       };
 
       scrolling = {
