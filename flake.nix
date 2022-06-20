@@ -52,6 +52,8 @@
 
       nnn-plugins.url = "github:jarun/nnn/v4.4";
       nnn-plugins.flake= false;
+
+      emacs-overlay.url = "github:nix-community/emacs-overlay";
     };
 
   outputs =
@@ -67,7 +69,15 @@
     , deploy
     , nixpkgs
     , ...
-    } @ inputs:
+    } @ inputs':
+    let
+      # TODO: https://github.com/divnix/digga/issues/464
+      inputs = inputs' // {
+        emacs-overlay = inputs'.emacs-overlay // {
+          overlay = self.lib.overlayNullProtector inputs'.emacs-overlay.overlay;
+        };
+      };
+    in
     digga.lib.mkFlake
       {
         inherit self inputs;
@@ -77,7 +87,7 @@
         channels = {
           nixos = {
             imports = [ (digga.lib.importOverlays ./overlays) ];
-            overlays = [ ];
+            overlays = [ inputs.emacs-overlay.overlay ];
           };
           nixpkgs-darwin-stable = {
             imports = [ (digga.lib.importOverlays ./overlays) ];
@@ -173,10 +183,10 @@
             profiles = digga.lib.rakeLeaves ./users/profiles;
             suites = with profiles; rec {
               base = [ direnv git ];
-              baseGUI = [ firefox alacritty];
+              baseGUI = [ firefox alacritty ];
               baseCLI = [ zsh vim tmux nnn ];
               baseDesktop = baseGUI ++ baseCLI;
-              baseDev = [ dev ];
+              baseDev = [ dev emacs ];
               i3Desktop = baseDesktop ++ baseDev ++ [ i3 rofi picom ];
             };
           };
