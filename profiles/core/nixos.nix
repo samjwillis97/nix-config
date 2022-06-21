@@ -19,6 +19,13 @@
       utillinux
     ];
 
+    sessionVariables = {
+      XDG_CACHE_HOME = "$HOME/.cache";
+      XDG_CONFIG_HOME = "$HOME/.config";
+      XDG_DATA_HOME = "$HOME/.local/share";
+      XDG_BIN_HOME = "$HOME/.local/bin";
+    };
+
     shellAliases =
       let ifSudo = lib.mkIf config.security.sudo.enable; in
       {
