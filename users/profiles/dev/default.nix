@@ -5,5 +5,7 @@
     mongodb-compass
   ];
 
+  # TODO: Add Goland
+
   home.file.".ideavimrc".source = ./ideavimrc;
 }
