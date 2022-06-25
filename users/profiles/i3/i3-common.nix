@@ -91,6 +91,8 @@
     }
   ]
 }: let
+  resizeMode = " : [h]  , [j]  , [k]  , [l] ";
+
   mapWorkspacesStr = with builtins;
     with lib.strings;
     { workspaces, prefixKey ? null, prefixCmd }:
@@ -158,7 +160,8 @@ in {
       "${mod}+d" = "exec ${menu} drun";
       "${mod}+Tab" = "exec ${menu} window";
       # Modes
-      "${mod}+r" = "mode resize";
+      # "${mod}+r" = "mode resize";
+      "${mod}+r" = ''mode "${resizeMode}"'';
       "${mod}+p" = "mode rofi";
       # Change Focus
       "${mod}+h" = "focus left";
@@ -204,26 +207,25 @@ in {
     } // extraBindings);
 
     # TODO: Add PowerManager
-    modes = {
-      resize = {
+    modes = let 
+      exitMode = {
+        "Return" = "mode default";
+        "Escape" = "mode default";
+       };
+    in {
+      ${resizeMode} = {
         "h" = "resize shrink width 10 px or 10 ppt";
         "j" = "resize grow height 10 px or 10 ppt";
         "k" = "resize shrink height 10 px or 10 ppt";
         "l" = "resize grow width 10 px or 10 ppt";
-        "Return" = "mode default";
-        "Escape" = "mode default";
-        "${mod}+r" = "mode default";
-      };
+      } // exitMode;
       rofi = {
-        "s" = "exec ${menu} ssh";
-        "e" = "exec ${menu} emoji";
-        "f" = "exec ${menu} filebrowser";
-        "c" = "exec ${menu} calc";
-        "Return" = "mode default";
-        "Escape" = "mode default";
-        "${mod}+p" = "mode default";
-      };
-    };
+        "s" = "exec ${menu} ssh, mode \"default\"";
+        "e" = "exec ${menu} emoji, mode \"default\"";
+        "f" = "exec ${menu} filebrowser, mode \"default\"";
+        "c" = "exec ${menu} calc, mode \"default\"";
+      } // exitMode;
+    } // extraModes;
 
     gaps = {
       inner = 15;

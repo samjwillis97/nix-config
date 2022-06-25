@@ -13,7 +13,9 @@ This flake is configured with the use of [digga][digga].
 
 ## TODO
 
-- Add Picom
+- Get logitech settings to be persistent
+- Network problems after hibernation
+- Fix Picom
 - Add i3 lock
 - Add Nvidia
 - Add Gaming
