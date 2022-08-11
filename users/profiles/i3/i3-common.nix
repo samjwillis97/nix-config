@@ -154,36 +154,51 @@ in {
       "${mod}+Shift+q" = "kill"; # Kill Focused Window
       "${mod}+Shift+r" = "restart"; # Restart i3 in Place
       "${mod}+Shift+Control+q" = "exec i3-nagbar -t warning -m 'Exit i3?' -B 'Yes' 'i3-msg exit'";
-      "${mod}+Return" = "exec ${terminal}";
       "Print" = "exec ${areaScreenShot}"; # Flameshot
+
+      # Programs
+      "${mod}+b" = "exec ${browser}";
+      "${mod}+n" = "exec ${fileManager}";
+      "${mod}+m" = "exec ${terminal}";
+
+      # Scratchpad?
+      "${mod}+Shift+minus" = "move scratchpad";
+      "${mod}+minus" = "scratchpad show";
+
       # Rofi
       "${mod}+d" = "exec ${menu} drun";
       "${mod}+Tab" = "exec ${menu} window";
+
       # Modes
-      # "${mod}+r" = "mode resize";
       "${mod}+r" = ''mode "${resizeMode}"'';
       "${mod}+p" = "mode rofi";
+
       # Change Focus
       "${mod}+h" = "focus left";
       "${mod}+j" = "focus down";
       "${mod}+k" = "focus up";
       "${mod}+l" = "focus right";
+
       # Resizing
       "${mod}+Control+h" = "resize shrink width 10 px or 10 ppt";
       "${mod}+Control+j" = "resize grow height 10 px or 10 ppt";
       "${mod}+Control+k" = "resize shrink height 10 px or 10 ppt";
       "${mod}+Control+l" = "resize grow width 10 px or 10 ppt";
+
       # Move Focused Window
       "${mod}+Shift+h" = "move left";
       "${mod}+Shift+j" = "move down";
       "${mod}+Shift+k" = "move up";
       "${mod}+Shift+l" = "move right";
+
       # Move Workspaces Between Screens
       "${mod}+period" = "move workspace to output right";
       "${mod}+comma" = "move workspace to output left";
+
       # Splitting
       "${mod}+s" = "split v"; # Horizontal
       "${mod}+v" = "split h"; # Vertical
+
       # Change Modes
       "${mod}+f" = "fullscreen toggle"; # Fullscreen for Current Container
       "${mod}+Shift+s" = "layout stacking";

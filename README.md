@@ -14,6 +14,8 @@ This flake is configured with the use of [digga][digga].
 ## TODO
 
 - Get logitech settings to be persistent
+- Persistent/edfault arandr
+- Persistent/default audio
 - Network problems after hibernation
 - Fix Picom
 - Add i3 lock

@@ -15,6 +15,11 @@
       go-outline
       go-tools
       gopls
+
+      # dotNet
+      dotnet-sdk
+      dotnet-runtime
+      mono
     ];
   };
 
