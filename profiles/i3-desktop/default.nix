@@ -1,6 +1,11 @@
 { config, lib, pkgs, self, ...}: {
   boot.kernelParams = lib.optionals config.services.greetd.enable [ "quiet" ];
 
+  environment = {
+    systemPackages = [
+    ];
+  };
+
   services = {
     greetd = {
       enable = true;

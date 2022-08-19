@@ -1,7 +1,7 @@
 { config, lib, pkgs, self, ... }: {
   environment = {
     systemPackages = with pkgs; [
-      ag
+      silver-searcher
       vim
       # nnn
       tmux

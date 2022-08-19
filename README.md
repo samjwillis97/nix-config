@@ -13,15 +13,12 @@ This flake is configured with the use of [digga][digga].
 
 ## TODO
 
-- Get logitech settings to be persistent
-- Persistent/edfault arandr
+- Autostart Solaar
+- Autostart autorandr
 - Persistent/default audio
 - Network problems after hibernation
-- Fix Picom
 - Add i3 lock
-- Add Nvidia
 - Add Gaming
-- Try get wallpaper to stretch on resize? (for VM)
 - Workout what overlays do lol
 - Re add sound block to i3status-rs
 - Fix i3status-rs look
@@ -30,19 +27,13 @@ This flake is configured with the use of [digga][digga].
 - Change i3 + alacritty + rofi one dark theme
 - Fix tmux and vim interactions, currently need C-w + direction to move within vim when in tmux
 - Remove tmux theme
-- Setup Feh for backgrounds in i3
 - Determine why Firefox Bookmarks don't work
 - Workout how to apply configurations to the likes of PyCharm and WebStorm
 - Modify the root setup to my likings:
   - Remove Starship
 - Look into storing secrets - agenix?
-- nnn Configuration
 - Doom Emacs
 - Notifications with Dunst
-- Get Steam/Runelite working
-- Picom
-- Nvidia
-- Pipewire
 - Test working on Darwin
 - Test working on aarch64
 - Better Theming
