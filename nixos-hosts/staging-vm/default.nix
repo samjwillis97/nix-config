@@ -5,9 +5,5 @@
     (inputs.nixpkgs + "/nixos/modules/virtualisation/qemu-vm.nix")
   ];
 
-  users.users.sam = {
-    isNormalUser = true;
-    extraGroups = [ "wheel" ];
-    initialPassword = "nixos";
-  };
+  config.my.users = [ "sam" ];
 }
