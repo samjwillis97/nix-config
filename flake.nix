@@ -41,6 +41,7 @@
           pre-commit.settings.hooks = {
             nixpkgs-fmt.enable = true;
             deadnix.enable = true;
+            statix.enable = true;
           };
           devShells.default = pkgs.mkShell {
             shellHook = ''
