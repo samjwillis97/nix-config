@@ -33,9 +33,15 @@ in
 
     nixosConfigurations =
       builtins.mapAttrs
-        (inputs.nixpkgs.lib.nixosSystem {
-          modules = builtins.attrValues nixosModules;
-        })
+        (
+          _name: hostModule:
+            inputs.nixpkgs.lib.nixosSystem {
+              modules = [ hostModule ] ++ builtins.attrValues nixosModules;
+              specialArgs = {
+                inherit inputs;
+              };
+            }
+        )
         (readModules {
           dir = ./nixos-hosts;
         });
