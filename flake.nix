@@ -38,7 +38,10 @@
         , ...
         }:
         {
-          pre-commit.settings.hooks.nixpkgs-fmt.enable = true;
+          pre-commit.settings.hooks = {
+            nixpkgs-fmt.enable = true;
+            deadnix.enable = true;
+          };
           devShells.default = pkgs.mkShell {
             shellHook = ''
               ${config.pre-commit.shellHook}
