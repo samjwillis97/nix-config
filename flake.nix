@@ -20,7 +20,7 @@
     inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
-        # inputs.home-manager.flakeModules.home-manager
+        inputs.home-manager.flakeModules.home-manager
         inputs.git-hooks.flakeModule
         ./flake-module.nix
       ];

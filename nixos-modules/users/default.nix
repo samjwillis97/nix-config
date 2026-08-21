@@ -7,10 +7,13 @@ let
   discoverDirs =
     dir: builtins.attrNames (lib.filterAttrs (_: type: type == "directory") (builtins.readDir dir));
 
+  hasHomeNixFile = user: builtins.pathExists (./. + "/${user}/home.nix");
+
   loadUser = user: import (./. + "/${user}") { inherit pkgs; };
 
   availableUsers = discoverDirs ./.;
   selectedUsers = config.my.users;
+  homeManagerUsers = lib.filter hasHomeNixFile selectedUsers;
 in
 {
   options.my.users = lib.mkOption {
@@ -22,6 +25,9 @@ in
   config = {
     users.users = lib.genAttrs selectedUsers loadUser;
 
-    # home-manager here maybe
+    home-manager.users = lib.genAttrs homeManagerUsers (user: {
+      imports = [ (./. + "/${user}/home.nix") ];
+      home.stateVersion = "23.11";
+    });
   };
 }

@@ -36,7 +36,11 @@ in
         (
           _name: hostModule:
             inputs.nixpkgs.lib.nixosSystem {
-              modules = [ hostModule ] ++ builtins.attrValues nixosModules;
+              modules = [
+                inputs.home-manager.nixosModules.home-manager
+                hostModule
+              ]
+              ++ builtins.attrValues nixosModules;
               specialArgs = {
                 inherit inputs;
               };
