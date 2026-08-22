@@ -54,12 +54,6 @@ let
   };
 in
 {
-  options.my.users = lib.mkOption {
-    type = with lib.types; listOf (enum users);
-    default = [ ];
-    description = "Users to create on OS configurations.";
-  };
-
   config.flake = {
     inherit nixosModules homeModules;
 
