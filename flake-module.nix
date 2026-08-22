@@ -47,6 +47,9 @@ let
     home-manager = {
       sharedModules = allHomeModules;
 
+      useGlobalPkgs = true;
+      useUserPackages = true;
+
       extraSpecialArgs = {
         inherit inputs;
       };
