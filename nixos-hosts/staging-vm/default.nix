@@ -6,4 +6,5 @@
   ];
 
   config.my.users = [ "sam" ];
+  config.my.home-manager.enable = true;
 }

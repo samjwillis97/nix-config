@@ -42,19 +42,24 @@ let
   allNixosModules = builtins.attrValues nixosModules;
   allHomeModules = builtins.attrValues homeModules;
 
-  # Shared NixOS/nix-darwin module.
-  homeManagerIntegrationModule = {
-    home-manager = {
-      sharedModules = allHomeModules;
+  # The Home Manager module must be imported unconditionally so its options
+  # exist; only its configuration can depend on a NixOS option.
+  homeManagerIntegrationModule =
+    { config, lib, ... }:
+    {
+      config = lib.mkIf config.my.home-manager.enable {
+        home-manager = {
+          sharedModules = allHomeModules;
 
-      useGlobalPkgs = true;
-      useUserPackages = true;
+          useGlobalPkgs = true;
+          useUserPackages = true;
 
-      extraSpecialArgs = {
-        inherit inputs;
+          extraSpecialArgs = {
+            inherit inputs;
+          };
+        };
       };
     };
-  };
 in
 {
   config.flake = {
