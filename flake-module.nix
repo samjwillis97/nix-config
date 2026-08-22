@@ -26,39 +26,63 @@ let
         (builtins.readDir dir)
     else
       { };
+
+  userModules = readModules { dir = ./users; };
+
+  userHomeModules = readModules {
+    dir = ./users;
+    entryPoint = "home.nix";
+  };
+
+  nixosHosts = readModules { dir = ./nixos-hosts; };
+
+  nixosModules = readModules { dir = ./nixos-modules; };
+  homeModules = readModules { dir = ./home-modules; };
+
+  allNixosModules = builtins.attrValues nixosModules;
+  allHomeModules = builtins.attrValues homeModules;
+
+  # Shared NixOS/nix-darwin module.
+  homeManagerIntegrationModule = {
+    home-manager = {
+      sharedModules = allHomeModules;
+
+      extraSpecialArgs = {
+        inherit inputs;
+      };
+    };
+  };
 in
 {
-  config.flake = rec {
-    nixosModules = readModules { dir = ./nixos-modules; };
+  options.my.users = lib.mkOption {
+    type = with lib.types; listOf (enum users);
+    default = [ ];
+    description = "Users to create on OS configurations.";
+  };
 
-    nixosConfigurations =
-      builtins.mapAttrs
-        (
-          _name: hostModule:
-            inputs.nixpkgs.lib.nixosSystem {
-              modules = [
-                inputs.home-manager.nixosModules.home-manager
-                hostModule
-              ]
-              ++ builtins.attrValues nixosModules;
-              specialArgs = {
-                inherit inputs;
-              };
-            }
-        )
-        (readModules {
-          dir = ./nixos-hosts;
-        });
+  config.flake = {
+    inherit nixosModules homeModules;
+
+    nixosConfigurations = builtins.mapAttrs
+      (
+        _name: hostModule:
+          inputs.nixpkgs.lib.nixosSystem {
+            specialArgs = {
+              inherit inputs userHomeModules userModules;
+            };
+
+            modules = allNixosModules ++ [
+              inputs.home-manager.nixosModules.home-manager
+              homeManagerIntegrationModule
+              hostModule
+            ];
+          }
+      )
+      nixosHosts;
 
     # darwinConfigurations = {
     #   test-mac = inputs.nix-darwin.lib.darwinSystem {
     #   };
     # };
-
-    modules = {
-      functions = {
-        inherit readModules;
-      };
-    };
   };
 }
