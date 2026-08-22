@@ -28,7 +28,6 @@ in
 
     home-manager.users = lib.genAttrs homeManagerUsers (user: {
       imports = [ userHomeModules.${user} ];
-      home.stateVersion = "23.11";
     });
   };
 }

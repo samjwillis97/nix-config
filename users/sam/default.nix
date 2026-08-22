@@ -1,8 +1,7 @@
 { pkgs, ... }:
 {
   isNormalUser = true;
-  shell = pkgs.bash;
-  # openssh.authorizedKeys.keys = lib.mkForce (builtins.readFile ./users/${user}/ssh/authorized_keys);
+  shell = pkgs.zsh;
   initialPassword = "nixos";
   extraGroups = [ "wheel" ];
 }

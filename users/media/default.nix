@@ -1,1 +1,3 @@
-{ }
+{
+  isNormalUser = false;
+}
