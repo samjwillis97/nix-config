@@ -1,4 +1,8 @@
-{ inputs, lib, ... }:
+{ self
+, inputs
+, lib
+, ...
+}:
 let
   # from: https://github.com/ehllie/ez-configs/blob/eb320b3a6032a30e5fa67bebbaf381e6552f9441/flake-module.nix#L169
   # scan directory and return an attribute set of nix modules, where the key is the module name and the value is the path to the module.
@@ -117,6 +121,8 @@ in
           }
       )
       (lib.filterAttrs (_name: host: host.config.my.deploy-rs.enable) nixosConfigurations);
+
+    githubActions = inputs.nix-github-actions.lib.mkGithubMatrix { inherit (self) checks; };
 
     # darwinConfigurations = {
     #   test-mac = inputs.nix-darwin.lib.darwinSystem {
