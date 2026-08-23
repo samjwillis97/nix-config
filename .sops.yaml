@@ -1,8 +1,10 @@
 keys:
-  - &agenix-primary age154u8ykjvq5ey7jzt942ewa02ak4g0zygtzpv7jav9u2d48trq32svpc8jz
+  - &desktop age1g8xl3ku8yaqypg94yhgh7fmspf4yn9d6fn3dp2vmkkfxpg9v3clqc3k6qf
+  - &staging-vm age1t6k2u966g6j65wal6n4zndr80tphteg83ej8ttj3hjaenw7zdcgqz7t8x6
 
 creation_rules:
   - path_regex: ^secrets/tailscale/secrets\.yaml$
     key_groups:
       - age:
-          - *agenix-primary
+          - *desktop
+          - *staging-vm

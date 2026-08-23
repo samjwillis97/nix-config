@@ -46,11 +46,11 @@
             deadnix.enable = true;
             statix.enable = true;
             flake-checker.enable = true;
+            prettier.enable = true;
           };
           devShells.default = pkgs.mkShell {
             shellHook = ''
               ${config.pre-commit.shellHook}
-              export SOPS_AGE_KEY_CMD='ssh-to-age -private-key -i /var/agenix/id-ed25519-agenix-primary'
               echo 1>&2 "Welcome to the development shell!"
             '';
 

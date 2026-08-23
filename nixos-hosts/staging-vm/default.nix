@@ -11,8 +11,6 @@
   ];
 
   config = {
-    sops.useSystemdActivation = true;
-
     my = {
       users = [ "sam" ];
       home-manager.enable = true;

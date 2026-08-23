@@ -1,10 +1,15 @@
+{ pkgs, ... }:
 {
   sops = {
-    age.sshKeyPaths = [
-      # stable host SSH key
-      # "/etc/ssh/ssh_host_ed25519_key"
+    useSystemdActivation = true;
 
-      "/var/agenix/id-ed25519-agenix-primary"
-    ];
+    age = {
+      keyFile = "/var/lib/sops-nix/key.txt";
+      generateKey = true;
+    };
   };
+
+  environment.systemPackages = with pkgs; [
+    age
+  ];
 }
