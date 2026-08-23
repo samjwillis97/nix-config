@@ -47,6 +47,9 @@
             statix.enable = true;
             flake-checker.enable = true;
             prettier.enable = true;
+            actionlint.enable = true;
+            detect-aws-credentials.enable = true;
+            detect-private-keys.enable = true;
           };
           devShells.default = pkgs.mkShell {
             shellHook = ''
