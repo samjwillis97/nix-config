@@ -32,6 +32,8 @@
         authKeyFile = config.sops.secrets."tailscale-auth-key".path;
       };
 
+      virtualisation.docker.enable = true;
+
       deploy-rs = {
         enable = true;
         authorizedKeys = [

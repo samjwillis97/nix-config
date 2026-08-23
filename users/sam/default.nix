@@ -1,10 +1,10 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 {
   isNormalUser = true;
   uid = 1000;
   shell = pkgs.zsh;
   initialPassword = "nixos";
-  extraGroups = [ "wheel" ];
+  extraGroups = [ "wheel" ] ++ (if config.my.virtualisation.docker.enable then [ "docker" ] else [ ]);
 
   openssh = {
     authorizedKeys.keys = [

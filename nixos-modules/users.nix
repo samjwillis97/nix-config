@@ -33,7 +33,7 @@ in
       users.users = lib.genAttrs selectedUsers (
         user:
         import userModules.${user} {
-          inherit lib pkgs;
+          inherit lib pkgs config;
         }
       );
     }
