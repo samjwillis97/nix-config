@@ -34,6 +34,8 @@ let
     entryPoint = "home.nix";
   };
 
+  secretModules = readModules { dir = ./secrets; };
+
   nixosHosts = readModules { dir = ./nixos-hosts; };
 
   nixosModules = readModules { dir = ./nixos-modules; };
@@ -70,11 +72,17 @@ in
         _name: hostModule:
           inputs.nixpkgs.lib.nixosSystem {
             specialArgs = {
-              inherit inputs userHomeModules userModules;
+              inherit
+                inputs
+                userHomeModules
+                userModules
+                secretModules
+                ;
             };
 
             modules = allNixosModules ++ [
               inputs.home-manager.nixosModules.home-manager
+              inputs.sops-nix.nixosModules.sops
               homeManagerIntegrationModule
               hostModule
             ];

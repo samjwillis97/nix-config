@@ -7,6 +7,14 @@
     diskSize = 20000;
     memorySize = 4096;
     cores = 8;
+
+    sharedDirectories.agenix = {
+      source = "/var/agenix";
+      target = "/var/agenix";
+      securityModel = "none";
+    };
+
+    fileSystems."/var/agenix".options = [ "ro" ];
   };
 
   networking.useDHCP = true;

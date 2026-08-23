@@ -14,6 +14,9 @@
 
     git-hooks.url = "github:cachix/git-hooks.nix";
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";
+
+    sops-nix.url = "github:Mic92/sops-nix";
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -47,11 +50,17 @@
           devShells.default = pkgs.mkShell {
             shellHook = ''
               ${config.pre-commit.shellHook}
+              export SOPS_AGE_KEY_CMD='ssh-to-age -private-key -i /var/agenix/id-ed25519-agenix-primary'
               echo 1>&2 "Welcome to the development shell!"
             '';
 
-            # Equivalent to self.checks.${system}.pre-commit-check.enabledPackages;
-            packages = config.pre-commit.settings.enabledPackages;
+            packages =
+              config.pre-commit.settings.enabledPackages
+              ++ (with pkgs; [
+                age
+                ssh-to-age
+                sops
+              ]);
           };
         };
     };

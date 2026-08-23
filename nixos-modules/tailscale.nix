@@ -1,6 +1,6 @@
 { lib, config, ... }:
 {
-  options.my.networking.tailscale = {
+  options.my.tailscale = {
     enable = lib.mkEnableOption "Enable tailscale VPN";
 
     exitNode = {
@@ -19,10 +19,13 @@
     };
   };
 
-  config = lib.mkIf config.my.networking.tailscale.enable (
+  config = lib.mkIf config.my.tailscale.enable (
     lib.mkMerge [
       {
-        services.tailscale.enable = true;
+        services.tailscale = {
+          enable = true;
+          authKeyFile = config.my.tailscale.authKeyFile;
+        };
 
         networking.firewall = {
           enable = true;
@@ -31,7 +34,7 @@
           checkReversePath = "loose";
         };
       }
-      (lib.mkIf config.my.networking.tailscale.exitNode.enable {
+      (lib.mkIf config.my.tailscale.exitNode.enable {
         boot.kernel.sysctl = {
           "net.ipv6.conf.all.forwarding" = 1;
         };
