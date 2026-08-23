@@ -6,12 +6,12 @@ A flake-parts configuration for NixOS and Home Manager, with scaffolding for nix
 
 ## Layout
 
-| Path | Purpose |
-| --- | --- |
-| `nixos-hosts/` | Host-specific NixOS configuration and hardware imports. |
-| `nixos-modules/` | Reusable modules imported into every NixOS configuration. |
-| `darwin-modules/` | Reusable modules intended for every nix-darwin configuration. |
-| `home-modules/` | Reusable modules imported into every Home Manager configuration. |
-| `users/` | System account definitions and per-user Home Manager configuration. |
+| Path              | Purpose                                                             |
+| ----------------- | ------------------------------------------------------------------- |
+| `nixos-hosts/`    | Host-specific NixOS configuration and hardware imports.             |
+| `nixos-modules/`  | Reusable modules imported into every NixOS configuration.           |
+| `darwin-modules/` | Reusable modules intended for every nix-darwin configuration.       |
+| `home-modules/`   | Reusable modules imported into every Home Manager configuration.    |
+| `users/`          | System account definitions and per-user Home Manager configuration. |
 
 Directory entries can be either `<name>.nix` or `<name>/default.nix`. See each directory's README for its local conventions.
