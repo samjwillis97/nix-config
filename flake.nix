@@ -21,12 +21,17 @@
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
+    # REMOTE DEPLOYMENT
+    deploy-rs.url = "github:serokell/deploy-rs";
+    deploy-rs.inputs.nixpkgs.follows = "nixpkgs";
+
     # THEMEING
     stylix = {
       url = "github:nix-community/stylix";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";
+        base16.follows = "base16";
       };
     };
 
@@ -77,9 +82,13 @@
             packages =
               config.pre-commit.settings.enabledPackages
               ++ (with pkgs; [
+                # Secrets
                 age
                 ssh-to-age
                 sops
+
+                # Remote deployment
+                deploy-rs
               ]);
           };
         };

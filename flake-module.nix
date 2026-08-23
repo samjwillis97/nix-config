@@ -68,12 +68,12 @@ let
     };
 in
 {
-  config.flake = {
+  config.flake = rec {
     inherit nixosModules homeModules;
 
     nixosConfigurations = builtins.mapAttrs
       (
-        _name: hostModule:
+        name: hostModule:
           inputs.nixpkgs.lib.nixosSystem {
             specialArgs = {
               inherit
@@ -91,10 +91,32 @@ in
               inputs.stylix.nixosModules.stylix
               homeManagerIntegrationModule
               hostModule
+              {
+                networking.hostName = name;
+              }
             ];
           }
       )
       nixosHosts;
+
+    deploy.nodes = builtins.mapAttrs
+      (
+        name: host:
+          let
+            system = host.config.nixpkgs.hostPlatform.system;
+          in
+          {
+            hostname = name;
+
+            profiles.system = {
+              sshUser = "deploy";
+              user = "root";
+
+              path = inputs.deploy-rs.lib.${system}.activate.nixos host;
+            };
+          }
+      )
+      (lib.filterAttrs (_name: host: host.config.my.deploy-rs.enable) nixosConfigurations);
 
     # darwinConfigurations = {
     #   test-mac = inputs.nix-darwin.lib.darwinSystem {
