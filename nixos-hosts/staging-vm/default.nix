@@ -25,6 +25,8 @@
 
       styling.enable = true;
 
+      desktop.enable = true;
+
       tailscale = {
         enable = true;
         authKeyFile = config.sops.secrets."tailscale-auth-key".path;
