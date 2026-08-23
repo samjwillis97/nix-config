@@ -29,6 +29,8 @@ let
 
   userModules = readModules { dir = ./users; };
 
+  groupModules = readModules { dir = ./groups; };
+
   userHomeModules = readModules {
     dir = ./users;
     entryPoint = "home.nix";
@@ -78,6 +80,7 @@ in
                 inputs
                 userHomeModules
                 userModules
+                groupModules
                 secretModules
                 ;
             };

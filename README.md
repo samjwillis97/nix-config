@@ -13,6 +13,7 @@ A flake-parts configuration for NixOS and Home Manager, with scaffolding for nix
 | `darwin-modules/` | Reusable modules intended for every nix-darwin configuration.       |
 | `home-modules/`   | Reusable modules imported into every Home Manager configuration.    |
 | `users/`          | System account definitions and per-user Home Manager configuration. |
+| `groups/`         | System group definitions and their member lists.                    |
 
 Directory entries can be either `<name>.nix` or `<name>/default.nix`. See each directory's README for its local conventions.
 

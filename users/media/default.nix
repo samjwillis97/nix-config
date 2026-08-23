@@ -1,3 +1,4 @@
 {
-  isNormalUser = false;
+  isSystemUser = true;
+  group = "media";
 }
