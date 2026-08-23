@@ -1,5 +1,6 @@
 { config
 , inputs
+, lib
 , secretModules
 , ...
 }:
@@ -11,6 +12,13 @@
   ];
 
   config = {
+    # qemu-vm boots the kernel directly unless useBootLoader is enabled.
+    boot.loader = {
+      grub.enable = lib.mkForce false;
+      efi.canTouchEfiVariables = lib.mkForce false;
+      systemd-boot.enable = lib.mkForce false;
+    };
+
     my = {
       users = [ "sam" ];
       home-manager.enable = true;

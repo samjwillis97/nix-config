@@ -38,6 +38,10 @@
       openssh.authorizedKeys.keys = config.my.deploy-rs.authorizedKeys;
     };
 
+    # The Nix daemon must accept unsigned store paths copied by deploy-rs.
+    # This is root-equivalent trust, matching the sudo capability below.
+    nix.settings.trusted-users = [ "deploy" ];
+
     security.sudo.extraRules = [
       {
         users = [ "deploy" ];
