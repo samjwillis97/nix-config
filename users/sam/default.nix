@@ -4,7 +4,20 @@
   uid = 1000;
   shell = pkgs.zsh;
   initialPassword = "nixos";
-  extraGroups = [ "wheel" ] ++ (if config.my.virtualisation.docker.enable then [ "docker" ] else [ ]);
+  extraGroups = [
+    "wheel"
+  ]
+  ++ (
+    if
+      (
+        config.my.virtualisation.containers.enable
+          && config.my.virtualisation.containers.backend == "docker"
+      )
+    then
+      [ "docker" ]
+    else
+      [ ]
+  );
 
   openssh = {
     authorizedKeys.keys = [
