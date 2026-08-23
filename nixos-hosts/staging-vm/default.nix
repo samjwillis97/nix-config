@@ -17,6 +17,8 @@
       users = [ "sam" ];
       home-manager.enable = true;
 
+      styling.enable = true;
+
       tailscale = {
         enable = true;
         authKeyFile = config.sops.secrets."tailscale-auth-key".path;

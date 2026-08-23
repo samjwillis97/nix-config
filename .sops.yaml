@@ -1,6 +1,6 @@
 keys:
   - &desktop age1g8xl3ku8yaqypg94yhgh7fmspf4yn9d6fn3dp2vmkkfxpg9v3clqc3k6qf
-  - &staging-vm age1t6k2u966g6j65wal6n4zndr80tphteg83ej8ttj3hjaenw7zdcgqz7t8x6
+  - &staging-vm age1v9tm9nunv6gsvf4kkj5emm8nw5elnh7z79hsa9fzd6j9v52zy46slj0e0g
 
 creation_rules:
   - path_regex: ^secrets/tailscale/secrets\.yaml$

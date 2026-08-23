@@ -8,15 +8,32 @@
     flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
 
     home-manager.url = "github:nix-community/home-manager";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
     nix-darwin.url = "github:nix-darwin/nix-darwin/master";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
+    # PRE-COMMIT HOOKS
     git-hooks.url = "github:cachix/git-hooks.nix";
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";
 
+    # SECRETS
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+
+    # THEMEING
+    stylix = {
+      url = "github:nix-community/stylix";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+      };
+    };
+
+    base16.url = "github:SenchoPens/base16.nix";
+
+    tt-schemes.url = "github:tinted-theming/schemes";
+    tt-schemes.flake = false;
   };
 
   outputs =

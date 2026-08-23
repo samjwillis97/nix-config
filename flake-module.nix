@@ -51,7 +51,9 @@ let
     {
       config = lib.mkIf config.my.home-manager.enable {
         home-manager = {
-          sharedModules = allHomeModules;
+          sharedModules = allHomeModules ++ [
+            inputs.base16.nixosModule
+          ];
 
           useGlobalPkgs = true;
           useUserPackages = true;
@@ -83,6 +85,7 @@ in
             modules = allNixosModules ++ [
               inputs.home-manager.nixosModules.home-manager
               inputs.sops-nix.nixosModules.sops
+              inputs.stylix.nixosModules.stylix
               homeManagerIntegrationModule
               hostModule
             ];
