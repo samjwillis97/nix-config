@@ -17,7 +17,7 @@
 
       base16Scheme = "${inputs.tt-schemes}/base16/catppuccin-mocha.yaml";
       polarity = "dark";
-      # image = ../assets/wallpapers/evening-sky.png;
+      image = ./wallpapers/evening-sky.png;
 
       targets = {
         fontconfig = {
