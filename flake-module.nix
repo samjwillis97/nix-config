@@ -122,7 +122,13 @@ in
       )
       (lib.filterAttrs (_name: host: host.config.my.deploy-rs.enable) nixosConfigurations);
 
-    githubActions = inputs.nix-github-actions.lib.mkGithubMatrix { inherit (self) checks; };
+    githubActions = inputs.nix-github-actions.lib.mkGithubMatrix {
+      checks = lib.getAttrs [
+        "x86_64-linux"
+        "x86_64-darwin"
+      ]
+        self.checks;
+    };
 
     # darwinConfigurations = {
     #   test-mac = inputs.nix-darwin.lib.darwinSystem {
