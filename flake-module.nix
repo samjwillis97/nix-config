@@ -128,10 +128,5 @@ in
       ]
         self.checks;
     };
-
-    # darwinConfigurations = {
-    #   test-mac = inputs.nix-darwin.lib.darwinSystem {
-    #   };
-    # };
   };
 }

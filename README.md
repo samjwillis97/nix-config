@@ -30,5 +30,4 @@ nix path-info -Sh \
 
 ```
 nix eval --json .#nixosConfigurations.staging-vm.config.environment.systemPackages --apply 'packages: map (package: package.name) packages' | jq -r '.[]' | sort -u
-
 ```
