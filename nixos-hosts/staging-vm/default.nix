@@ -11,6 +11,8 @@
   ];
 
   config = {
+    networking.hostName = "staging-vm";
+
     my = {
       users = [ "sam" ];
       home-manager.enable = true;
