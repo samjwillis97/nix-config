@@ -28,7 +28,8 @@
 
       desktop.enable = true;
 
-      reverse-proxy.enable = true;
+      actual.enable = true;
+
       cloudflared = {
         enable = true;
         connector = {

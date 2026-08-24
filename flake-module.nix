@@ -107,6 +107,13 @@ in
       (_name: host: {
         subdomain = host.config.my.cloudflared.subdomain;
         origin = host.config.my.cloudflared.origin;
+
+        routes = lib.mapAttrs
+          (name: route: {
+            inherit (route) subdomain;
+            internalHost = name;
+          })
+          host.config.my.ingress.routes;
       })
       (lib.filterAttrs (_name: host: host.config.my.cloudflared.enable) nixosConfigurations);
 
