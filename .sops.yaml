@@ -8,3 +8,12 @@ creation_rules:
       - age:
           - *desktop
           - *staging-vm
+  - path_regex: ^secrets/terranix/cloudflare\.yaml$
+    key_groups:
+      - age:
+          - *desktop
+  - path_regex: ^secrets/(.*/)?staging-vm[.]yaml$
+    key_groups:
+      - age:
+          - *desktop
+          - *staging-vm

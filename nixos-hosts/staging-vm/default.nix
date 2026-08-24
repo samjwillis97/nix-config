@@ -8,6 +8,7 @@
   imports = [
     ./hardware-configuration.nix
     secretModules.tailscale
+    secretModules.cloudflared
     (inputs.nixpkgs + "/nixos/modules/virtualisation/qemu-vm.nix")
   ];
 
@@ -26,6 +27,15 @@
       styling.enable = true;
 
       desktop.enable = true;
+
+      reverse-proxy.enable = true;
+      cloudflared = {
+        enable = true;
+        connector = {
+          enable = true;
+          tokenFile = config.sops.secrets."cloudflared-token".path;
+        };
+      };
 
       tailscale = {
         enable = true;

@@ -25,6 +25,15 @@
     deploy-rs.url = "github:serokell/deploy-rs";
     deploy-rs.inputs.nixpkgs.follows = "nixpkgs";
 
+    # TERRAFORM
+    terranix = {
+      url = "github:terranix/terranix";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+      };
+    };
+
     # GITHUB ACTIONS
     nix-github-actions.url = "github:nix-community/nix-github-actions";
     nix-github-actions.inputs.nixpkgs.follows = "nixpkgs";
@@ -46,11 +55,12 @@
   };
 
   outputs =
-    inputs@{ flake-parts, ... }:
+    inputs@{ self, flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
         inputs.home-manager.flakeModules.home-manager
         inputs.git-hooks.flakeModule
+        inputs.terranix.flakeModule
         ./flake-module.nix
       ];
 
@@ -67,6 +77,41 @@
         , ...
         }:
         {
+          terranix.terranixConfigurations.cloudflare = {
+            modules = [
+              ./terranix/cloudflare.nix
+            ];
+
+            extraArgs = {
+              inherit (self) cloudflareHosts;
+              cloudflareSettings = {
+                accountId = "75eabfce45add00e729e977b056ea024";
+                zoneId = "4a5b0bb6db200785f5dfe66b28f971e0";
+                zoneName = "williscloud.org";
+              };
+            };
+
+            workdir = ".terranix/cloudflare";
+
+            terraformWrapper = {
+              package = pkgs.opentofu;
+
+              extraRuntimeInputs = [
+                pkgs.sops
+              ];
+
+              prefixText = ''
+                CLOUDFLARE_API_TOKEN="$(
+                  sops \
+                    --decrypt \
+                    --extract '["api-token"]' \
+                    ${./secrets/terranix/cloudflare.yaml}
+                )"
+                export CLOUDFLARE_API_TOKEN
+              '';
+            };
+          };
+
           pre-commit.settings.hooks = {
             nixpkgs-fmt.enable = true;
             deadnix.enable = true;
@@ -77,6 +122,7 @@
             detect-aws-credentials.enable = true;
             detect-private-keys.enable = true;
           };
+
           devShells.default = pkgs.mkShell {
             shellHook = ''
               ${config.pre-commit.shellHook}

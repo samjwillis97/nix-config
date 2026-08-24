@@ -12,3 +12,5 @@ result-*
 /.pre-commit-config.yaml
 
 *.qcow2
+
+/.terranix/

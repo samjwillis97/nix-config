@@ -103,6 +103,13 @@ in
       )
       nixosHosts;
 
+    cloudflareHosts = builtins.mapAttrs
+      (_name: host: {
+        subdomain = host.config.my.cloudflared.subdomain;
+        origin = host.config.my.cloudflared.origin;
+      })
+      (lib.filterAttrs (_name: host: host.config.my.cloudflared.enable) nixosConfigurations);
+
     deploy.nodes = builtins.mapAttrs
       (
         name: host:
