@@ -22,6 +22,8 @@
           publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB0JQTnmK59i/vGOzMb4MR3KphYThSxEOorbribPp/Y1 sam@williscloud.org";
         };
       };
+
+      development.enable = true;
     };
 
     home.stateVersion = "23.11";

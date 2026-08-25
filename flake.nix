@@ -52,6 +52,9 @@
 
     tt-schemes.url = "github:tinted-theming/schemes";
     tt-schemes.flake = false;
+
+    # Other Flakes
+    my-neovim.url = "github:samjwillis97/modular-neovim-flake";
   };
 
   outputs =

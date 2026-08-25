@@ -100,6 +100,9 @@ in
               homeManagerIntegrationModule
               hostModule
               {
+                imports = [
+                  ./overlays
+                ];
                 networking.hostName = name;
               }
             ];
@@ -124,6 +127,11 @@ in
               inputs.base16.nixosModule
               homeManagerIntegrationModule
               hostModule
+              {
+                imports = [
+                  ./overlays
+                ];
+              }
             ];
           }
       )
