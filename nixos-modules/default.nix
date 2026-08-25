@@ -35,16 +35,10 @@
   };
 
   boot = {
-    blacklistedKernelModules = [ "pcspkr" ];
-    plymouth.enable = true;
-
     loader = {
-      efi.canTouchEfiVariables = true;
       timeout = 0;
-
       systemd-boot = {
-        enable = true;
-        configurationLimit = 3;
+        configurationLimit = 5;
       };
     };
   };
