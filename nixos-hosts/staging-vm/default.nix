@@ -28,7 +28,10 @@
 
       desktop.enable = true;
 
-      actual.enable = true;
+      actual = {
+        enable = true;
+        ingress.enable = true;
+      };
 
       cloudflared = {
         enable = true;
