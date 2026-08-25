@@ -14,6 +14,7 @@ creation_rules:
       - age:
           - *sam
           - *staging-vm
+          - *teeny
   - path_regex: ^secrets/terranix/cloudflare\.yaml$
     key_groups:
       - age:
