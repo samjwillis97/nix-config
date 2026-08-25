@@ -60,13 +60,15 @@ let
     {
       config = lib.mkIf config.my.home-manager.enable {
         home-manager = {
-          sharedModules = allHomeModules;
+          sharedModules = allHomeModules ++ [
+            inputs.sops-nix.homeManagerModules.sops
+          ];
 
           useGlobalPkgs = true;
           useUserPackages = true;
 
           extraSpecialArgs = {
-            inherit inputs;
+            inherit inputs secretModules;
           };
         };
       };
