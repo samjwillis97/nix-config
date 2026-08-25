@@ -4,23 +4,43 @@
 , ...
 }:
 let
-  email = "sam@williscloud.org";
-  githubPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB0JQTnmK59i/vGOzMb4MR3KphYThSxEOorbribPp/Y1 sam@williscloud.org";
-
   allowedSignersFile = pkgs.writeText "git-allowed-signers" ''
-    ${email} namespaces="git" ${githubPublicKey}
+    ${config.my.git.email} namespaces="git" ${config.my.git.signedCommits.github.publicKey}
   '';
 in
 {
   options.my.git = {
     enable = lib.mkEnableOption "git configuration";
 
-    signedCommits = {
-      enable = lib.mkEnableOption "enable git commit signing";
+    email = lib.mkOption {
+      type = lib.types.str;
+      description = "Email address used for git configuration.";
+    };
 
-      identityFile = lib.mkOption {
-        type = lib.types.path;
-        description = "Path to the GPG key used for signing git commits.";
+    authentication = {
+      github = {
+        enable = lib.mkEnableOption "enable GitHub authentication for git";
+
+        keyFile = lib.mkOption {
+          type = lib.types.path;
+          description = "Path to the SSH key used for GitHub authentication.";
+        };
+      };
+    };
+
+    signedCommits = {
+      github = {
+        enable = lib.mkEnableOption "enable git commit signing for github";
+
+        keyFile = lib.mkOption {
+          type = lib.types.path;
+          description = "Path to the SSH private key used for signing git commits.";
+        };
+
+        publicKey = lib.mkOption {
+          type = lib.types.str;
+          description = "SSH public key used for signing git commits.";
+        };
       };
     };
   };
@@ -52,7 +72,7 @@ in
 
           settings = {
             user = {
-              inherit email;
+              email = config.my.git.email;
               name = "samjwillis97";
             };
 
@@ -83,44 +103,30 @@ in
         };
       };
     })
-    (lib.mkIf (config.my.git.enable && config.my.git.signedCommits.enable) {
-      programs.ssh = {
-        enable = true;
-        enableDefaultConfig = false;
 
-        settings = {
-          "*" = {
-            ForwardAgent = false;
-            AddKeysToAgent = "no";
-            Compression = false;
-            ServerAliveInterval = 0;
-            ServerAliveCountMax = 3;
-            HashKnownHosts = false;
-            UserKnownHostsFile = "~/.ssh/known_hosts";
-            ControlMaster = "no";
-            ControlPath = "~/.ssh/master-%r@%n:%p";
-            ControlPersist = "no";
-          };
+    (lib.mkIf (config.my.git.enable && config.my.git.authentication.github.enable) {
+      my.ssh.enable = true;
 
-          "github.com" = {
-            identityFile = builtins.replaceStrings [ "$HOME" ] [ "~" ] config.my.git.signedCommits.identityFile;
-            identitiesOnly = true;
-            compression = true;
-            forwardAgent = true;
-          };
-        };
+      programs.ssh.settings."github.com" = {
+        identityFile =
+          builtins.replaceStrings [ "$HOME" ] [ "~" ]
+            config.my.git.authentication.github.keyFile;
+        identitiesOnly = true;
+        compression = true;
       };
+    })
 
+    (lib.mkIf (config.my.git.enable && config.my.git.signedCommits.github.enable) {
       programs.git = {
         signing = {
-          key = githubPublicKey;
+          key = toString config.my.git.signedCommits.github.keyFile;
           format = "ssh";
           signByDefault = true;
         };
 
         settings = {
           gpg.format = "ssh";
-          gpg.ssh.allowedSignersFile = "${allowedSignersFile}";
+          gpg.ssh.allowedSignersFile = toString allowedSignersFile;
         };
       };
     })
