@@ -32,7 +32,7 @@ in
             options = {
               subdomain = lib.mkOption {
                 type = lib.types.str;
-                default = "${name}.${config.networking.hostName}";
+                default = "${name}-${config.networking.hostName}";
                 description = "Subdomain relative to the Cloudflare zone";
               };
 
