@@ -84,6 +84,7 @@ in
           inputs.nixpkgs.lib.nixosSystem {
             specialArgs = {
               inherit
+                self
                 inputs
                 userHomeModules
                 userModules
@@ -116,6 +117,7 @@ in
           inputs.nix-darwin.lib.darwinSystem {
             specialArgs = {
               inherit
+                self
                 inputs
                 userHomeModules
                 ;

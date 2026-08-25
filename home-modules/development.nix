@@ -9,6 +9,8 @@
   };
 
   config = lib.mkIf config.my.development.enable {
+    my.f.enable = true;
+
     home.packages = with pkgs; [
       neovim
     ];

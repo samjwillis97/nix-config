@@ -1,0 +1,139 @@
+{ config
+, lib
+, pkgs
+, ...
+}:
+{
+  options.my.tmux = {
+    enable = lib.mkEnableOption "tmux";
+  };
+
+  config = lib.mkIf config.my.tmux.enable {
+    programs.tmux = {
+      enable = true;
+      sensibleOnTop = false;
+      package = pkgs.tmux;
+
+      aggressiveResize = true;
+      baseIndex = 1;
+      historyLimit = 10000;
+      newSession = false;
+
+      prefix = "C-b";
+      terminal = "screen-256color";
+
+      plugins = [ ];
+
+      extraConfig = with config.lib.stylix.colors; ''
+        # Clear MRU session tracking cache on server start / config reload
+        # run-shell 'rm -rf $HOME/.cache/tmux-session-history && mkdir -p $HOME/.cache/tmux-session-history'
+
+        # Better splitting
+        bind | split-window -h -c "#{pane_current_path}"
+        bind - split-window -v -c "#{pane_current_path}"
+
+        # Smart pane switching with awareness of Vim splits.
+        # See: https://github.com/christoomey/vim-tmux-navigator
+        is_vim="ps -o state= -o comm= -t '#{pane_tty}' \
+            | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
+        bind-key -n 'C-h' if-shell "$is_vim" 'send-keys C-h'  'select-pane -L'
+        bind-key -n 'C-j' if-shell "$is_vim" 'send-keys C-j'  'select-pane -D'
+        bind-key -n 'C-k' if-shell "$is_vim" 'send-keys C-k'  'select-pane -U'
+        bind-key -n 'C-l' if-shell "$is_vim" 'send-keys C-l'  'select-pane -R'
+        tmux_version='$(tmux -V | sed -En "s/^tmux ([0-9]+(.[0-9]+)?).*/\1/p")'
+        if-shell -b '[ "$(echo "$tmux_version < 3.0" | bc)" = 1 ]' \
+            "bind-key -n 'C-\\' if-shell \"$is_vim\" 'send-keys C-\\'  'select-pane -l'"
+        if-shell -b '[ "$(echo "$tmux_version >= 3.0" | bc)" = 1 ]' \
+            "bind-key -n 'C-\\' if-shell \"$is_vim\" 'send-keys C-\\\\'  'select-pane -l'"
+
+        bind-key -T copy-mode-vi 'C-h' select-pane -L
+        bind-key -T copy-mode-vi 'C-j' select-pane -D
+        bind-key -T copy-mode-vi 'C-k' select-pane -U
+        bind-key -T copy-mode-vi 'C-l' select-pane -R
+        bind-key -T copy-mode-vi 'C-\' select-pane -l
+
+        set-window-option -g mode-keys vi
+        bind -T copy-mode-vi v send-keys -X begin-selection
+        bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel 'xclip -in -selection clipboard'
+
+        # Better sessions
+        bind-key -r f display-popup -E -w 80% -h 80% "${pkgs.f}/bin/f -l"
+        bind-key -r i run-shell "tmux neww tmux-cht.sh"
+
+        # Enabled 256 Color
+        set -g default-terminal "tmux-256color"
+        set-option -ga terminal-overrides ',xterm-256color:Tc'
+
+        # Enable scrolling
+        set -g mouse on
+
+        # Passing through enter properly
+        set -g extended-keys on
+        set -g extended-keys-format csi-u
+
+        # Pass through title
+        set -g set-titles-string '#{pane_title}'
+
+        # Fix switching delay
+        set -sg escape-time 0
+
+        # easy reload
+        bind-key r source-file ~/.config/tmux/tmux.conf \; display-message "~/.tmux.conf reloaded"
+
+        # Track session usage (MRU) - records timestamp when switching to a session
+        # set-hook -g client-session-changed 'run-shell "tmux-session-track \"#{session_name}\""'
+
+        # Clean up MRU tracking file when a session is destroyed
+        # set-hook -g session-closed 'run-shell "tmux-session-track-clean \"#{hook_session}\""'
+
+        # fzf session picker
+        # bind s display-popup -E -w 80% -h 80% "tmux-session-picker"
+
+        # fzf window picker
+        # bind w display-popup -E -w 80% -h 80% "tmux-window-picker"
+
+        # opencode-aware session picker
+        # bind a display-popup -E -w 80% -h 80% "tmux-oc-session-picker"
+
+        # opencode notification picker (single notification jumps directly, multiple opens picker popup)
+        # bind A run-shell "tmux-oc-notification-dispatch"
+
+        # default statusbar colors
+
+        thm_bg="#${base00}"
+        thm_fg="#${base05}"
+        thm_cyan="#${base0C}"
+        thm_black="#${base00}"
+        thm_gray="#${base02}"
+        thm_magenta="#${base0E}"
+        thm_pink="#${base0F}"
+        thm_red="#${base08}"
+        thm_green="#${base0B}"
+        thm_yellow="#${base0A}"
+        thm_blue="#${base0D}"
+        thm_orange="#${base09}"
+        thm_black4="#${base03}"
+
+        # Refresh status bar every 5 seconds for notification indicator
+        set-option -gq status-interval 5
+
+        # --------=== Statusline
+
+        set-option -gq status-left ""
+        set-option -gq status-right "#[fg=$thm_yellow,bg=$thm_bg]#(tmux-oc-notification-status)#[default] #[fg=$thm_pink,bg=$thm_bg,nobold,nounderscore,noitalics]#[fg=$thm_bg,bg=$thm_pink,nobold,nounderscore,noitalics] #[fg=$thm_fg,bg=$thm_gray] #{b:pane_current_path} #{?client_prefix,#[fg=$thm_red],#[fg=$thm_green]}#[bg=$thm_gray]#{?client_prefix,#[bg=$thm_red],#[bg=$thm_green]}#[fg=$thm_bg] #[fg=$thm_fg,bg=$thm_gray] #S "
+
+        # current_application
+        set-window-option -gq window-status-format "#[fg=$thm_bg,bg=$thm_blue] #I #[fg=$thm_fg,bg=$thm_gray] #W "
+        set-window-option -gq window-status-current-format "#[fg=$thm_bg,bg=$thm_orange] #I #[fg=$thm_fg,bg=$thm_bg] #W "
+
+        # --------=== Modes
+        set-window-option -gq clock-mode-colour "''${thm_blue}"
+        set-window-option -gq mode-style "fg=''${thm_pink} bg=''${thm_black4} bold"
+
+        # Pane number display
+        set-option -g display-panes-active-colour colour33
+        set-option -g display-panes-colour colour166
+      '';
+    };
+  };
+}

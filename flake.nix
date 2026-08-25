@@ -80,6 +80,8 @@
         , ...
         }:
         {
+          packages.f = pkgs.callPackage ./packages/f { };
+
           terranix.terranixConfigurations.cloudflare = {
             modules = [
               ./terranix/cloudflare.nix
