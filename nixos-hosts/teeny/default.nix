@@ -1,4 +1,5 @@
 { config
+, lib
 , secretModules
 , ...
 }:
@@ -10,6 +11,17 @@
   ];
 
   config = {
+    boot.plymouth.enable = lib.mkForce false;
+
+    networking = {
+      nameservers = [
+        "1.1.1.1"
+        "8.8.8.8"
+      ];
+      networkmanager.enable = true;
+    };
+    systemd.enableEmergencyMode = false;
+
     my = {
       users = [ "sam" ];
       actual = {
