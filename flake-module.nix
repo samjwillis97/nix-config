@@ -43,11 +43,14 @@ let
   secretModules = readModules { dir = ./secrets; };
 
   nixosHosts = readModules { dir = ./nixos-hosts; };
+  darwinHosts = readModules { dir = ./darwin-hosts; };
 
   nixosModules = readModules { dir = ./nixos-modules; };
+  darwinModules = readModules { dir = ./darwin-modules; };
   homeModules = readModules { dir = ./home-modules; };
 
   allNixosModules = builtins.attrValues nixosModules;
+  allDarwinModules = builtins.attrValues darwinModules;
   allHomeModules = builtins.attrValues homeModules;
 
   # The Home Manager module must be imported unconditionally so its options
@@ -57,9 +60,7 @@ let
     {
       config = lib.mkIf config.my.home-manager.enable {
         home-manager = {
-          sharedModules = allHomeModules ++ [
-            inputs.base16.nixosModule
-          ];
+          sharedModules = allHomeModules;
 
           useGlobalPkgs = true;
           useUserPackages = true;
@@ -73,7 +74,7 @@ let
 in
 {
   config.flake = rec {
-    inherit nixosModules homeModules;
+    inherit nixosModules darwinModules homeModules;
 
     nixosConfigurations = builtins.mapAttrs
       (
@@ -93,6 +94,7 @@ in
               inputs.home-manager.nixosModules.home-manager
               inputs.sops-nix.nixosModules.sops
               inputs.stylix.nixosModules.stylix
+              inputs.base16.nixosModule
               homeManagerIntegrationModule
               hostModule
               {
@@ -102,6 +104,28 @@ in
           }
       )
       nixosHosts;
+
+    darwinConfigurations = builtins.mapAttrs
+      (
+        _name: hostModule:
+          inputs.nix-darwin.lib.darwinSystem {
+            specialArgs = {
+              inherit
+                inputs
+                userHomeModules
+                ;
+            };
+
+            modules = allDarwinModules ++ [
+              inputs.home-manager.darwinModules.home-manager
+              inputs.stylix.darwinModules.stylix
+              inputs.base16.nixosModule
+              homeManagerIntegrationModule
+              hostModule
+            ];
+          }
+      )
+      darwinHosts;
 
     cloudflareHosts = builtins.mapAttrs
       (_name: host: {
