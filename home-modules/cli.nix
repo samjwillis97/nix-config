@@ -1,3 +1,4 @@
+{ pkgs, ... }:
 {
   programs = {
     dircolors = {
@@ -15,10 +16,20 @@
       };
     };
 
+    bat = {
+      enable = true;
+    };
+
     fzf = {
       enable = true;
       enableZshIntegration = false;
     };
   };
 
+  home.packages = with pkgs; [
+    ripgrep
+    zip
+    unzip
+    htop
+  ];
 }
