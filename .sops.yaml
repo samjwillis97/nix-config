@@ -1,7 +1,7 @@
 keys:
   - &sam age1g8xl3ku8yaqypg94yhgh7fmspf4yn9d6fn3dp2vmkkfxpg9v3clqc3k6qf
   - &staging-vm age1v9tm9nunv6gsvf4kkj5emm8nw5elnh7z79hsa9fzd6j9v52zy46slj0e0g
-  - &teeny age13lr8x2p82cpw76ay74v0sjrsn8czpkk807jetlt2v33jtjz7qa2syl8zuk
+  - &teeny age16egjqzlqfukmyxgp3a60cr0xnheg9cw3gwzl5569hh2szyxhw5ksae60ug
 
 creation_rules:
   - path_regex: ^secrets/development/secrets\.yaml$
