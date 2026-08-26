@@ -28,6 +28,17 @@ let
       [[ -r ${pkgs.fzf}/share/fzf/completion.zsh ]] && source ${pkgs.fzf}/share/fzf/completion.zsh
     fi
 
+    ${
+      if config.my.f.enable then
+        ''
+          if [[ -t 0 && -t 1 ]]; then
+            bindkey -s ^f "${pkgs.f}/bin/f -l\n\n"
+          fi
+        ''
+      else
+        ""
+    }
+
     export CDPATH="$CDPATH:../:../../"
 
     # See: https://discourse.nixos.org/t/brew-not-on-path-on-m1-mac/26770/4

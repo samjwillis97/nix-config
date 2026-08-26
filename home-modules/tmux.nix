@@ -57,8 +57,14 @@
         bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel 'xclip -in -selection clipboard'
 
         # Better sessions
-        bind-key -r f display-popup -E -w 80% -h 80% "${pkgs.f}/bin/f -l"
-        bind-key -r i run-shell "tmux neww tmux-cht.sh"
+        ${
+          if config.my.f.enable then
+            ''
+              bind-key -r f display-popup -E -w 80% -h 80% "${pkgs.f}/bin/f -l"
+            ''
+          else
+            ""
+        }
 
         # Enabled 256 Color
         set -g default-terminal "tmux-256color"
@@ -79,24 +85,6 @@
 
         # easy reload
         bind-key r source-file ~/.config/tmux/tmux.conf \; display-message "~/.tmux.conf reloaded"
-
-        # Track session usage (MRU) - records timestamp when switching to a session
-        # set-hook -g client-session-changed 'run-shell "tmux-session-track \"#{session_name}\""'
-
-        # Clean up MRU tracking file when a session is destroyed
-        # set-hook -g session-closed 'run-shell "tmux-session-track-clean \"#{hook_session}\""'
-
-        # fzf session picker
-        # bind s display-popup -E -w 80% -h 80% "tmux-session-picker"
-
-        # fzf window picker
-        # bind w display-popup -E -w 80% -h 80% "tmux-window-picker"
-
-        # opencode-aware session picker
-        # bind a display-popup -E -w 80% -h 80% "tmux-oc-session-picker"
-
-        # opencode notification picker (single notification jumps directly, multiple opens picker popup)
-        # bind A run-shell "tmux-oc-notification-dispatch"
 
         # default statusbar colors
 
