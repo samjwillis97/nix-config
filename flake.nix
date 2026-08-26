@@ -53,8 +53,15 @@
     tt-schemes.url = "github:tinted-theming/schemes";
     tt-schemes.flake = false;
 
-    # Other Flakes
+    # Dev Tools
     my-neovim.url = "github:samjwillis97/modular-neovim-flake";
+    direnv-instant = {
+      url = "github:Mic92/direnv-instant";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+      };
+    };
   };
 
   outputs =

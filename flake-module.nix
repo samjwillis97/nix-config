@@ -62,6 +62,7 @@ let
         home-manager = {
           sharedModules = allHomeModules ++ [
             inputs.sops-nix.homeManagerModules.sops
+            inputs.direnv-instant.homeModules.direnv-instant
           ];
 
           useGlobalPkgs = true;
