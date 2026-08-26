@@ -28,6 +28,10 @@
         enable = true;
         ingress.enable = true;
       };
+      hello = {
+        enable = true;
+        ingress.enable = true;
+      };
 
       cloudflared = {
         enable = true;
