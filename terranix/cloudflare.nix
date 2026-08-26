@@ -8,8 +8,6 @@ let
     (
       _hostName: host:
         let
-          hostname = "${host.subdomain}.${cloudflareSettings.zoneName}";
-
           routes = lib.mapAttrs
             (
               _routeName: route:
@@ -20,24 +18,13 @@ let
             )
             host.routes;
         in
-        host
-        // {
-          inherit hostname routes;
+        {
+          inherit routes;
 
-          ingress = [
-            {
-              inherit hostname;
-              service = host.origin;
-
-              origin_request = {
-                http_host_header = "localhost";
-              };
-            }
-          ]
-          ++ lib.mapAttrsToList
+          ingress = lib.mapAttrsToList
             (_routeName: route: {
               inherit (route) hostname;
-              service = host.origin;
+              service = "http://127.0.0.1:8080";
 
               origin_request = {
                 http_host_header = route.internalHost;
@@ -69,11 +56,19 @@ let
           host.routes
     )
     hosts;
+  rootRoutes = lib.filterAttrs
+    (_routeName: route: route.subdomain == route.tunnelHost)
+    dnsRoutes;
 
   tunnelId = lib.tf.ref "cloudflare_zero_trust_tunnel_cloudflared.host[each.key].id";
-  hostname = lib.tf.ref "each.value.hostname";
 in
 {
+  moved = lib.mapAttrsToList
+    (routeName: route: {
+      from = ''cloudflare_dns_record.host["${route.tunnelHost}"]'';
+      to = ''cloudflare_dns_record.route["${routeName}"]'';
+    })
+    rootRoutes;
   terraform.required_providers.cloudflare = {
     source = "cloudflare/cloudflare";
     version = "~> 5.23";
@@ -96,21 +91,6 @@ in
       source = "cloudflare";
 
       config.ingress = lib.tf.ref "each.value.ingress";
-    };
-
-    cloudflare_dns_record.host = {
-      for_each = hosts;
-
-      zone_id = cloudflareSettings.zoneId;
-      name = hostname;
-      type = "CNAME";
-
-      content = lib.tf.ref ''
-        format("%s.cfargotunnel.com",
-         cloudflare_zero_trust_tunnel_cloudflared.host[each.key].id)'';
-
-      proxied = true;
-      ttl = 1;
     };
 
     cloudflare_dns_record.route = {

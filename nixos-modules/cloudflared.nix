@@ -7,19 +7,6 @@
   options.my.cloudflared = {
     enable = lib.mkEnableOption "cloudflared tunnels";
 
-    subdomain = lib.mkOption {
-      type = lib.types.str;
-      default = config.networking.hostName;
-      defaultText = lib.literalExpression "config.networking.hostName";
-      description = "Subdomain for the cloudflared tunnel";
-    };
-
-    origin = lib.mkOption {
-      type = lib.types.str;
-      default = "http://127.0.0.1:8080";
-      description = "Origin reached by the cloudflare tunnel";
-    };
-
     connector = {
       enable = lib.mkEnableOption "cloudflared connector";
 

@@ -141,9 +141,6 @@ in
 
     cloudflareHosts = builtins.mapAttrs
       (_name: host: {
-        subdomain = host.config.my.cloudflared.subdomain;
-        origin = host.config.my.cloudflared.origin;
-
         routes = lib.mapAttrs
           (name: route: {
             inherit (route) subdomain;
