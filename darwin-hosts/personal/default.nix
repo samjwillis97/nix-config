@@ -9,5 +9,7 @@
     desktop.enable = true;
   };
 
+  services.tailscale.enable = true;
+
   system.stateVersion = 5;
 }

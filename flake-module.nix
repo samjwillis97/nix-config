@@ -57,10 +57,16 @@ let
   # exist; only its configuration can depend on a NixOS option.
   homeManagerIntegrationModule =
     { config, lib, ... }:
+    let
+      sharedHostHomeModule = {
+        config.my.desktop.enable = lib.mkForce config.my.desktop.enable;
+      };
+    in
     {
       config = lib.mkIf config.my.home-manager.enable {
         home-manager = {
           sharedModules = allHomeModules ++ [
+            sharedHostHomeModule
             inputs.sops-nix.homeManagerModules.sops
             inputs.direnv-instant.homeModules.direnv-instant
           ];
