@@ -91,7 +91,7 @@ in
 
     (lib.mkIf (lib.elem "python" config.my.development.runtimes) {
       home.packages = with pkgs; [
-        python313
+        python3
       ];
     })
 
