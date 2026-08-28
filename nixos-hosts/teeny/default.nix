@@ -28,8 +28,10 @@
         enable = true;
         ingress.enable = true;
       };
-      hello = {
+
+      jellyfin = {
         enable = true;
+        openFirewall = true;
         ingress.enable = true;
       };
 

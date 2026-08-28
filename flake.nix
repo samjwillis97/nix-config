@@ -96,7 +96,6 @@
         }:
         {
           packages.f = pkgs.callPackage ./packages/f { };
-          packages.dispatcharr = pkgs.callPackage ./packages/dispatcharr { };
 
           terranix.terranixConfigurations.cloudflare = {
             modules = [
