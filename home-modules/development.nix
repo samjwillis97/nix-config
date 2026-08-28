@@ -9,6 +9,19 @@ in
 {
   options.my.development = {
     enable = lib.mkEnableOption "development environment";
+
+    runtimes = lib.mkOption {
+      type = lib.types.listOf (
+        lib.types.enum [
+          "nodejs"
+          "bun"
+          "python"
+          "go"
+        ]
+      );
+      default = [ ];
+      description = "List of development runtimes to install, the latest will be installed";
+    };
   };
 
   config = lib.mkIf config.my.development.enable lib.mkMerge [
@@ -50,6 +63,30 @@ in
       home.packages = with pkgs; [
         insomnia
         dbeaver-bin
+      ];
+    })
+
+    (lib.mkIf (lib.elem "nodejs" config.my.development.runtimes) {
+      home.packages = with pkgs; [
+        nodejs
+      ];
+    })
+
+    (lib.mkIf (lib.elem "bun" config.my.development.runtimes) {
+      home.packages = with pkgs; [
+        bun
+      ];
+    })
+
+    (lib.mkIf (lib.elem "python" config.my.development.runtimes) {
+      home.packages = with pkgs; [
+        python313
+      ];
+    })
+
+    (lib.mkIf (lib.elem "go" config.my.development.runtimes) {
+      home.packages = with pkgs; [
+        go
       ];
     })
   ];
