@@ -22,6 +22,17 @@ in
       default = [ ];
       description = "List of development runtimes to install, the latest will be installed";
     };
+
+    platform-clis = lib.mkOption {
+      type = lib.types.listOf (
+        lib.types.enum [
+          "aws"
+          "cloudflare"
+        ]
+      );
+      default = [ ];
+      description = "List of platform applications to install (i.e. AWS CLI)";
+    };
   };
 
   config = lib.mkIf config.my.development.enable lib.mkMerge [
@@ -87,6 +98,19 @@ in
     (lib.mkIf (lib.elem "go" config.my.development.runtimes) {
       home.packages = with pkgs; [
         go
+      ];
+    })
+
+    (lib.mkIf (lib.elem "aws" config.my.development.platform-clis) {
+      home.packages = with pkgs; [
+        awscli2
+      ];
+    })
+
+    (lib.mkIf (lib.elem "cloudflare" config.my.development.platform-clis) {
+      home.packages = with pkgs; [
+        wrangler
+        cloudflared
       ];
     })
   ];
