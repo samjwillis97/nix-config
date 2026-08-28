@@ -7,7 +7,11 @@
   };
 
   config = lib.mkMerge [
-    (lib.mkIf config.my.jellyfin.enable { })
+    (lib.mkIf config.my.jellyfin.enable {
+      services.jellyfin = {
+        enable = true;
+      };
+    })
 
     (lib.mkIf (config.my.jellyfin.enable && config.my.actual.ingress.enable) {
       my.ingress.routes.jellyfin = {
