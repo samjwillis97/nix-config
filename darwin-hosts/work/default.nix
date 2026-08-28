@@ -7,6 +7,7 @@
     users = [ "samuel.willis" ];
 
     desktop.enable = true;
+    work.enable = true;
   };
 
   system.stateVersion = 5;

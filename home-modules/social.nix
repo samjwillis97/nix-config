@@ -5,15 +5,6 @@
 }:
 let
   workEnabled = config.my.work.enable;
-  workPackages =
-    if workEnabled then
-      with pkgs;
-      [
-        slack
-        zoom-us
-      ]
-    else
-      [ ];
 in
 {
   options.my.social = {
@@ -24,10 +15,20 @@ in
     };
   };
 
-  home.packages =
-    with pkgs;
-    [
-      discord
+  config = lib.mkIf config.my.social.enable (
+    lib.mkMerge [
+      {
+        home.packages = with pkgs; [
+          discord
+        ];
+      }
+
+      (lib.mkIf workEnabled {
+        home.packages = with pkgs; [
+          slack
+          zoom-us
+        ];
+      })
     ]
-    ++ workPackages;
+  );
 }

@@ -60,6 +60,7 @@ let
     let
       sharedHostHomeModule = {
         config.my.desktop.enable = lib.mkForce config.my.desktop.enable;
+        config.my.work.enable = lib.mkForce config.my.work.enable;
       };
     in
     {
