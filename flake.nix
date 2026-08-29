@@ -147,6 +147,14 @@
             actionlint.enable = true;
             detect-aws-credentials.enable = true;
             detect-private-keys.enable = true;
+
+            zizmor = {
+              enable = true;
+              name = "zizmor";
+              entry = pkgs.lib.getExe pkgs.zizmor;
+              files = "^\\.github/workflows/.*\\.(yml|yaml)$";
+              pass_filenames = true;
+            };
           };
 
           devShells.default = pkgs.mkShell {
@@ -162,6 +170,9 @@
                 age
                 ssh-to-age
                 sops
+
+                # github action checks
+                zizmor
 
                 # Remote deployment
                 deploy-rs
