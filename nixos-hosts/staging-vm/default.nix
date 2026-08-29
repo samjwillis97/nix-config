@@ -9,6 +9,7 @@
     ./hardware-configuration.nix
     secretModules.tailscale
     secretModules.cloudflared
+    secretModules.media
     (inputs.nixpkgs + "/nixos/modules/virtualisation/qemu-vm.nix")
   ];
 
@@ -27,6 +28,24 @@
       styling.enable = true;
 
       desktop.enable = true;
+
+      media = {
+        enable = true;
+
+        jellyfin = {
+          enable = true;
+          apiKeyFile = config.sops.secrets."jellyfin/api-key".path;
+          adminPasswordFile = config.sops.secrets."jellyfin/admin-password".path;
+          openFirewall = true;
+          ingress.enable = true;
+
+          xtream = {
+            baseUrlFile = config.sops.secrets."xtream/base-url".path;
+            usernameFile = config.sops.secrets."xtream/username".path;
+            passwordFile = config.sops.secrets."xtream/password".path;
+          };
+        };
+      };
 
       tailscale = {
         enable = true;

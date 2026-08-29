@@ -104,6 +104,7 @@ in
             modules = allNixosModules ++ [
               inputs.home-manager.nixosModules.home-manager
               inputs.sops-nix.nixosModules.sops
+              inputs.nixflix.nixosModules.default
               inputs.stylix.nixosModules.stylix
               inputs.base16.nixosModule
               homeManagerIntegrationModule

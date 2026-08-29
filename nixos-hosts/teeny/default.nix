@@ -8,6 +8,7 @@
     ./hardware-configuration.nix
     secretModules.tailscale
     secretModules.cloudflared
+    secretModules.media
   ];
 
   config = {
@@ -29,10 +30,15 @@
         ingress.enable = true;
       };
 
-      jellyfin = {
+      media = {
         enable = true;
-        openFirewall = true;
-        ingress.enable = true;
+
+        jellyfin = {
+          enable = true;
+          apiKeyFile = config.sops.secrets."jellyfin-api-key".path;
+          openFirewall = true;
+          ingress.enable = true;
+        };
       };
 
       cloudflared = {
