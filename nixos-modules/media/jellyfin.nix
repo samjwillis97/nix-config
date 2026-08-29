@@ -30,6 +30,12 @@ in
       baseUrlFile = secretFileOption "Base URL for Xtream plugin";
       usernameFile = secretFileOption "Username for Xtream plugin";
       passwordFile = secretFileOption "Password for Xtream plugin";
+
+      channels = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+        default = { };
+        description = "Channels to enable for Xtream plugin, grouped by group ID";
+      };
     };
 
     httpPort = lib.mkOption {
@@ -88,15 +94,7 @@ in
                 Username._secret = config.my.media.jellyfin.xtream.usernameFile;
                 Password._secret = config.my.media.jellyfin.xtream.passwordFile;
 
-                LiveTv = {
-                  "234" = [ ];
-                };
-
-                Vod = { };
-
-                Series = { };
-
-                LiveTvOverrides = { };
+                LiveTv = config.my.media.jellyfin.xtream.channels;
 
                 IsCatchupVisible = false;
                 IsSeriesVisible = false;
