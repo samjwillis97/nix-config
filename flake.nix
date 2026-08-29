@@ -151,7 +151,7 @@
             zizmor = {
               enable = true;
               name = "zizmor";
-              entry = pkgs.lib.getExe pkgs.zizmor;
+              entry = "${pkgs.lib.getExe pkgs.zizmor} --persona=auditor --no-ignores";
               files = "^\\.github/workflows/.*\\.(yml|yaml)$";
               pass_filenames = true;
             };
