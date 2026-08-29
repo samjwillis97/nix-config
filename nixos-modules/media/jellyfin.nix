@@ -84,9 +84,20 @@ in
                 hash = "sha256-mcLeVW7nQdaqMYf2UOQSUMtn7zOBi6jOZ35TCTR35vA=";
               };
               config = {
-                BaseUrl = "";
-                Username = "";
-                Password = "";
+                BaseUrl._secret = config.my.media.jellyfin.xtream.baseUrlFile;
+                Username._secret = config.my.media.jellyfin.xtream.usernameFile;
+                Password._secret = config.my.media.jellyfin.xtream.passwordFile;
+
+                LiveTv = {
+                  "234" = [ ];
+                };
+
+                Vod = { };
+
+                Series = { };
+
+                LiveTvOverrides = { };
+
                 IsCatchupVisible = false;
                 IsSeriesVisible = false;
                 IsVodVisible = false;
