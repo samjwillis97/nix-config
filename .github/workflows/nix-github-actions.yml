@@ -4,14 +4,19 @@ on:
   pull_request:
   push:
 
+permissions:
+  contents: read
+
 jobs:
   nix-matrix:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v30
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a #v7.0.1
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
       - id: set-matrix
         name: Generate Nix Matrix
         run: |
@@ -26,6 +31,10 @@ jobs:
     strategy:
       matrix: ${{fromJSON(needs.nix-matrix.outputs.matrix)}}
     steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v30
-      - run: nix build -L '.#${{ matrix.attr }}'
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a #v7.0.1
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+      - run: nix build -L ".#$NIX_ATTR"
+        env:
+          NIX_ATTR: ${{ matrix.attr }}
