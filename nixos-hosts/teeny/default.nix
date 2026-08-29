@@ -35,7 +35,8 @@
 
         jellyfin = {
           enable = true;
-          apiKeyFile = config.sops.secrets."jellyfin-api-key".path;
+          apiKeyFile = config.sops.secrets."jellyfin/api-key".path;
+          adminPasswordFile = config.sops.secrets."jellyfin/admin-password".path;
           openFirewall = true;
           ingress.enable = true;
 
