@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 {
   isNormalUser = true;
   uid = 1000;
@@ -6,18 +6,7 @@
   initialPassword = "nixos";
   extraGroups = [
     "wheel"
-  ]
-  ++ (
-    if
-      (
-        config.my.virtualisation.containers.enable
-          && config.my.virtualisation.containers.backend == "docker"
-      )
-    then
-      [ "docker" ]
-    else
-      [ ]
-  );
+  ];
 
   openssh = {
     authorizedKeys.keys = [
