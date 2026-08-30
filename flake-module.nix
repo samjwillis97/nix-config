@@ -178,11 +178,40 @@ in
       )
       (lib.filterAttrs (_name: host: host.config.my.deploy-rs.enable) nixosConfigurations);
 
-    githubActions = inputs.nix-github-actions.lib.mkGithubMatrix {
-      checks = lib.getAttrs [
-        "x86_64-linux"
-      ]
-        self.checks;
-    };
+    githubActions =
+      let
+        deployConfigurations =
+          lib.filterAttrs
+            (_name: host: host.config.my.deploy-rs.githubActions.enable)
+            nixosConfigurations;
+        deployChecks = builtins.foldl'
+          (
+            checks: name:
+              let
+                host = deployConfigurations.${name};
+                system = host.config.nixpkgs.hostPlatform.system;
+              in
+              checks
+              // {
+                ${system} = (checks.${system} or { }) // {
+                  ${name} = deploy.nodes.${name}.profiles.system.path;
+                };
+              }
+          )
+          { }
+          (builtins.attrNames deployConfigurations);
+      in
+      (inputs.nix-github-actions.lib.mkGithubMatrix {
+        checks = lib.getAttrs [
+          "x86_64-linux"
+        ]
+          self.checks;
+      })
+      // {
+        deploy = inputs.nix-github-actions.lib.mkGithubMatrix {
+          checks = deployChecks;
+          attrPrefix = "githubActions.deploy.checks";
+        };
+      };
   };
 }

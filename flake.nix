@@ -102,6 +102,7 @@
         }:
         {
           packages.f = pkgs.callPackage ./packages/f { };
+          apps.deploy = inputs.deploy-rs.apps.${pkgs.stdenv.hostPlatform.system}.default;
 
           terranix.terranixConfigurations.cloudflare = {
             modules = [

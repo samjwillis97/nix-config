@@ -5,14 +5,19 @@ on:
   schedule:
     - cron: "0 0 * * 0"
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
 
 jobs:
   lockfile:
+    name: update flake lockfile
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # required to update flake.lock file
+      pull-requests: write # open PR to the repo
     steps:
       - name: Checkout repository
         uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a #v7.0.1

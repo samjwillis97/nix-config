@@ -12,46 +12,59 @@
       default = [ ];
       description = "List of authorized SSH public keys for the deploy user.";
     };
+
+    githubActions.enable = lib.mkEnableOption "deployment of this host through GitHub Actions.";
   };
 
-  config = lib.mkIf config.my.deploy-rs.enable {
-    assertions = [
-      {
-        assertion = config.my.deploy-rs.authorizedKeys != [ ];
-        message = "my.deploy-rs.authorizedKeys must contain at least one key when enabled.";
-      }
-    ];
+  config = lib.mkMerge [
+    {
+      assertions = [
+        {
+          assertion = !config.my.deploy-rs.githubActions.enable || config.my.deploy-rs.enable;
+          message = "my.deploy-rs.githubActions requires my.deploy-rs.enable";
+        }
+      ];
+    }
 
-    users.groups.deploy = { };
+    (lib.mkIf config.my.deploy-rs.enable {
+      assertions = [
+        {
+          assertion = config.my.deploy-rs.authorizedKeys != [ ];
+          message = "my.deploy-rs.authorizedKeys must contain at least one key when enabled.";
+        }
+      ];
 
-    users.users.deploy = {
-      isSystemUser = true;
-      group = "deploy";
+      users.groups.deploy = { };
 
-      shell = pkgs.bashInteractive;
+      users.users.deploy = {
+        isSystemUser = true;
+        group = "deploy";
 
-      home = "/var/lib/deploy";
-      createHome = true;
+        shell = pkgs.bashInteractive;
 
-      hashedPassword = "!";
+        home = "/var/lib/deploy";
+        createHome = true;
 
-      openssh.authorizedKeys.keys = config.my.deploy-rs.authorizedKeys;
-    };
+        hashedPassword = "!";
 
-    # The Nix daemon must accept unsigned store paths copied by deploy-rs.
-    # This is root-equivalent trust, matching the sudo capability below.
-    nix.settings.trusted-users = [ "deploy" ];
+        openssh.authorizedKeys.keys = config.my.deploy-rs.authorizedKeys;
+      };
 
-    security.sudo.extraRules = [
-      {
-        users = [ "deploy" ];
-        commands = [
-          {
-            command = "ALL";
-            options = [ "NOPASSWD" ];
-          }
-        ];
-      }
-    ];
-  };
+      # The Nix daemon must accept unsigned store paths copied by deploy-rs.
+      # This is root-equivalent trust, matching the sudo capability below.
+      nix.settings.trusted-users = [ "deploy" ];
+
+      security.sudo.extraRules = [
+        {
+          users = [ "deploy" ];
+          commands = [
+            {
+              command = "ALL";
+              options = [ "NOPASSWD" ];
+            }
+          ];
+        }
+      ];
+    })
+  ];
 }
