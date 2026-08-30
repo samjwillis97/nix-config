@@ -1,16 +1,11 @@
 {
-  system.defaults.NSGlobaleDomain = {
+  system.defaults.NSGlobalDomain = {
     ApplePressAndHoldEnabled = false;
 
     InitialKeyRepeat = 20;
     KeyRepeat = 1;
 
-    AppleKeyboardsUIMode = 3;
-
-    remap = {
-      capsLockToControl = true;
-      capsLockToEscape = true;
-    };
+    AppleKeyboardUIMode = 3;
 
     # Disable all automatic substitution
     NSAutomaticCapitalizationEnabled = false;
@@ -23,7 +18,7 @@
   system.keyboard = {
     enableKeyMapping = true;
 
-    remapCapsLockToControl = true;
+    remapCapsLockToEscape = true;
     swapLeftCommandAndLeftAlt = false;
     swapLeftCtrlAndFn = false;
   };

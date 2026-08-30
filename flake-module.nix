@@ -18,10 +18,10 @@ let
         (
           entry: type:
           let
-            dirDefault = "${dir}/${entry}/${entryPoint}";
+            dirDefault = dir + "/${entry}/${entryPoint}";
           in
           if type == "regular" && lib.hasSuffix ".nix" entry then
-            { ${lib.removeSuffix ".nix" entry} = "${dir}/${entry}"; }
+            { ${lib.removeSuffix ".nix" entry} = dir + "/${entry}"; }
           else if builtins.pathExists dirDefault && builtins.readFileType dirDefault == "regular" then
             { ${entry} = dirDefault; }
           else

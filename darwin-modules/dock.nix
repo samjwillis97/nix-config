@@ -4,7 +4,7 @@
     appswitcher-all-displays = true;
     autohide = false;
     dashboard-in-overlay = false;
-    expose-group-by-app = true;
+    expose-group-apps = true;
     launchanim = true;
     minimize-to-application = false;
     mru-spaces = false;

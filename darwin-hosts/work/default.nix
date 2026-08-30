@@ -10,5 +10,7 @@
     work.enable = true;
   };
 
+  system.primaryUser = "samuel.willis";
+
   system.stateVersion = 5;
 }

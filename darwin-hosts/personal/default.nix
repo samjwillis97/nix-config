@@ -11,5 +11,7 @@
 
   services.tailscale.enable = true;
 
+  system.primaryUser = "samuel.willis";
+
   system.stateVersion = 5;
 }

@@ -5,7 +5,10 @@
 , ...
 }:
 let
-  availableUsers = builtins.attrNames userModules;
+  availableUsers = lib.unique (
+    builtins.attrNames userModules
+    ++ builtins.attrNames userHomeModules
+  );
   selectedUsers = config.my.users;
 
   homeManagerUsers = lib.filter (user: builtins.hasAttr user userHomeModules) selectedUsers;

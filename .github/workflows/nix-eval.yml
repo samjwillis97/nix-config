@@ -1,0 +1,38 @@
+name: Evaluate Nix flake
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evaluate:
+    name: Evaluate all flake outputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+      - name: Check standard flake outputs
+        run: nix flake check --all-systems --no-build --keep-going
+      - name: Evaluate Darwin configurations
+        run: >-
+          nix eval --json .#darwinConfigurations
+          --apply 'builtins.mapAttrs (_: host: host.config.system.build.toplevel.drvPath)'
+          > /dev/null
+      - name: Evaluate custom flake outputs
+        run: |
+          set -euo pipefail
+          nix eval --json .#cloudflareHosts > /dev/null
+          nix eval --json .#deploy > /dev/null
+          nix eval --json .#githubActions > /dev/null
