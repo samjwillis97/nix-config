@@ -11,9 +11,7 @@ let
     , entryPoint ? "default.nix"
     ,
     }:
-    if builtins.pathExists "${dir}.nix" && builtins.readFileType "${dir}.nix" == "regular" then
-      { default = dir; }
-    else if builtins.pathExists dir && builtins.readFileType dir == "directory" then
+    if builtins.pathExists dir && builtins.readFileType dir == "directory" then
       lib.concatMapAttrs
         (
           entry: type:
