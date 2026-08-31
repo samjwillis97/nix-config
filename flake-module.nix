@@ -127,6 +127,7 @@ in
                 self
                 inputs
                 userHomeModules
+                userModules
                 ;
             };
 
