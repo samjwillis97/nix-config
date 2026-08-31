@@ -172,6 +172,9 @@
                 ssh-to-age
                 sops
 
+                # diff nix ouputs
+                dix
+
                 # github action checks
                 zizmor
 

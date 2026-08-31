@@ -127,6 +127,7 @@ in
                 self
                 inputs
                 userHomeModules
+                userModules
                 ;
             };
 
@@ -198,6 +199,50 @@ in
           )
           { }
           (builtins.attrNames deployConfigurations);
+        homeConfigurations = self.homeConfigurations or { };
+        dixChecks =
+          let
+            entries =
+              (lib.mapAttrsToList
+                (name: host: {
+                  system = host.config.nixpkgs.hostPlatform.system;
+                  name = "nixosConfiguration-${name}";
+                  drv = host.config.system.build.toplevel;
+                })
+                (lib.filterAttrs
+                  (_name: host: host.config.my.dix.enable)
+                  nixosConfigurations))
+              ++ (lib.mapAttrsToList
+                (name: host: {
+                  system = host.pkgs.stdenv.hostPlatform.system;
+                  name = "homeConfiguration-${name}";
+                  drv = host.activationPackage;
+                })
+                (lib.filterAttrs
+                  (_name: host: lib.attrByPath [ "config" "my" "dix" "enable" ] false host)
+                  homeConfigurations))
+              ++ (lib.mapAttrsToList
+                (name: host: {
+                  system = host.config.nixpkgs.hostPlatform.system;
+                  name = "darwinConfiguration-${name}";
+                  drv = host.system;
+                })
+                (lib.filterAttrs
+                  (_name: host: host.config.my.dix.enable)
+                  darwinConfigurations));
+          in
+          builtins.foldl'
+            (
+              checks: check:
+                checks
+                // {
+                  ${check.system} = (checks.${check.system} or { }) // {
+                    ${check.name} = check.drv;
+                  };
+                }
+            )
+            { }
+            entries;
       in
       (inputs.nix-github-actions.lib.mkGithubMatrix {
         checks = lib.getAttrs [
@@ -209,6 +254,10 @@ in
         deploy = inputs.nix-github-actions.lib.mkGithubMatrix {
           checks = deployChecks;
           attrPrefix = "githubActions.deploy.checks";
+        };
+        dix = inputs.nix-github-actions.lib.mkGithubMatrix {
+          checks = dixChecks;
+          attrPrefix = "githubActions.dix.checks";
         };
       };
   };

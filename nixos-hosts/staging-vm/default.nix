@@ -23,6 +23,7 @@
 
     my = {
       users = [ "sam" ];
+      dix.enable = true;
       home-manager.enable = true;
 
       styling.enable = true;
