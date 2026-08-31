@@ -7,6 +7,7 @@
     users = [ "samuel.willis" ];
 
     desktop.enable = true;
+    dix.enable = true;
   };
 
   services.tailscale.enable = true;

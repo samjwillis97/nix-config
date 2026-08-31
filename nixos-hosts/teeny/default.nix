@@ -25,6 +25,7 @@
 
     my = {
       users = [ "sam" ];
+      dix.enable = true;
       actual = {
         enable = true;
         ingress.enable = true;

@@ -1,0 +1,106 @@
+name: Diff Nix configurations
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dix-matrix:
+    name: Generate Dix matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: head
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+      - id: set-matrix
+        name: Generate enabled configuration matrix
+        working-directory: head
+        run: |
+          set -euo pipefail
+          echo "matrix=$(nix eval --json '.#githubActions.dix.matrix')" >> "$GITHUB_OUTPUT"
+
+  diff:
+    name: Diff ${{ matrix.name }}
+    needs: dix-matrix
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.dix-matrix.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: head
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+      - name: Diff configuration
+        env:
+          CONFIG_NAME: ${{ matrix.name }}
+        run: |
+          set -euo pipefail
+
+          case "$CONFIG_NAME" in
+            nixosConfiguration-*)
+              config_name="${CONFIG_NAME#nixosConfiguration-}"
+              config_output=nixosConfigurations
+              config_attr="nixosConfigurations.${config_name}.config.system.build.toplevel"
+              ;;
+            homeConfiguration-*)
+              config_name="${CONFIG_NAME#homeConfiguration-}"
+              config_output=homeConfigurations
+              config_attr="homeConfigurations.${config_name}.activationPackage"
+              ;;
+            darwinConfiguration-*)
+              config_name="${CONFIG_NAME#darwinConfiguration-}"
+              config_output=darwinConfigurations
+              config_attr="darwinConfigurations.${config_name}.system"
+              ;;
+            *)
+              echo "Unknown Dix configuration: $CONFIG_NAME" >&2
+              exit 1
+              ;;
+          esac
+
+          base_outputs="$(nix flake show --json --all-systems ./base)"
+          if ! jq -e --arg output "$config_output" 'has($output)' <<<"$base_outputs" > /dev/null; then
+            echo "$CONFIG_NAME was added; there is no previous closure to diff."
+            exit 0
+          fi
+
+          base_names="$(nix eval --json "./base#$config_output" --apply builtins.attrNames)"
+          if ! jq -e --arg name "$config_name" 'index($name) != null' <<<"$base_names" > /dev/null; then
+            echo "$CONFIG_NAME was added; there is no previous closure to diff."
+            exit 0
+          fi
+
+          profiles="$(mktemp -d)"
+          trap 'rm -rf "$profiles"' EXIT
+          old_profile="$profiles/old"
+          new_profile="$profiles/new"
+
+          echo "Building $CONFIG_NAME from the base revision"
+          nix build -L --profile "$old_profile" "./base#$config_attr"
+          echo "Building $CONFIG_NAME from the pull request revision"
+          nix build -L --profile "$new_profile" "./head#$config_attr"
+
+          echo "Diff for $CONFIG_NAME"
+          nix run "github:manic-systems/dix/857739fe62bd8ae8e4a8078b983ca9b5a7bd075b#dix" -- \
+            --force-correctness "$old_profile" "$new_profile"

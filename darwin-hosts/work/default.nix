@@ -8,6 +8,7 @@
 
     desktop.enable = true;
     work.enable = true;
+    dix.enable = true;
   };
 
   system.primaryUser = "samuel.willis";
