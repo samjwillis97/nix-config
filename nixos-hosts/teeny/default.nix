@@ -43,9 +43,14 @@
 
           # Automatically map the users from secrets to the jellyfin configuration. The secrets are expected to be in the format "jellyfin/users/<username>/password".
           users =
-            lib.filterAttrs (_name: _value: builtins.match "jellyfin/users/(.*)/password" _name != null)
+            lib.mapAttrs'
+              (name: _value: {
+                name = builtins.elemAt (builtins.match "jellyfin/users/(.*)/password" name) 0;
+                value = { password = config.sops.secrets.${name}.path; };
+              })
               (
-                lib.mapAttrs (_name: _value: { password = config.sops.secrets.${_name}.path; }) config.sops.secrets
+                lib.filterAttrs (_name: _value: builtins.match "jellyfin/users/(.*)/password" _name != null)
+                  config.sops.secrets
               );
 
           xtream = {
