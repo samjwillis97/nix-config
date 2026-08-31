@@ -46,6 +46,17 @@ let
   nixosModules = readModules { dir = ./nixos-modules; };
   darwinModules = readModules { dir = ./darwin-modules; };
   homeModules = readModules { dir = ./home-modules; };
+  mkUnstable =
+    pkgs:
+    import inputs.unstable {
+      inherit (pkgs) system config;
+    };
+
+  unstablePackageModule =
+    { pkgs, ... }:
+    {
+      _module.args.unstable = mkUnstable pkgs;
+    };
 
   allNixosModules = builtins.attrValues nixosModules;
   allDarwinModules = builtins.attrValues darwinModules;
@@ -54,7 +65,11 @@ let
   # The Home Manager module must be imported unconditionally so its options
   # exist; only its configuration can depend on a NixOS option.
   homeManagerIntegrationModule =
-    { config, lib, ... }:
+    { config
+    , lib
+    , pkgs
+    , ...
+    }:
     let
       sharedHostHomeModule = {
         config.my.desktop.enable = lib.mkForce config.my.desktop.enable;
@@ -75,6 +90,7 @@ let
 
           extraSpecialArgs = {
             inherit inputs secretModules;
+            unstable = mkUnstable pkgs;
           };
         };
       };
@@ -100,6 +116,7 @@ in
             };
 
             modules = allNixosModules ++ [
+              unstablePackageModule
               inputs.home-manager.nixosModules.home-manager
               inputs.sops-nix.nixosModules.sops
               inputs.nixflix.nixosModules.default
@@ -132,6 +149,7 @@ in
             };
 
             modules = allDarwinModules ++ [
+              unstablePackageModule
               inputs.home-manager.darwinModules.home-manager
               inputs.stylix.darwinModules.stylix
               inputs.base16.nixosModule
@@ -179,10 +197,11 @@ in
 
     githubActions =
       let
-        deployConfigurations =
-          lib.filterAttrs
-            (_name: host: host.config.my.deploy-rs.githubActions.enable)
-            nixosConfigurations;
+        deployConfigurations = lib.filterAttrs
+          (
+            _name: host: host.config.my.deploy-rs.githubActions.enable
+          )
+          nixosConfigurations;
         deployChecks = builtins.foldl'
           (
             checks: name:
@@ -209,27 +228,28 @@ in
                   name = "nixosConfiguration-${name}";
                   drv = host.config.system.build.toplevel;
                 })
-                (lib.filterAttrs
-                  (_name: host: host.config.my.dix.enable)
-                  nixosConfigurations))
+                (lib.filterAttrs (_name: host: host.config.my.dix.enable) nixosConfigurations))
               ++ (lib.mapAttrsToList
                 (name: host: {
                   system = host.pkgs.stdenv.hostPlatform.system;
                   name = "homeConfiguration-${name}";
                   drv = host.activationPackage;
                 })
-                (lib.filterAttrs
-                  (_name: host: lib.attrByPath [ "config" "my" "dix" "enable" ] false host)
-                  homeConfigurations))
+                (
+                  lib.filterAttrs
+                    (
+                      _name: host: lib.attrByPath [ "config" "my" "dix" "enable" ] false host
+                    )
+                    homeConfigurations
+                )
+              )
               ++ (lib.mapAttrsToList
                 (name: host: {
                   system = host.config.nixpkgs.hostPlatform.system;
                   name = "darwinConfiguration-${name}";
                   drv = host.system;
                 })
-                (lib.filterAttrs
-                  (_name: host: host.config.my.dix.enable)
-                  darwinConfigurations));
+                (lib.filterAttrs (_name: host: host.config.my.dix.enable) darwinConfigurations));
           in
           builtins.foldl'
             (
