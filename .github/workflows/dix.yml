@@ -105,14 +105,20 @@ jobs:
           echo "Diff for $CONFIG_NAME"
           set +e
           nix run "github:manic-systems/dix/857739fe62bd8ae8e4a8078b983ca9b5a7bd075b#dix" -- \
-            --force-correctness "$old_profile" "$new_profile" \
-            2>&1 | tee "$output_file"
+            --force-correctness \
+            --color never \
+            "$old_profile" "$new_profile" \
+            | sed '/^<<< /d; /^>>> /d' | tee "$output_file"
           statuses=("${PIPESTATUS[@]}")
           dix_status="${statuses[0]}"
-          tee_status="${statuses[1]}"
+          filter_status="${statuses[1]}"
+          tee_status="${statuses[2]}"
           set -e
           if (( dix_status != 0 )); then
             exit "$dix_status"
+          fi
+          if (( filter_status != 0 )); then
+            exit "$filter_status"
           fi
           exit "$tee_status"
       - name: Save Dix output
