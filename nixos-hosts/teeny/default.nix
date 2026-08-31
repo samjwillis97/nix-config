@@ -41,6 +41,13 @@
           openFirewall = true;
           ingress.enable = true;
 
+          # Automatically map the users from secrets to the jellyfin configuration. The secrets are expected to be in the format "jellyfin/users/<username>/password".
+          users =
+            lib.filterAttrs (_name: _value: builtins.match "jellyfin/users/(.*)/password" _name != null)
+              (
+                lib.mapAttrs (_name: _value: { password = config.sops.secrets.${_name}.path; }) config.sops.secrets
+              );
+
           xtream = {
             baseUrlFile = config.sops.secrets."xtream/base-url".path;
             usernameFile = config.sops.secrets."xtream/username".path;

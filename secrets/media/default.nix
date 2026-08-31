@@ -2,6 +2,7 @@ let
   secrets = [
     "jellyfin/api-key"
     "jellyfin/admin-password"
+    "jellyfin/users/sam/password"
     "xtream/base-url"
     "xtream/username"
     "xtream/password"
