@@ -6,6 +6,7 @@
   my = {
     users = [ "samuel.willis" ];
     home-manager.enable = true;
+    styling.enable = true;
     desktop.enable = true;
     work.enable = true;
     dix.enable = true;
