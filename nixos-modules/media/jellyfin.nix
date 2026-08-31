@@ -24,6 +24,12 @@ in
 
     apiKeyFile = secretFileOption "jellyfin API key";
 
+    users = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.attrsOf lib.types.path);
+      default = { };
+      description = "Users to create for jellyfin, with passwords stored in files";
+    };
+
     adminPasswordFile = secretFileOption "jellyfin admin password";
 
     xtream = {
@@ -69,7 +75,17 @@ in
                 isAdministrator = true;
               };
             };
-          };
+          }
+          // (builtins.mapAttrs
+            (_name: user: {
+              password = {
+                _secret = user.password;
+              };
+              policy = {
+                isAdministrator = false;
+              };
+            })
+            config.my.media.jellyfin.users);
 
           network = {
             internalHttpPort = config.my.media.jellyfin.httpPort;
