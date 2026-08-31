@@ -8,6 +8,7 @@
 
     desktop.enable = true;
     work.enable = true;
+    firefox.enable = false;
     dix.enable = true;
   };
 
