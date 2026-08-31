@@ -1,4 +1,8 @@
-{ config, lib, ... }:
+{ config
+, lib
+, unstable
+, ...
+}:
 {
   options.my.actual = {
     enable = lib.mkEnableOption "actual budgetting";
@@ -10,6 +14,8 @@
     (lib.mkIf config.my.actual.enable {
       services.actual = {
         enable = true;
+
+        package = unstable.actual-server;
 
         settings = {
           hostname = "127.0.0.1";
