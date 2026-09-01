@@ -31,6 +31,8 @@
         };
       };
 
+      _1password.enable = true;
+
       development.enable = true;
 
       omp = {

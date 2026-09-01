@@ -156,6 +156,7 @@ in
             modules = allDarwinModules ++ [
               unstablePackageModule
               inputs.home-manager.darwinModules.home-manager
+              inputs.brew-nix.darwinModules.default
               inputs.stylix.darwinModules.stylix
               inputs.base16.nixosModule
               homeManagerIntegrationModule
