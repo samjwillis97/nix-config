@@ -9,6 +9,7 @@ in
 {
   nixpkgs.overlays = [
     inputs.nur.overlays.default
+    inputs.llm-agents.overlays.shared-nixpkgs
 
     (_final: _prev: {
       neovim = inputs.my-neovim.packages.${system}.default;
