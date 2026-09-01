@@ -1,5 +1,5 @@
 # pre-assigned user on work macbook
-{ lib
+{ pkgs
 , config
 , secretModules
 , ...
@@ -9,9 +9,9 @@
     secretModules.development
   ];
 
-  home = {
+  config.home = {
     username = "samuel.willis";
-    homeDirectory = lib.mkForce "/Users/samuel.willis";
+    homeDirectory = if pkgs.stdenv.hostPlatform.isDarwin then "/Users/samuel.willis" else null;
     stateVersion = "23.11";
   };
 

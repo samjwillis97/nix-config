@@ -1,13 +1,13 @@
-{ config
+{ pkgs
+, config
 , lib
-, userModules
+, darwinUserModules
 , userHomeModules
 , ...
 }:
 let
   availableUsers = lib.unique (
-    builtins.attrNames userModules
-    ++ builtins.attrNames userHomeModules
+    builtins.attrNames darwinUserModules ++ builtins.attrNames userHomeModules
   );
   selectedUsers = config.my.users;
 
@@ -31,6 +31,14 @@ in
   };
 
   config = lib.mkMerge [
+    {
+      users.users = lib.genAttrs selectedUsers (
+        user:
+        import darwinUserModules.${user} {
+          inherit lib pkgs config;
+        }
+      );
+    }
     (lib.mkIf config.my.home-manager.enable {
       home-manager.users = lib.genAttrs homeManagerUsers (user: {
         imports = [ userHomeModules.${user} ];

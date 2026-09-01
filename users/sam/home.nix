@@ -1,10 +1,18 @@
-{ config, secretModules, ... }:
+{ config
+, secretModules
+, ...
+}:
 {
   imports = [
     secretModules.development
   ];
 
   config = {
+    home = {
+      username = "sam";
+      stateVersion = "23.11";
+    };
+
     my = {
       git = {
         enable = true;
@@ -24,8 +32,13 @@
       };
 
       development.enable = true;
-    };
 
-    home.stateVersion = "23.11";
+      omp = {
+        enable = true;
+        settings = {
+          provider = "openai-codex";
+        };
+      };
+    };
   };
 }

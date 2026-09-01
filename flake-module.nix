@@ -38,6 +38,11 @@ let
     entryPoint = "home.nix";
   };
 
+  darwinUserModules = readModules {
+    dir = ./users;
+    entryPoint = "darwin.nix";
+  };
+
   secretModules = readModules { dir = ./secrets; };
 
   nixosHosts = readModules { dir = ./nixos-hosts; };
@@ -144,7 +149,7 @@ in
                 self
                 inputs
                 userHomeModules
-                userModules
+                darwinUserModules
                 ;
             };
 
