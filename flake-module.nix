@@ -46,6 +46,8 @@ let
   nixosModules = readModules { dir = ./nixos-modules; };
   darwinModules = readModules { dir = ./darwin-modules; };
   homeModules = readModules { dir = ./home-modules; };
+  microvmGuests = readModules { dir = ./microvms/guests; };
+
   mkUnstable =
     pkgs:
     import inputs.unstable {
@@ -95,6 +97,62 @@ let
         };
       };
     };
+
+  # Evaluates a single named guest. `hostPkgs` is the *host* package set; the
+  # returned nixosSystem is the Linux guest configuration.
+  mkMicrovmGuest =
+    { name
+    , hostPkgs
+    , guestModule
+    , deploymentModule
+    ,
+    }:
+    inputs.nixpkgs.lib.nixosSystem {
+      system =
+        lib.replaceStrings
+          [
+            "-darwin"
+          ]
+          [
+            "-linux"
+          ]
+          hostPkgs.stdenv.hostPlatform.system;
+
+      specialArgs = {
+        inherit
+          self
+          inputs
+          userHomeModules
+          userModules
+          groupModules
+          secretModules
+          ;
+      };
+
+      modules = [
+        # Baseline subset of NixOS
+        ./nixos-modules/users.nix
+        ./nixos-modules/shared.nix
+
+        # Base Inputs
+        unstablePackageModule
+        inputs.home-manager.nixosModules.home-manager
+        inputs.sops-nix.nixosModules.sops
+        homeManagerIntegrationModule
+        inputs.microvm.nixosModules.microvm
+
+        # Base microvm module
+        ./microvms/modules/base.nix
+
+        guestModule
+        deploymentModule
+
+        {
+          networking.hostName = name;
+          microvm.vmHostPackages = hostPkgs;
+        }
+      ];
+    };
 in
 {
   config.flake = rec {
@@ -112,6 +170,8 @@ in
                 userModules
                 groupModules
                 secretModules
+                microvmGuests
+                mkMicrovmGuest
                 ;
             };
 
@@ -119,6 +179,7 @@ in
               unstablePackageModule
               inputs.home-manager.nixosModules.home-manager
               inputs.sops-nix.nixosModules.sops
+              inputs.microvm.nixosModules.host
               inputs.nixflix.nixosModules.default
               inputs.stylix.nixosModules.stylix
               inputs.base16.nixosModule
@@ -145,6 +206,8 @@ in
                 inputs
                 userHomeModules
                 userModules
+                microvmGuests
+                mkMicrovmGuest
                 ;
             };
 

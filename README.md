@@ -9,6 +9,8 @@ A flake-parts configuration for NixOS and Home Manager, with scaffolding for nix
 | Path              | Purpose                                                             |
 | ----------------- | ------------------------------------------------------------------- |
 | `nixos-hosts/`    | Host-specific NixOS configuration and hardware imports.             |
+| `darwin-hosts/`   |                                                                     |
+| `microvms/`       |                                                                     |
 | `nixos-modules/`  | Reusable modules imported into every NixOS configuration.           |
 | `darwin-modules/` | Reusable modules intended for every nix-darwin configuration.       |
 | `home-modules/`   | Reusable modules imported into every Home Manager configuration.    |

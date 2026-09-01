@@ -10,6 +10,15 @@
     desktop.enable = true;
     work.enable = true;
     dix.enable = true;
+
+    microvms = {
+      enable = true;
+
+      guests.shell = {
+        autostart = false;
+        sshPort = 2222;
+      };
+    };
   };
 
   system.primaryUser = "samuel.willis";

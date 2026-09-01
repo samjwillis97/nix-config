@@ -26,6 +26,16 @@
       dix.enable = true;
       home-manager.enable = true;
 
+      microvms = {
+        enable = true;
+
+        guests.shell = {
+          # Coding/shell guests start on demand, not at boot.
+          autostart = false;
+          sshPort = 2222;
+        };
+      };
+
       styling.enable = true;
 
       desktop.enable = true;
