@@ -1,3 +1,8 @@
+{ config
+, lib
+, pkgs
+, ...
+}:
 {
   system.defaults.dock = {
     enable-spring-load-actions-on-all-items = true;
@@ -17,14 +22,18 @@
     magnification = false;
     largesize = 56;
     persistent-apps = builtins.filter (a: a != "") [
-      "/Applications/Google Chrome.app"
+      (
+        if config.my.work.enable then
+          "/Applications/Google Chrome.app"
+        else
+          "${pkgs.firefox-bin}/Applications/Firefox.app"
+      )
       "/system/Applications/Messages.app/"
       "/system/Applications/Calendar.app/"
       "/system/Applications/Notes.app/"
       "/system/Applications/Reminders.app/"
-      # "${pkgs.slack}/Applications/Slack.app"
-      # "${pkgs.discord}/Applications/Discord.app"
-      # "${pkgs.ghostty-bin}/Applications/Ghostty.app"
+      (lib.optionalString config.my.work.enable "${pkgs.slack}/Applications/Slack.app")
+      "${pkgs.ghostty-bin}/Applications/Ghostty.app"
       "/system/Applications/Music.app"
       "/system/Applications/iPhone Mirroring.app/"
       "/Applications/1Password.app"

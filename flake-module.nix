@@ -93,6 +93,9 @@ let
           useGlobalPkgs = true;
           useUserPackages = true;
 
+          backupFileExtension = "bak";
+          overwriteBackup = true;
+
           extraSpecialArgs = {
             inherit inputs secretModules;
             unstable = mkUnstable pkgs;
@@ -156,6 +159,7 @@ in
             modules = allDarwinModules ++ [
               unstablePackageModule
               inputs.home-manager.darwinModules.home-manager
+              inputs.sops-nix.darwinModules.sops
               inputs.brew-nix.darwinModules.default
               inputs.stylix.darwinModules.stylix
               inputs.base16.nixosModule
