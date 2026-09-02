@@ -24,7 +24,6 @@
     ./which-key.nix
     ./lastplace.nix
     ./actions-preview.nix
-    ./neotest.nix
     ./snacks.nix
     ./namu.nix
     # ./neogit.nix
