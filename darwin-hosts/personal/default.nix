@@ -4,15 +4,17 @@
   };
 
   my = {
-    users = [ "samuel.willis" ];
+    users = [ "sam" ];
 
+    home-manager.enable = true;
     desktop.enable = true;
+    styling.enable = true;
     dix.enable = true;
   };
 
   services.tailscale.enable = true;
 
-  system.primaryUser = "samuel.willis";
+  system.primaryUser = "sam";
 
   system.stateVersion = 5;
 }

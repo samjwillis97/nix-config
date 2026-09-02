@@ -50,6 +50,13 @@ in
       programs = {
         difftastic.enable = true;
 
+        gh = {
+          enable = true;
+          extensions = [
+            pkgs.gh-stack
+          ];
+        };
+
         git = {
           enable = true;
           lfs.enable = true;

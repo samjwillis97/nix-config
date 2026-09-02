@@ -38,6 +38,11 @@ let
     entryPoint = "home.nix";
   };
 
+  darwinUserModules = readModules {
+    dir = ./users;
+    entryPoint = "darwin.nix";
+  };
+
   secretModules = readModules { dir = ./secrets; };
 
   nixosHosts = readModules { dir = ./nixos-hosts; };
@@ -87,6 +92,9 @@ let
 
           useGlobalPkgs = true;
           useUserPackages = true;
+
+          backupFileExtension = "bak";
+          overwriteBackup = true;
 
           extraSpecialArgs = {
             inherit inputs secretModules;
@@ -144,13 +152,15 @@ in
                 self
                 inputs
                 userHomeModules
-                userModules
+                darwinUserModules
                 ;
             };
 
             modules = allDarwinModules ++ [
               unstablePackageModule
               inputs.home-manager.darwinModules.home-manager
+              inputs.sops-nix.darwinModules.sops
+              inputs.brew-nix.darwinModules.default
               inputs.stylix.darwinModules.stylix
               inputs.base16.nixosModule
               homeManagerIntegrationModule

@@ -107,6 +107,10 @@ in
       (lib.mkIf isDarwin {
         programs.firefox.package = pkgs.firefox-bin;
       })
+
+      (lib.mkIf config.stylix.enable {
+        stylix.targets.firefox.profileNames = [ "default" ];
+      })
     ]
   );
 }
