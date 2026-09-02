@@ -3,7 +3,6 @@
     # Copilot autocomplete is now enabled via custom.copilot.autocomplete.enable in full-config/default.nix
 
     ./conform.nix
-    ./neotest.nix
     ./render-markdown.nix
 
     # AI Assistant - Commented out because it requires Copilot authentication
