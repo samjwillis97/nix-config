@@ -91,7 +91,7 @@ let
     };
     skills.enabled = true;
     modelRoles =
-      if config.my.omp.settings.provider == "openai-codex" then
+      if config.my.omp.settings.provider == "github-copilot" then
         {
           default = "github-copilot/gpt-5.6-luna:xhigh";
           advisor = "github-copilot/gpt-5.6-luna:max";
@@ -102,7 +102,7 @@ let
           tiny = "github-copilot/gemini-3.5-flash";
           commit = "github-copilot/claude-haiku-4.5";
         }
-      else if config.my.omp.settings.provider == "github-copilot" then
+      else if config.my.omp.settings.provider == "openai-codex" then
         {
           default = "openai-codex/gpt-5.6-luna:xhigh";
           advisor = "openai-codex/gpt-5.6-luna:max";
