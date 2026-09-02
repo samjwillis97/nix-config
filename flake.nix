@@ -108,6 +108,7 @@
     nixvim = {
       url = "github:nix-community/nixvim";
       inputs = {
+        nixpkgs.follows = "unstable";
         flake-parts.follows = "flake-parts";
       };
     };

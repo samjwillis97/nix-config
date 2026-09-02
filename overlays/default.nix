@@ -4,7 +4,7 @@
 , ...
 }:
 let
-  inherit (pkgs) system;
+  system = pkgs.stdenv.hostPlatform.system;
 in
 {
   nixpkgs.overlays = [
