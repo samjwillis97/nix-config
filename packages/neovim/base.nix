@@ -1,8 +1,17 @@
 { inputs, pkgs }:
 let
-  nixvim = inputs.nixvim.legacyPackages.${pkgs.system};
+  system = pkgs.stdenv.hostPlatform.system;
+
+  nvimPkgs = import inputs.unstable {
+    inherit system;
+    config.allowUnfree = true;
+  };
+
+  nixvim = inputs.nixvim.legacyPackages.${system};
 in
 nixvim.makeNixvimWithModule {
+  pkgs = nvimPkgs;
+
   extraSpecialArgs = {
     inherit inputs;
   };
