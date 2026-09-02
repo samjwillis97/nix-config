@@ -1,7 +1,8 @@
-{ config
-, lib
-, secretModules
-, ...
+{
+  config,
+  lib,
+  secretModules,
+  ...
 }:
 {
   imports = [
@@ -46,11 +47,14 @@
             lib.mapAttrs'
               (name: _value: {
                 name = builtins.elemAt (builtins.match "jellyfin/users/(.*)/password" name) 0;
-                value = { password = config.sops.secrets.${name}.path; };
+                value = {
+                  password = config.sops.secrets.${name}.path;
+                };
               })
               (
-                lib.filterAttrs (_name: _value: builtins.match "jellyfin/users/(.*)/password" _name != null)
-                  config.sops.secrets
+                lib.filterAttrs (
+                  _name: _value: builtins.match "jellyfin/users/(.*)/password" _name != null
+                ) config.sops.secrets
               );
 
           xtream = {

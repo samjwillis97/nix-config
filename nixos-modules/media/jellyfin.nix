@@ -1,7 +1,8 @@
-{ inputs
-, config
-, lib
-, ...
+{
+  inputs,
+  config,
+  lib,
+  ...
 }:
 let
   pathOrString =
@@ -76,16 +77,14 @@ in
               };
             };
           }
-          // (builtins.mapAttrs
-            (_name: user: {
-              password = {
-                _secret = user.password;
-              };
-              policy = {
-                isAdministrator = false;
-              };
-            })
-            config.my.media.jellyfin.users);
+          // (builtins.mapAttrs (_name: user: {
+            password = {
+              _secret = user.password;
+            };
+            policy = {
+              isAdministrator = false;
+            };
+          }) config.my.media.jellyfin.users);
 
           network = {
             internalHttpPort = config.my.media.jellyfin.httpPort;

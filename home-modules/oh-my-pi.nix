@@ -1,8 +1,9 @@
-{ inputs
-, config
-, lib
-, pkgs
-, ...
+{
+  inputs,
+  config,
+  lib,
+  pkgs,
+  ...
 }:
 let
   yamlFormat = pkgs.formats.yaml { };
@@ -140,15 +141,13 @@ let
   ];
 
   sandboxGetDomainsMapped = builtins.listToAttrs (
-    map
-      (domain: {
-        name = domain;
-        value = [
-          "GET"
-          "HEAD"
-        ];
-      })
-      allowedGetDomains
+    map (domain: {
+      name = domain;
+      value = [
+        "GET"
+        "HEAD"
+      ];
+    }) allowedGetDomains
   );
 
   omp-sandboxed = agentSandbox.mkSandbox {

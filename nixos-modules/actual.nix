@@ -1,7 +1,8 @@
-{ config
-, lib
-, unstable
-, ...
+{
+  config,
+  lib,
+  unstable,
+  ...
 }:
 {
   options.my.actual = {

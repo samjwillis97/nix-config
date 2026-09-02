@@ -1,9 +1,10 @@
-{ pkgs
-, config
-, lib
-, darwinUserModules
-, userHomeModules
-, ...
+{
+  pkgs,
+  config,
+  lib,
+  darwinUserModules,
+  userHomeModules,
+  ...
 }:
 let
   availableUsers = lib.unique (

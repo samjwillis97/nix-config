@@ -1,7 +1,8 @@
-{ self
-, inputs
-, pkgs
-, ...
+{
+  self,
+  inputs,
+  pkgs,
+  ...
 }:
 let
   system = pkgs.stdenv.hostPlatform.system;

@@ -3,9 +3,9 @@ let
   ToggleTreeKey = "<C-n>";
 
   configurableSelectLayout =
-    { width ? 0.5
-    , height ? 0.4
-    ,
+    {
+      width ? 0.5,
+      height ? 0.4,
     }:
     {
       hidden = [ "preview" ];
