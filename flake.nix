@@ -85,8 +85,6 @@
     tt-schemes.flake = false;
 
     # Dev Tools
-    my-neovim.url = "github:samjwillis97/modular-neovim-flake";
-
     direnv-instant = {
       url = "github:Mic92/direnv-instant";
       inputs = {
@@ -106,6 +104,13 @@
     agent-sandbox = {
       url = "github:archie-judd/agent-sandbox.nix";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nixvim = {
+      url = "github:nix-community/nixvim";
+      inputs = {
+        flake-parts.follows = "flake-parts";
+      };
     };
 
     # Media Server
@@ -138,7 +143,16 @@
         , ...
         }:
         {
-          packages.f = pkgs.callPackage ./packages/f { };
+          packages = {
+            f = pkgs.callPackage ./packages/f { };
+            neovim-full = pkgs.callPackage ./packages/neovim/full.nix {
+              inherit inputs;
+            };
+            neovim = pkgs.callPackage ./packages/neovim/base.nix {
+              inherit inputs;
+            };
+          };
+
           apps.deploy = inputs.deploy-rs.apps.${pkgs.stdenv.hostPlatform.system}.default;
 
           terranix.terranixConfigurations.cloudflare = {

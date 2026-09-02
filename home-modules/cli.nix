@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 {
   programs = {
     dircolors = {
@@ -16,10 +16,13 @@
     };
   };
 
-  home.packages = with pkgs; [
-    ripgrep
-    zip
-    unzip
-    htop
-  ];
+  home.packages =
+    with pkgs;
+    [
+      ripgrep
+      zip
+      unzip
+      htop
+    ]
+    ++ (if (!config.my.development.enable) then [ neovim ] else [ ]);
 }

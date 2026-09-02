@@ -41,7 +41,7 @@ in
         my.f.enable = true;
 
         home.packages = with pkgs; [
-          neovim
+          neovim-full
 
           # JSON Tooling
           jq
