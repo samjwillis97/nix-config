@@ -22,7 +22,9 @@
       prefix = "C-b";
       terminal = "screen-256color";
 
-      plugins = [ ];
+      plugins = with pkgs; [
+        tmuxPlugins.tmux-fzf
+      ];
 
       extraConfig = with config.lib.stylix.colors; ''
         # Clear MRU session tracking cache on server start / config reload
