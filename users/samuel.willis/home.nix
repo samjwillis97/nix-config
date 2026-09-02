@@ -1,6 +1,5 @@
 # pre-assigned user on work macbook
-{ pkgs
-, config
+{ config
 , secretModules
 , ...
 }:
@@ -9,9 +8,8 @@
     secretModules.development
   ];
 
-  config.home = {
+  home = {
     username = "samuel.willis";
-    homeDirectory = if pkgs.stdenv.hostPlatform.isDarwin then "/Users/samuel.willis" else null;
     stateVersion = "23.11";
   };
 
