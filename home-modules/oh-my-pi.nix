@@ -1,4 +1,5 @@
-{ config
+{ inputs
+, config
 , lib
 , pkgs
 , ...
@@ -6,6 +7,8 @@
 let
   yamlFormat = pkgs.formats.yaml { };
   jsonFormat = pkgs.formats.json { };
+
+  agentSandbox = import inputs.agent-sandbox { inherit pkgs; };
 
   dapAdapters = {
     node = {
@@ -116,6 +119,101 @@ let
       else
         { };
   };
+
+  allowedGetDomains = [
+    "githubusercontent.com"
+    "npmjs.org"
+    "nodejs.org"
+    "developer.mozilla.org"
+    "omp.sh"
+    "html.duckduckgo.com"
+    "typescriptlang.org"
+    "tanstack.com"
+    "shadcn.com"
+    "supabase.com"
+    "nextjs.org"
+    "react.dev"
+    "docs.aws.amazon.com"
+    "channels.nixos.org"
+    "cache.nixos.org"
+    "raw.githubusercontent.com"
+  ];
+
+  sandboxGetDomainsMapped = builtins.listToAttrs (
+    map
+      (domain: {
+        name = domain;
+        value = [
+          "GET"
+          "HEAD"
+        ];
+      })
+      allowedGetDomains
+  );
+
+  omp-sandboxed = agentSandbox.mkSandbox {
+    pkg = pkgs.llm-agents.omp;
+    binName = "omp";
+    outName = "omp";
+    allowedPackages = with pkgs; [
+      curl
+      wget
+      file
+      coreutils
+      which
+      git
+      ripgrep
+      fd
+      gnused
+      gnugrep
+      findutils
+      jq
+      nodejs
+      vscode-js-debug
+      python3
+      openssh
+      difftastic
+      gnused
+      nix
+      man
+      llm-agents.omp
+      bun
+      gh
+    ];
+    rwDirs = [
+      "$HOME/.omp"
+      "$HOME/.npm"
+      "$HOME/.cache"
+      "$HOME/.config/gh"
+      "$HOME/.config/git"
+      "$HOME/.config/httpcraft"
+      "/nix/var/nix/daemon-socket"
+    ];
+    roFiles = [
+      "$TMPDIR/agenix/ssh-key"
+      "$TMPDIR/agenix/ssh-key.pub"
+    ];
+    roDirs = [
+      "$HOME/code"
+    ];
+    allowNix = true;
+    allowUnixSockets = true;
+    allowedLocatPorts = null;
+    allowedDomains = {
+      # Copilot required domains (MITM-filtered)
+      "githubcopilot.com" = "*";
+
+      "github.com" = "*";
+      "api.github.com" = "*";
+    }
+    // sandboxGetDomainsMapped;
+    env = {
+      # Keep the OAuth callback on the host loopback interface, rather than
+      # routing it through the sandbox's outbound filtering proxy.
+      NO_PROXY = "localhost,127.0.0.1,::1";
+      no_proxy = "localhost,127.0.0.1,::1";
+    };
+  };
 in
 {
 
@@ -154,6 +252,18 @@ in
           };
         };
       }
+
+      (lib.mkIf (!config.my.omp.sandbox) {
+        home.packages = [
+          pkgs.llm-agents.omp
+        ];
+      })
+
+      (lib.mkIf config.my.omp.sandbox {
+        home.packages = [
+          omp-sandboxed
+        ];
+      })
     ]
   );
 }

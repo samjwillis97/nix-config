@@ -1,5 +1,25 @@
 {
   "nodes": {
+    "agent-sandbox": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788282415,
+        "narHash": "sha256-P9NcBIor8hSHz++3mUrJTa2F8RWAN3JbnrLtkotOk9o=",
+        "owner": "archie-judd",
+        "repo": "agent-sandbox.nix",
+        "rev": "6f5cd2612ea33f3b8af462625c29da96f41bc315",
+        "type": "github"
+      },
+      "original": {
+        "owner": "archie-judd",
+        "repo": "agent-sandbox.nix",
+        "type": "github"
+      }
+    },
     "base16": {
       "inputs": {
         "fromYaml": "fromYaml"
@@ -642,33 +662,9 @@
         "type": "github"
       }
     },
-    "nur_2": {
-      "inputs": {
-        "flake-parts": [
-          "stylix",
-          "flake-parts"
-        ],
-        "nixpkgs": [
-          "stylix",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1785549842,
-        "narHash": "sha256-DCwBZmGsySF7oKGTRgEv2HvpxVXkHT+38VhTM76k0B4=",
-        "owner": "nix-community",
-        "repo": "NUR",
-        "rev": "a9f987b57594e845e3e5cdd423b9a70846d70308",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-community",
-        "repo": "NUR",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
+        "agent-sandbox": "agent-sandbox",
         "base16": "base16",
         "brew-api": "brew-api",
         "brew-nix": "brew-nix",
@@ -744,7 +740,9 @@
         "nixpkgs": [
           "nixpkgs"
         ],
-        "nur": "nur_2",
+        "nur": [
+          "nur"
+        ],
         "systems": "systems_5",
         "tinted-kitty": "tinted-kitty",
         "tinted-schemes": "tinted-schemes",
