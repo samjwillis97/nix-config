@@ -414,7 +414,7 @@
           "flake-parts"
         ],
         "nixpkgs": [
-          "nixpkgs"
+          "unstable"
         ],
         "systems": "systems_2",
         "treefmt-nix": "treefmt-nix_2"

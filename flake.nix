@@ -98,7 +98,7 @@
     llm-agents = {
       url = "github:numtide/llm-agents.nix";
       inputs = {
-        nixpkgs.follows = "nixpkgs";
+        nixpkgs.follows = "unstable";
         flake-parts.follows = "flake-parts";
       };
     };
