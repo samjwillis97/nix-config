@@ -6,7 +6,7 @@
 }:
 let
 
-  ompPackage = inputs.llm-agents.${pkgs.stdenv.hostPlatform.system}.omp;
+  ompPackage = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.omp;
 
   yamlFormat = pkgs.formats.yaml { };
   jsonFormat = pkgs.formats.json { };
