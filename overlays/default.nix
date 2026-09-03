@@ -4,7 +4,7 @@
 , ...
 }:
 let
-  inherit (pkgs) system;
+  system = pkgs.stdenv.hostPlatform.system;
 in
 {
   nixpkgs.overlays = [
@@ -12,7 +12,8 @@ in
     inputs.brew-nix.overlays.default
 
     (_final: _prev: {
-      neovim = inputs.my-neovim.packages.${system}.default;
+      neovim = self.packages.${system}.neovim;
+      neovim-full = self.packages.${system}.neovim-full;
       f = self.packages.${system}.f;
     })
   ];
