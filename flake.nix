@@ -138,11 +138,14 @@
       ];
 
       perSystem =
-        { config
-        , pkgs
-        , ...
+        {
+          config,
+          pkgs,
+          ...
         }:
         {
+          formatter = pkgs.nixfmt-tree;
+
           packages = {
             f = pkgs.callPackage ./packages/f { };
             neovim-full = pkgs.callPackage ./packages/neovim/full.nix {
@@ -191,7 +194,7 @@
           };
 
           pre-commit.settings.hooks = {
-            nixpkgs-fmt.enable = true;
+            nixfmt.enable = true;
             deadnix.enable = true;
             statix.enable = true;
             flake-checker.enable = true;
@@ -225,6 +228,8 @@
 
                 # diff nix ouputs
                 dix
+
+                nixfmt-tree
 
                 # github action checks
                 zizmor
