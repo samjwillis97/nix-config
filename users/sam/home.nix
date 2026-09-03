@@ -1,6 +1,7 @@
-{ config
-, secretModules
-, ...
+{
+  config,
+  secretModules,
+  ...
 }:
 {
   imports = [

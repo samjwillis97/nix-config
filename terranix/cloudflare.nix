@@ -1,74 +1,62 @@
-{ cloudflareHosts
-, cloudflareSettings
-, lib
-, ...
+{
+  cloudflareHosts,
+  cloudflareSettings,
+  lib,
+  ...
 }:
 let
-  hosts = lib.mapAttrs
-    (
-      _hostName: host:
-        let
-          routes = lib.mapAttrs
-            (
-              _routeName: route:
-                route
-                // {
-                  hostname = "${route.subdomain}.${cloudflareSettings.zoneName}";
-                }
-            )
-            host.routes;
-        in
-        {
-          inherit routes;
-
-          ingress = lib.mapAttrsToList
-            (_routeName: route: {
-              inherit (route) hostname;
-              service = "http://127.0.0.1:8080";
-
-              origin_request = {
-                http_host_header = route.internalHost;
-              };
-            })
-            routes
-          ++ [
-            {
-              service = "http_status:404";
-            }
-          ];
+  hosts = lib.mapAttrs (
+    _hostName: host:
+    let
+      routes = lib.mapAttrs (
+        _routeName: route:
+        route
+        // {
+          hostname = "${route.subdomain}.${cloudflareSettings.zoneName}";
         }
-    )
-    cloudflareHosts;
+      ) host.routes;
+    in
+    {
+      inherit routes;
 
-  dnsRoutes = lib.concatMapAttrs
-    (
-      hostName: host:
-        lib.mapAttrs'
-          (
-            routeName: route:
-              lib.nameValuePair "${hostName}/${routeName}" (
-                route
-                // {
-                  tunnelHost = hostName;
-                }
-              )
-          )
-          host.routes
-    )
-    hosts;
-  rootRoutes = lib.filterAttrs
-    (_routeName: route: route.subdomain == route.tunnelHost)
-    dnsRoutes;
+      ingress =
+        lib.mapAttrsToList (_routeName: route: {
+          inherit (route) hostname;
+          service = "http://127.0.0.1:8080";
+
+          origin_request = {
+            http_host_header = route.internalHost;
+          };
+        }) routes
+        ++ [
+          {
+            service = "http_status:404";
+          }
+        ];
+    }
+  ) cloudflareHosts;
+
+  dnsRoutes = lib.concatMapAttrs (
+    hostName: host:
+    lib.mapAttrs' (
+      routeName: route:
+      lib.nameValuePair "${hostName}/${routeName}" (
+        route
+        // {
+          tunnelHost = hostName;
+        }
+      )
+    ) host.routes
+  ) hosts;
+  rootRoutes = lib.filterAttrs (_routeName: route: route.subdomain == route.tunnelHost) dnsRoutes;
 
   tunnelId = lib.tf.ref "cloudflare_zero_trust_tunnel_cloudflared.host[each.key].id";
 in
 {
-  moved = lib.mapAttrsToList
-    (routeName: route: {
-      from = ''cloudflare_dns_record.host["${route.tunnelHost}"]'';
-      to = ''cloudflare_dns_record.route["${routeName}"]'';
-    })
-    rootRoutes;
+  moved = lib.mapAttrsToList (routeName: route: {
+    from = ''cloudflare_dns_record.host["${route.tunnelHost}"]'';
+    to = ''cloudflare_dns_record.route["${routeName}"]'';
+  }) rootRoutes;
   terraform.required_providers.cloudflare = {
     source = "cloudflare/cloudflare";
     version = "~> 5.23";

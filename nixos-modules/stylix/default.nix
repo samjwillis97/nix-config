@@ -1,8 +1,9 @@
-{ pkgs
-, config
-, inputs
-, lib
-, ...
+{
+  pkgs,
+  config,
+  inputs,
+  lib,
+  ...
 }:
 let
   isDesktopEnabled = config.my.desktop.enable;

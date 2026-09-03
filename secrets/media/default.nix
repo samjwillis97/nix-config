@@ -10,13 +10,11 @@ let
 in
 {
   sops.secrets = builtins.listToAttrs (
-    map
-      (secretName: {
-        name = secretName;
-        value = {
-          sopsFile = ./secrets.yaml;
-        };
-      })
-      secrets
+    map (secretName: {
+      name = secretName;
+      value = {
+        sopsFile = ./secrets.yaml;
+      };
+    }) secrets
   );
 }

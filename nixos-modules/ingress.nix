@@ -1,6 +1,7 @@
-{ config
-, lib
-, ...
+{
+  config,
+  lib,
+  ...
 }:
 let
   listen = [
@@ -74,24 +75,22 @@ in
     services.nginx = {
       enable = true;
 
-      virtualHosts = lib.mapAttrs
-        (
-          _name: route:
-            {
-              inherit listen;
-            }
-            // lib.optionalAttrs (route.upstream != null) {
-              locations."/" = {
-                proxyPass = route.upstream;
-                proxyWebsockets = route.websockets;
-                recommendedProxySettings = true;
-              };
-            }
-            // lib.optionalAttrs (route.root != null) {
-              inherit (route) root;
-            }
-        )
-        config.my.ingress.routes;
+      virtualHosts = lib.mapAttrs (
+        _name: route:
+        {
+          inherit listen;
+        }
+        // lib.optionalAttrs (route.upstream != null) {
+          locations."/" = {
+            proxyPass = route.upstream;
+            proxyWebsockets = route.websockets;
+            recommendedProxySettings = true;
+          };
+        }
+        // lib.optionalAttrs (route.root != null) {
+          inherit (route) root;
+        }
+      ) config.my.ingress.routes;
     };
   };
 }
