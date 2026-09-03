@@ -75,6 +75,7 @@
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";
         base16.follows = "base16";
+        nur.follows = "nur";
       };
     };
 
@@ -97,9 +98,13 @@
     llm-agents = {
       url = "github:numtide/llm-agents.nix";
       inputs = {
-        nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";
       };
+    };
+
+    agent-sandbox = {
+      url = "github:archie-judd/agent-sandbox.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # Media Server

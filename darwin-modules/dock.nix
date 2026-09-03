@@ -39,6 +39,6 @@
       "/Applications/1Password.app"
       "/system/Applications/System Settings.app/"
     ];
-    persistent-others = [ "~/Downloads" ];
+    persistent-others = [ "/Users/${config.system.primaryUser}/Downloads" ];
   };
 }

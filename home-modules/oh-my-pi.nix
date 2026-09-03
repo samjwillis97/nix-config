@@ -1,11 +1,17 @@
-{ config
+{ inputs
+, config
 , lib
 , pkgs
 , ...
 }:
 let
+
+  ompPackage = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.omp;
+
   yamlFormat = pkgs.formats.yaml { };
   jsonFormat = pkgs.formats.json { };
+
+  agentSandbox = import inputs.agent-sandbox { inherit pkgs; };
 
   dapAdapters = {
     node = {
@@ -91,7 +97,7 @@ let
     };
     skills.enabled = true;
     modelRoles =
-      if config.my.omp.settings.provider == "openai-codex" then
+      if config.my.omp.settings.provider == "github-copilot" then
         {
           default = "github-copilot/gpt-5.6-luna:xhigh";
           advisor = "github-copilot/gpt-5.6-luna:max";
@@ -102,7 +108,7 @@ let
           tiny = "github-copilot/gemini-3.5-flash";
           commit = "github-copilot/claude-haiku-4.5";
         }
-      else if config.my.omp.settings.provider == "github-copilot" then
+      else if config.my.omp.settings.provider == "openai-codex" then
         {
           default = "openai-codex/gpt-5.6-luna:xhigh";
           advisor = "openai-codex/gpt-5.6-luna:max";
@@ -115,6 +121,101 @@ let
         }
       else
         { };
+  };
+
+  allowedGetDomains = [
+    "githubusercontent.com"
+    "npmjs.org"
+    "nodejs.org"
+    "developer.mozilla.org"
+    "omp.sh"
+    "html.duckduckgo.com"
+    "typescriptlang.org"
+    "tanstack.com"
+    "shadcn.com"
+    "supabase.com"
+    "nextjs.org"
+    "react.dev"
+    "docs.aws.amazon.com"
+    "channels.nixos.org"
+    "cache.nixos.org"
+    "raw.githubusercontent.com"
+  ];
+
+  sandboxGetDomainsMapped = builtins.listToAttrs (
+    map
+      (domain: {
+        name = domain;
+        value = [
+          "GET"
+          "HEAD"
+        ];
+      })
+      allowedGetDomains
+  );
+
+  omp-sandboxed = agentSandbox.mkSandbox {
+    pkg = ompPackage;
+    binName = "omp";
+    outName = "omp";
+    allowedPackages = with pkgs; [
+      curl
+      wget
+      file
+      coreutils
+      which
+      git
+      ripgrep
+      fd
+      gnused
+      gnugrep
+      findutils
+      jq
+      nodejs
+      vscode-js-debug
+      python3
+      openssh
+      difftastic
+      gnused
+      nix
+      man
+      ompPackage
+      bun
+      gh
+    ];
+    rwDirs = [
+      "$HOME/.omp"
+      "$HOME/.npm"
+      "$HOME/.cache"
+      "$HOME/.config/gh"
+      "$HOME/.config/git"
+      "$HOME/.config/httpcraft"
+      "/nix/var/nix/daemon-socket"
+    ];
+    roFiles = [
+      "$TMPDIR/agenix/ssh-key"
+      "$TMPDIR/agenix/ssh-key.pub"
+    ];
+    roDirs = [
+      "$HOME/code"
+    ];
+    allowNix = true;
+    allowUnixSockets = true;
+    allowedLocatPorts = null;
+    allowedDomains = {
+      # Copilot required domains (MITM-filtered)
+      "githubcopilot.com" = "*";
+
+      "github.com" = "*";
+      "api.github.com" = "*";
+    }
+    // sandboxGetDomainsMapped;
+    env = {
+      # Keep the OAuth callback on the host loopback interface, rather than
+      # routing it through the sandbox's outbound filtering proxy.
+      NO_PROXY = "localhost,127.0.0.1,::1";
+      no_proxy = "localhost,127.0.0.1,::1";
+    };
   };
 in
 {
@@ -143,10 +244,6 @@ in
   config = lib.mkIf config.my.omp.enable (
     lib.mkMerge [
       {
-        home.packages = [
-          pkgs.llm-agents.omp
-        ];
-
         home.file = {
           ".omp/agent/config.yml".source = yamlFormat.generate "omp-config.yml" settings;
           ".omp/agent/dap.json".source = jsonFormat.generate "omp-dap.json" {
@@ -154,6 +251,18 @@ in
           };
         };
       }
+
+      (lib.mkIf (!config.my.omp.sandbox) {
+        home.packages = [
+          ompPackage
+        ];
+      })
+
+      (lib.mkIf config.my.omp.sandbox {
+        home.packages = [
+          omp-sandboxed
+        ];
+      })
     ]
   );
 }

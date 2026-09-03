@@ -22,6 +22,15 @@
       platform-clis = [ "aws" ];
     };
 
+    _1password.enable = true;
+
+    omp = {
+      enable = true;
+      settings = {
+        provider = "github-copilot";
+      };
+    };
+
     git = {
       enable = true;
 
