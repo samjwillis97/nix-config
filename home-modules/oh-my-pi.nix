@@ -5,6 +5,9 @@
 , ...
 }:
 let
+
+  ompPackage = inputs.llm-agents.${pkgs.stdenv.hostPlatform.system}.omp;
+
   yamlFormat = pkgs.formats.yaml { };
   jsonFormat = pkgs.formats.json { };
 
@@ -152,7 +155,7 @@ let
   );
 
   omp-sandboxed = agentSandbox.mkSandbox {
-    pkg = pkgs.llm-agents.omp;
+    pkg = ompPackage;
     binName = "omp";
     outName = "omp";
     allowedPackages = with pkgs; [
@@ -176,7 +179,7 @@ let
       gnused
       nix
       man
-      llm-agents.omp
+      ompPackage
       bun
       gh
     ];
@@ -241,10 +244,6 @@ in
   config = lib.mkIf config.my.omp.enable (
     lib.mkMerge [
       {
-        home.packages = [
-          pkgs.llm-agents.omp
-        ];
-
         home.file = {
           ".omp/agent/config.yml".source = yamlFormat.generate "omp-config.yml" settings;
           ".omp/agent/dap.json".source = jsonFormat.generate "omp-dap.json" {
@@ -255,7 +254,7 @@ in
 
       (lib.mkIf (!config.my.omp.sandbox) {
         home.packages = [
-          pkgs.llm-agents.omp
+          ompPackage
         ];
       })
 
