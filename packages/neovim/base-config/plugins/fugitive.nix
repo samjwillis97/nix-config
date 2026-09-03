@@ -14,13 +14,19 @@
     {
       key = "<leader>go";
       action = "<CMD>GBrowse<CR>";
-      mode = [ "n" "v" ];
+      mode = [
+        "n"
+        "v"
+      ];
       options.desc = "Open in GitHub";
     }
     {
       key = "<leader>gy";
       action = "<CMD>GBrowse!<CR>";
-      mode = [ "n" "v" ];
+      mode = [
+        "n"
+        "v"
+      ];
       options.desc = "Copy GitHub URL";
     }
   ];

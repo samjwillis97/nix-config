@@ -1,9 +1,10 @@
-{ pkgs
-, config
-, lib
-, userModules
-, userHomeModules
-, ...
+{
+  pkgs,
+  config,
+  lib,
+  userModules,
+  userHomeModules,
+  ...
 }:
 let
   availableUsers = builtins.attrNames userModules;

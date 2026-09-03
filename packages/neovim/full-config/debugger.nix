@@ -47,13 +47,15 @@
 
         jsConfigs = [
           # Attach to a running node --inspect process
-          (common
+          (
+            common
             // {
-            type = "pwa-node";
-            request = "attach";
-            name = "Attach to process (port 9229)";
-            port = 9229;
-          })
+              type = "pwa-node";
+              request = "attach";
+              name = "Attach to process (port 9229)";
+              port = 9229;
+            }
+          )
         ];
       in
       {

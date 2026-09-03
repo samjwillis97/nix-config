@@ -1,7 +1,8 @@
 # pre-assigned user on work macbook
-{ config
-, secretModules
-, ...
+{
+  config,
+  secretModules,
+  ...
 }:
 {
   imports = [
