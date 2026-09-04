@@ -37,6 +37,8 @@ let
       };
     };
   };
+
+  pickerLayout = "default";
 in
 {
   options.my.picker = {
@@ -78,19 +80,9 @@ in
             options.desc = "Open grep for word under cursor";
           }
           {
-            key = "gd";
-            action = "<CMD>lua Snacks.picker.lsp_definitions()<CR>";
-            options.desc = "Go to definition";
-          }
-          {
-            key = "gr";
-            action = "<CMD>lua Snacks.picker.lsp_references()<CR>";
-            options.desc = "Find references";
-          }
-          {
-            key = "gi";
-            action = "<CMD>lua Snacks.picker.lsp_implementations()<CR>";
-            options.desc = "Find implementations";
+            key = "<leader><leader>";
+            action = "<CMD>lua Snacks.picker.pickers()<CR>";
+            options.desc = "List all available pickers";
           }
         ];
 
@@ -99,10 +91,18 @@ in
 
           settings = {
             picker = {
-              sources = {
-                files = { };
+              layout = pickerLayout;
 
-                git_grep = { };
+              sources = {
+                files = {
+                  show_empty = true;
+                  hidden = true;
+                  ignored = false;
+                };
+
+                git_grep = {
+                  untracked = true;
+                };
 
                 grep_word = { };
 

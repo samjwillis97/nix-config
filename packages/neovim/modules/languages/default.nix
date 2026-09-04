@@ -74,7 +74,44 @@ in
     })
 
     (lib.mkIf config.my.languages.lsp {
-      my.picker.enable = true;
+      keymaps =
+        if config.plugins.snacks.enable then
+          [
+            {
+              key = "gd";
+              action = "<CMD>lua Snacks.picker.lsp_definitions()<CR>";
+              options.desc = "Go to definition";
+            }
+            {
+              key = "gr";
+              action = "<CMD>lua Snacks.picker.lsp_references()<CR>";
+              options.desc = "Find references";
+            }
+            {
+              key = "gi";
+              action = "<CMD>lua Snacks.picker.lsp_implementations()<CR>";
+              options.desc = "Find implementations";
+            }
+
+          ]
+        else
+          [
+            {
+              key = "gd";
+              action = "<CMD>lua vim.lsp.buf.definition()<CR>";
+              options.desc = "Go to definition";
+            }
+            {
+              key = "gr";
+              action = "<CMD>lua vim.lsp.buf.references()<CR>";
+              options.desc = "Find references";
+            }
+            {
+              key = "gi";
+              action = "<CMD>lua vim.lsp.buf.implementation()<CR>";
+              options.desc = "Find implementations";
+            }
+          ];
 
       plugins.lsp = {
         enable = true;
@@ -102,5 +139,6 @@ in
         };
       };
     })
+
   ];
 }
