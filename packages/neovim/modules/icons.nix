@@ -5,10 +5,9 @@
   };
 
   config = lib.mkIf config.my.icons.enable {
-    plugins.web-devicons = {
-      # DO NOT LAZY LOAD
-      # common dependency
+    plugins.mini-icons = {
       enable = true;
+      mockDevIcons = true;
     };
   };
 }
