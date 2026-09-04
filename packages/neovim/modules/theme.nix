@@ -25,6 +25,8 @@ let
 
   highlightNames = builtins.attrNames themeRainbowLookup.default;
 
+  miniEnabled = config.plugins.mini-statusline.enable;
+
   rainbowIndentsEnabled = config.my.theme.indents.enable && config.my.theme.indents.rainbow;
 in
 {
@@ -107,6 +109,9 @@ in
                 # cmp = true;
                 gitsigns = config.plugins.gitsigns.enable;
                 treesitter = config.plugins.treesitter.enable;
+                mini = {
+                  enable = miniEnabled;
+                };
                 # diffview = true;
                 # fidget = true;
                 # which_key = true;
