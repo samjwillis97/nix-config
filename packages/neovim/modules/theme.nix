@@ -125,6 +125,9 @@ in
                 mini = {
                   enable = miniEnabled;
                 };
+                snacks = {
+                  enable = config.plugins.snacks.enable;
+                };
                 # diffview = true;
                 # fidget = true;
                 # which_key = true;

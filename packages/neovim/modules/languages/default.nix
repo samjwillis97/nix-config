@@ -74,6 +74,8 @@ in
     })
 
     (lib.mkIf config.my.languages.lsp {
+      my.picker.enable = true;
+
       plugins.lsp = {
         enable = true;
 
