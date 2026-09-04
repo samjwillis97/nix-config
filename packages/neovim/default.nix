@@ -14,7 +14,7 @@ let
       {
         nixpkgs.pkgs = nvimPkgs;
       }
-      (import ./base-config)
+      (import ./full-config)
     ];
 
     extraSpecialArgs = {

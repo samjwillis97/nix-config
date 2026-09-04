@@ -148,7 +148,7 @@
 
           packages = {
             f = pkgs.callPackage ./packages/f { };
-            neovim-full = pkgs.callPackage ./packages/neovim/full.nix {
+            neovim-full = pkgs.callPackage ./packages/neovim {
               inherit inputs;
             };
             neovim = pkgs.callPackage ./packages/neovim/base.nix {
