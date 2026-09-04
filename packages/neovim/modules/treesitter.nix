@@ -30,9 +30,22 @@
 
           settings = {
             highlight.enable = true;
+            folding.enable = true;
             indent.enable = true;
           };
         };
+
+        # nvim-treesitter's current rewrite leaves folding setup to Neovim.
+        extraConfigLua = ''
+          vim.api.nvim_create_autocmd("FileType", {
+            group = vim.api.nvim_create_augroup("nixvim_treesitter_folding", { clear = true }),
+            pattern = "*",
+            callback = function()
+              vim.wo[0][0].foldexpr = "v:lua.vim.treesitter.foldexpr()"
+              vim.wo[0][0].foldmethod = "expr"
+            end,
+          })
+        '';
       }
 
       (lib.mkIf config.my.treesitter.showContext {
