@@ -2,9 +2,6 @@
   opts = {
     cursorline = true;
 
-    # TODO: Only when gitsigns on
-    # signcolumn = "yes";
-
     termguicolors = true;
 
     syntax = "on";

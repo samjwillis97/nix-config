@@ -52,7 +52,7 @@ in
               flavour = "mocha";
               integrations = {
                 # cmp = true;
-                # gitsigns = true;
+                gitsigns = config.plugins.gitsigns.enable;
                 treesitter = config.plugins.treesitter.enable;
                 # diffview = true;
                 # fidget = true;

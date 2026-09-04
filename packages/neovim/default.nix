@@ -44,6 +44,11 @@ let
       {
         nixpkgs.pkgs = nvimPkgs;
       }
+      {
+        my = {
+          git.enable = true;
+        };
+      }
     ]
     ++ allNeovimModules;
 
