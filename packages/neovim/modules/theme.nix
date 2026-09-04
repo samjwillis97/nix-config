@@ -24,6 +24,8 @@ let
   };
 
   highlightNames = builtins.attrNames themeRainbowLookup.default;
+
+  rainbowIndentsEnabled = config.my.theme.indents.enable && config.my.theme.indents.rainbow;
 in
 {
   options.my.theme = {
@@ -47,17 +49,22 @@ in
       description = "Enable transparent background for the theme.";
     };
 
-    rainbowIndents = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = "Enable rainbow indents for the theme.";
-    };
-
     rainbowBrackets = lib.mkOption {
       type = lib.types.bool;
       default = false;
       description = "Enable rainbow brackets for the theme.";
     };
+
+    indents = {
+      enable = lib.mkEnableOption "showing indents for the theme.";
+
+      rainbow = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Enable rainbow indents for the theme.";
+      };
+    };
+
   };
 
   config = lib.mkIf config.my.theme.enable (
@@ -66,7 +73,7 @@ in
         assertions = [
           {
             assertion =
-              !(config.my.theme.rainbowIndents || config.my.theme.rainbowBrackets)
+              !(rainbowIndentsEnabled || config.my.theme.rainbowBrackets)
               || builtins.hasAttr config.my.theme.theme themeRainbowLookup;
             message = "${config.my.theme.theme} missing from themeRainbowLookup, please add it to the lookup table.";
           }
@@ -136,13 +143,13 @@ in
         };
       })
 
-      (lib.mkIf (config.my.theme.rainbowIndents || config.my.theme.rainbowBrackets) {
+      (lib.mkIf (rainbowIndentsEnabled || config.my.theme.rainbowBrackets) {
         highlightOverride = builtins.mapAttrs (_name: value: {
           fg = value;
         }) themeRainbowLookup.${config.my.theme.theme};
       })
 
-      (lib.mkIf config.my.theme.rainbowIndents {
+      (lib.mkIf config.my.theme.indents.enable {
         opts.list = true;
 
         plugins.indent-blankline = {
@@ -158,17 +165,21 @@ in
               tab_char = "▎";
             };
 
-            scope = {
-              enabled = true;
-              show_start = true;
-              show_exact_scope = false;
-              show_end = true;
-              highlight = highlightNames;
-            };
+            scope =
+              if config.my.theme.indents.rainbow then
+                {
+                  enabled = true;
+                  show_start = true;
+                  show_exact_scope = false;
+                  show_end = true;
+                  highlight = lib.mkIf config.my.theme.indents.rainbow highlightNames;
+                }
+              else
+                { enabled = false; };
           };
 
           luaConfig = {
-            pre = ''
+            pre = lib.mkIf config.my.theme.indents.rainbow ''
               local hooks = require("ibl.hooks")
               hooks.register(hooks.type.HIGHLIGHT_SETUP, function()
                 ${lib.concatStringsSep "\n" (
