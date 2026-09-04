@@ -236,6 +236,11 @@
 
                 # Remote deployment
                 deploy-rs
+
+                # neovim testing
+                (pkgs.callPackage ./packages/neovim {
+                  inherit inputs;
+                })
               ]);
           };
         };
