@@ -1,6 +1,29 @@
 { config, lib, ... }:
 let
   lazyLoadingEnabled = config.my.lazyLoading.enable;
+
+  themeRainbowLookup = {
+    "catppuccin" = {
+      "RainbowRed" = "#F38BA8";
+      "RainbowYellow" = "#F9E2AF";
+      "RainbowBlue" = "#89B4FA";
+      "RainbowOrange" = "#FAB387";
+      "RainbowGreen" = "#A6E3A1";
+      "RainbowViolet" = "#B4BEFE";
+      "RainbowCyan" = "#89DCEB";
+    };
+    "default" = {
+      "RainbowRed" = "#E06C75";
+      "RainbowYellow" = "#E5C07B";
+      "RainbowBlue" = "#61AFEF";
+      "RainbowOrange" = "#D19A66";
+      "RainbowGreen" = "#98C379";
+      "RainbowViolet" = "#C678DD";
+      "RainbowCyan" = "#56B6C2";
+    };
+  };
+
+  highlightNames = builtins.attrNames themeRainbowLookup.default;
 in
 {
   options.my.theme = {
@@ -23,10 +46,33 @@ in
       default = false;
       description = "Enable transparent background for the theme.";
     };
+
+    rainbowIndents = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable rainbow indents for the theme.";
+    };
+
+    rainbowBrackets = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable rainbow brackets for the theme.";
+    };
   };
 
   config = lib.mkIf config.my.theme.enable (
     lib.mkMerge [
+      {
+        assertions = [
+          {
+            assertion =
+              !(config.my.theme.rainbowIndents || config.my.theme.rainbowBrackets)
+              || builtins.hasAttr config.my.theme.theme themeRainbowLookup;
+            message = "${config.my.theme.theme} missing from themeRainbowLookup, please add it to the lookup table.";
+          }
+        ];
+      }
+
       (lib.mkIf config.my.theme.transparentBackground {
         plugins.transparent = {
           enable = true;
@@ -56,9 +102,6 @@ in
                 treesitter = config.plugins.treesitter.enable;
                 # diffview = true;
                 # fidget = true;
-                # indent_blankline = {
-                #   enabled = false;
-                # };
                 # which_key = true;
 
                 native_lsp = {
@@ -89,6 +132,67 @@ in
                 enabled = true;
               };
             };
+          };
+        };
+      })
+
+      (lib.mkIf (config.my.theme.rainbowIndents || config.my.theme.rainbowBrackets) {
+        highlightOverride = builtins.mapAttrs (_name: value: {
+          fg = value;
+        }) themeRainbowLookup.${config.my.theme.theme};
+      })
+
+      (lib.mkIf config.my.theme.rainbowIndents {
+        opts.list = true;
+
+        plugins.indent-blankline = {
+          enable = true;
+
+          lazyLoad.settings = lib.mkIf lazyLoadingEnabled {
+            event = "BufReadPost";
+          };
+
+          settings = {
+            indent = {
+              char = "▎";
+              tab_char = "▎";
+            };
+
+            scope = {
+              enabled = true;
+              show_start = true;
+              show_exact_scope = false;
+              show_end = true;
+              highlight = highlightNames;
+            };
+          };
+
+          luaConfig = {
+            pre = ''
+              local hooks = require("ibl.hooks")
+              hooks.register(hooks.type.HIGHLIGHT_SETUP, function()
+                ${lib.concatStringsSep "\n" (
+                  lib.mapAttrsToList (name: value: ''
+                    vim.api.nvim_set_hl(0, "${name}", { fg = "${value}" })
+                  '') themeRainbowLookup.${config.my.theme.theme}
+                )}
+              end)
+              hooks.register(hooks.type.SCOPE_HIGHLIGHT, hooks.builtin.scope_highlight_from_extmark)
+            '';
+          };
+        };
+      })
+
+      (lib.mkIf config.my.theme.rainbowBrackets {
+        plugins.rainbow-delimiters = {
+          enable = true;
+
+          lazyLoad.settings = lib.mkIf lazyLoadingEnabled {
+            event = "BufReadPost";
+          };
+
+          settings = {
+            highlight = highlightNames;
           };
         };
       })

@@ -46,7 +46,12 @@ let
       }
       {
         my = {
-          git.enable = true;
+          # git.enable = true;
+          #
+          # theme = {
+          #   rainbowBrackets = true;
+          #   rainbowIndents = true;
+          # };
         };
       }
     ]
