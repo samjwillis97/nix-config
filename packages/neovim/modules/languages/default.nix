@@ -72,5 +72,33 @@ in
         };
       };
     })
+
+    (lib.mkIf config.my.languages.lsp {
+      plugins.lsp = {
+        enable = true;
+
+        lazyLoad.settings = lib.mkIf lazyLoadingEnabled {
+          event = "BufReadPre";
+        };
+
+        keymaps.lspBuf = {
+          "gD" = "declaration";
+          "K" = "hover";
+          "<leader>k" = "signature_help";
+          "<leader>t" = "type_definition";
+          "<leader>r" = "rename";
+        };
+
+        luaConfig = {
+          post = ''
+            vim.diagnostic.config({
+              underline = true,
+              signs = true,
+              update_in_insert = false,
+            })
+          '';
+        };
+      };
+    })
   ];
 }

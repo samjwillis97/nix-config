@@ -29,6 +29,14 @@
 
   config = lib.mkIf config.my.languages.nix.enable (
     lib.mkMerge [
+      (lib.mkIf config.my.languages.nix.lsp {
+        plugins.lsp.servers = {
+          nixd = {
+            enable = true;
+          };
+        };
+      })
+
       (lib.mkIf config.my.languages.nix.formatter {
         plugins.conform-nvim.settings = {
           formatters_by_ft.nix = [ "nixfmt" ];

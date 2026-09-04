@@ -45,6 +45,15 @@ in
       description = "The theme to use.";
     };
 
+    windowBorders = lib.mkOption {
+      type = lib.types.enum [
+        "none"
+        "single"
+      ];
+      default = "none";
+      description = "Themeing window borders";
+    };
+
     transparentBackground = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -81,6 +90,10 @@ in
           }
         ];
       }
+
+      (lib.mkIf (config.my.theme.windowBorders != "none") {
+        opts.winborder = config.my.theme.windowBorders;
+      })
 
       (lib.mkIf config.my.theme.transparentBackground {
         plugins.transparent = {
