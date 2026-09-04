@@ -1,4 +1,7 @@
 { config, lib, ... }:
+let
+  lazyLoadingEnabled = config.my.lazyLoading.enable;
+in
 {
   options.my.theme = {
     enable = lib.mkOption {
@@ -14,10 +17,26 @@
       default = "catppuccin";
       description = "The theme to use.";
     };
+
+    transparentBackground = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable transparent background for the theme.";
+    };
   };
 
   config = lib.mkIf config.my.theme.enable (
     lib.mkMerge [
+      (lib.mkIf config.my.theme.transparentBackground {
+        plugins.transparent = {
+          enable = true;
+
+          lazyLoad.settings = lib.mkIf lazyLoadingEnabled {
+            event = "DeferredUIEnter";
+          };
+        };
+      })
+
       (lib.mkIf (config.my.theme.theme == "catppuccin") {
         colorschemes = {
           catppuccin = {
@@ -25,7 +44,7 @@
             enable = true;
 
             # Lazy load colorscheme
-            lazyLoad.settings = lib.mkIf config.my.lazyLoading.enable {
+            lazyLoad.settings = lib.mkIf lazyLoadingEnabled {
               colorscheme = "catppuccin";
             };
 
@@ -63,8 +82,8 @@
                   };
                 };
               };
-              #
-              # transparent_background = false;
+
+              transparent_background = config.my.theme.transparentBackground;
 
               dim_inactive = {
                 enabled = true;
