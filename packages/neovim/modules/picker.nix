@@ -43,6 +43,15 @@ in
 {
   options.my.picker = {
     enable = lib.mkEnableOption "Enable fuzzy finder for Neovim";
+
+    backend = lib.mkOption {
+      type = lib.types.enum [
+        "snacks"
+        "minipick"
+      ];
+      default = "snacks";
+      description = "The fuzzy finder backend to use.";
+    };
   };
 
   config = lib.mkIf config.my.picker.enable (
@@ -129,6 +138,27 @@ in
                 };
               };
             };
+          };
+        };
+      }
+
+      {
+        plugins.actions-preview = {
+          enable = true;
+
+          lazyLoad.settings = {
+            backend = config.my.picker.backend;
+            keys = [
+              {
+                __unkeyed-1 = "<leader>ca";
+                __unkeyed-2.__raw = ''
+                  function()
+                    require('actions-preview').code_actions()
+                  end
+                '';
+                desc = "Code actions preview";
+              }
+            ];
           };
         };
       }
