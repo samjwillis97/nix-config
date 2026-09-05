@@ -4,9 +4,6 @@
   lib,
   ...
 }:
-let
-  bordersEnabled = config.my.theme.windowBorders;
-in
 {
   options.my.picker = {
     enable = lib.mkEnableOption "Enable fuzzy finder for Neovim";
@@ -30,16 +27,6 @@ in
         ];
 
         keymaps = [
-          {
-            key = "<C-n>";
-            action = "<CMD>lua Snacks.explorer.open()<CR>";
-            options.desc = "Toggle file explorer";
-          }
-          {
-            key = ",n";
-            action = "<CMD>lua Snacks.explorer.open()<CR>";
-            options.desc = "Toggle file explorer";
-          }
           {
             key = "<leader>ff";
             action = "<CMD>lua Snacks.picker.files()<CR>";
@@ -87,52 +74,6 @@ in
                 lsp_references = { };
 
                 lsp_implementations = { };
-
-                explorer = {
-                  auto_close = true;
-                  hidden = true;
-                  layout = {
-                    hidden = [ "preview" ];
-                    layout = {
-                      height = 0.8;
-                      width = 0.35;
-                      backdrop = false;
-                      min_width = 40;
-                      max_width = 100;
-                      min_height = 2;
-                      box = "vertical";
-                      border = bordersEnabled;
-                      title = "{title}";
-                      title_pos = "center";
-                      __unkeyed-1 = {
-                        win = "input";
-                        height = 1;
-                        border = "bottom";
-                      };
-                      __unkeyed-2 = {
-                        win = "list";
-                        border = "none";
-                      };
-                      __unkeyed-3 = {
-                        win = "preview";
-                        title = "{preview}";
-                        height = 0.4;
-                        border = "top";
-                      };
-                    };
-                  };
-
-                  win = {
-                    list = {
-                      keys = {
-                        "<C-n>" = "cancel";
-                        "h" = "explorer_close";
-                        "o" = "confirm";
-                        "O" = "explorer_open";
-                      };
-                    };
-                  };
-                };
               };
             };
           };
