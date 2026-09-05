@@ -12,7 +12,7 @@
         "vinegar"
         "native"
       ];
-      default = "native";
+      default = "vinegar";
       description = "The file explorer engine to use.";
     };
   };
@@ -84,7 +84,32 @@
     })
 
     (lib.mkIf (config.my.explorer.engine == "vinegar") {
+      keymaps = [
+        {
+          key = "<C-n>";
+          mode = "n";
+          action = "-";
+          options = {
+            remap = true;
+            desc = "Toggle file explorer";
+          };
+        }
+      ];
+
       extraPlugins = with pkgs.vimPlugins; [ vim-vinegar ];
+
+      extraConfigLua = ''
+        vim.api.nvim_create_autocmd("FileType", {
+          group = vim.api.nvim_create_augroup("nixvim_vinegar", { clear = true }),
+          pattern = "netrw",
+          callback = function(args)
+            vim.keymap.set("n", "<C-n>", "<C-^>", {
+              buffer = args.buf,
+              desc = "Return to previous buffer",
+            })
+          end,
+        })
+      '';
     })
   ];
 }
