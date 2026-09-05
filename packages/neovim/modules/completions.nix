@@ -100,18 +100,6 @@
                 "path"
                 "buffer"
               ];
-
-              cmdline = [ ];
-
-              providers = {
-                buffer = {
-                  score_offset = -7;
-                };
-
-                lsp = {
-                  fallbacks = [ ];
-                };
-              };
             };
 
             keymap = {
@@ -146,6 +134,7 @@
               # This handles "Tab" accepting the ghost text
               "<Tab>" = [
                 "select_and_accept"
+                "snippet_forward" # Apparently accepts visible ghost text first
                 "fallback"
               ];
             };
