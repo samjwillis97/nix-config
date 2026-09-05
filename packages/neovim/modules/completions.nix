@@ -1,4 +1,32 @@
 { config, lib, ... }:
+let
+  cfg = config.my.completions;
+  copilotSuggestionsEnabled = cfg.copilot.suggestion.enabled;
+  copilotNextEditsEnabled = cfg.copilot.nextEdits.enabled;
+  copilotEnabled = copilotSuggestionsEnabled || copilotNextEditsEnabled;
+
+  sidekickTab = lib.nixvim.utils.mkRaw ''
+    function()
+      return require("sidekick").nes_jump_or_apply()
+    end
+  '';
+
+  nativeTab = lib.nixvim.utils.mkRaw ''
+    function()
+      ${lib.optionalString copilotNextEditsEnabled ''
+        if require("sidekick").nes_jump_or_apply() then
+          return ""
+        end
+      ''}
+      ${lib.optionalString copilotSuggestionsEnabled ''
+        if vim.lsp.inline_completion.get() then
+          return ""
+        end
+      ''}
+      return "<Tab>"
+    end
+  '';
+in
 {
   options.my.completions = {
     engine = lib.mkOption {
@@ -9,14 +37,65 @@
       default = "native";
       description = "The completion engine to use.";
     };
+
+    copilot = {
+      suggestion = {
+        enabled = lib.mkEnableOption "Copilot suggestions";
+      };
+
+      nextEdits = {
+        enabled = lib.mkEnableOption "Copilot next edit suggestions";
+      };
+    };
   };
 
   config = lib.mkMerge [
+    (lib.mkIf copilotEnabled {
+      plugins = {
+        lsp = {
+          enable = true;
+          servers.copilot.enable = true;
+        };
+
+        # blink-copilot defaults to copilot-lua, but both completion modes and
+        # Sidekick can share Neovim's native Copilot LSP client.
+        copilot-lua.enable = false;
+      };
+    })
+
+    (lib.mkIf copilotNextEditsEnabled {
+      plugins.sidekick.enable = true;
+    })
+
+    (lib.mkIf (cfg.engine == "native" && copilotSuggestionsEnabled) {
+      plugins.lsp.onAttach = ''
+        if client:supports_method(vim.lsp.protocol.Methods.textDocument_inlineCompletion, bufnr) then
+          vim.lsp.inline_completion.enable(true, { bufnr = bufnr })
+        end
+      '';
+    })
+
+    (lib.mkIf (cfg.engine == "native" && copilotEnabled) {
+      keymaps = [
+        {
+          key = "<Tab>";
+          mode = "i";
+          action = nativeTab;
+          options = {
+            expr = true;
+            desc = "Accept Copilot suggestion or next edit";
+          };
+        }
+      ];
+    })
+
     (lib.mkIf (config.my.completions.engine == "blink-cmp") {
       plugins = {
         colorful-menu = {
           enable = true;
         };
+
+        blink-copilot.enable = copilotSuggestionsEnabled;
 
         blink-cmp = {
           enable = true;
@@ -99,7 +178,27 @@
                 "lsp"
                 "path"
                 "buffer"
-              ];
+              ]
+              ++ lib.optional copilotSuggestionsEnabled "copilot";
+
+              providers = lib.optionalAttrs copilotSuggestionsEnabled {
+                copilot = {
+                  async = true;
+                  module = "blink-copilot";
+                  name = "copilot";
+                  score_offset = 100;
+                  opts = {
+                    max_completions = 3;
+                    max_attempts = 4;
+                    kind_name = "Copilot";
+                    debounce = 750;
+                    auto_refresh = {
+                      backward = true;
+                      forward = true;
+                    };
+                  };
+                };
+              };
             };
 
             keymap = {
@@ -131,12 +230,13 @@
                 "fallback"
               ];
 
-              # This handles "Tab" accepting the ghost text
+              # Accept visible completion text before snippets or next edits.
               "<Tab>" = [
                 "select_and_accept"
-                "snippet_forward" # Apparently accepts visible ghost text first
-                "fallback"
-              ];
+                "snippet_forward"
+              ]
+              ++ lib.optional copilotNextEditsEnabled sidekickTab
+              ++ [ "fallback" ];
             };
           };
         };

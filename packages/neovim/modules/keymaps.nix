@@ -1,3 +1,20 @@
+{ config, lib, ... }:
+let
+  nextEditsEnabled = config.my.completions.copilot.nextEdits.enabled;
+  nextEditOrJump = lib.nixvim.utils.mkRaw ''
+    function()
+      if require("sidekick").nes_jump_or_apply() then
+        return ""
+      end
+      return "<C-I>zz"
+    end
+  '';
+  nextEditAction = if nextEditsEnabled then nextEditOrJump else "<C-I>zz";
+  nextEditOptions = lib.optionalAttrs nextEditsEnabled {
+    expr = true;
+    desc = "Goto/apply Copilot next edit, or jump forward";
+  };
+in
 {
   globals = {
     # Leader is `\`
@@ -53,9 +70,17 @@
       key = "<C-D>";
       action = "<C-D>zz";
     }
+    # Enhanced keyboard protocols distinguish <Tab> from <C-I>, while
+    # traditional terminals encode both identically. Map both forms.
+    {
+      key = "<Tab>";
+      action = nextEditAction;
+      options = nextEditOptions;
+    }
     {
       key = "<C-I>";
-      action = "<C-I>zz";
+      action = nextEditAction;
+      options = nextEditOptions;
     }
     {
       key = "<C-O>";
