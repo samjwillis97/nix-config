@@ -116,7 +116,7 @@ in
             settings = {
               flavour = "mocha";
               integrations = {
-                blink_cmp = lib.mkIf (config.blink-cmp.enable && config.my.theme.windowBorders) {
+                blink_cmp = lib.mkIf (config.plugins.blink-cmp.enable && config.my.theme.windowBorders) {
                   style = "bordered";
                 };
                 gitsigns = config.plugins.gitsigns.enable;
