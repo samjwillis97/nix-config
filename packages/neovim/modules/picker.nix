@@ -8,7 +8,7 @@
   options.my.picker = {
     enable = lib.mkEnableOption "Enable fuzzy finder for Neovim";
 
-    backend = lib.mkOption {
+    engine = lib.mkOption {
       type = lib.types.enum [
         "snacks"
         "minipick"
@@ -20,7 +20,35 @@
 
   config = lib.mkIf config.my.picker.enable (
     lib.mkMerge [
-      (lib.mkIf (config.my.picker.backend == "snacks") {
+      (lib.mkIf (config.my.picker.engine == "minipick") {
+        extraPackages = with pkgs; [
+          fd
+          ripgrep
+        ];
+
+        keymaps = [
+          {
+            key = "<leader>ff";
+            action = "<CMD>lua MiniPick.builtin.files()<CR>";
+            options.desc = "Open file search";
+          }
+          {
+            key = "<leader>sf";
+            action = "<CMD>lua MiniPick.builtin.grep({ tool = 'git' })<CR>";
+            options.desc = "Open grep over git files";
+          }
+        ];
+
+        plugins.mini-pick = {
+          enable = true;
+
+          settings = {
+
+          };
+        };
+      })
+
+      (lib.mkIf (config.my.picker.engine == "snacks") {
         extraPackages = with pkgs; [
           fd
           ripgrep
@@ -81,11 +109,18 @@
       })
 
       {
+        keymaps = [
+          {
+            key = "<leader>ca";
+            action = "<CMD>require(`actions-preview`).code_actions<CR>";
+            options.desc = "Open code actions";
+          }
+        ];
+
         plugins.actions-preview = {
           enable = true;
 
           lazyLoad.settings = lib.mkIf config.my.lazyLoading.enable {
-            backend = config.my.picker.backend;
             keys = [
               {
                 __unkeyed-1 = "<leader>ca";
