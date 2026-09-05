@@ -6,7 +6,7 @@
         "blink-cmp"
         "native"
       ];
-      default = "blink-cmp";
+      default = "native";
       description = "The completion engine to use.";
     };
   };

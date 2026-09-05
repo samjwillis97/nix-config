@@ -6,39 +6,6 @@
 }:
 let
   bordersEnabled = config.my.theme.windowBorders;
-
-  explorerLayout = {
-    hidden = [ "preview" ];
-    layout = {
-      height = 0.8;
-      width = 0.35;
-      backdrop = false;
-      min_width = 40;
-      max_width = 100;
-      min_height = 2;
-      box = "vertical";
-      border = bordersEnabled;
-      title = "{title}";
-      title_pos = "center";
-      __unkeyed-1 = {
-        win = "input";
-        height = 1;
-        border = "bottom";
-      };
-      __unkeyed-2 = {
-        win = "list";
-        border = "none";
-      };
-      __unkeyed-3 = {
-        win = "preview";
-        title = "{preview}";
-        height = 0.4;
-        border = "top";
-      };
-    };
-  };
-
-  pickerLayout = "default";
 in
 {
   options.my.picker = {
@@ -56,7 +23,7 @@ in
 
   config = lib.mkIf config.my.picker.enable (
     lib.mkMerge [
-      {
+      (lib.mkIf (config.my.picker.backend == "snacks") {
         extraPackages = with pkgs; [
           fd
           ripgrep
@@ -100,7 +67,7 @@ in
 
           settings = {
             picker = {
-              layout = pickerLayout;
+              layout = "default";
 
               sources = {
                 files = {
@@ -124,7 +91,37 @@ in
                 explorer = {
                   auto_close = true;
                   hidden = true;
-                  layout = explorerLayout;
+                  layout = {
+                    hidden = [ "preview" ];
+                    layout = {
+                      height = 0.8;
+                      width = 0.35;
+                      backdrop = false;
+                      min_width = 40;
+                      max_width = 100;
+                      min_height = 2;
+                      box = "vertical";
+                      border = bordersEnabled;
+                      title = "{title}";
+                      title_pos = "center";
+                      __unkeyed-1 = {
+                        win = "input";
+                        height = 1;
+                        border = "bottom";
+                      };
+                      __unkeyed-2 = {
+                        win = "list";
+                        border = "none";
+                      };
+                      __unkeyed-3 = {
+                        win = "preview";
+                        title = "{preview}";
+                        height = 0.4;
+                        border = "top";
+                      };
+                    };
+                  };
+
                   win = {
                     list = {
                       keys = {
@@ -140,13 +137,13 @@ in
             };
           };
         };
-      }
+      })
 
       {
         plugins.actions-preview = {
           enable = true;
 
-          lazyLoad.settings = {
+          lazyLoad.settings = lib.mkIf config.my.lazyLoading.enable {
             backend = config.my.picker.backend;
             keys = [
               {
