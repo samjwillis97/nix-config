@@ -5,7 +5,7 @@
   ...
 }:
 let
-  bordersEnabled = config.my.theme.windowBorders != "none";
+  bordersEnabled = config.my.theme.windowBorders;
 
   explorerLayout = {
     hidden = [ "preview" ];

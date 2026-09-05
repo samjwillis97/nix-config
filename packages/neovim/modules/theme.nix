@@ -46,11 +46,8 @@ in
     };
 
     windowBorders = lib.mkOption {
-      type = lib.types.enum [
-        "none"
-        "single"
-      ];
-      default = "none";
+      type = lib.types.bool;
+      default = false;
       description = "Themeing window borders";
     };
 
@@ -91,7 +88,7 @@ in
         ];
       }
 
-      (lib.mkIf (config.my.theme.windowBorders != "none") {
+      (lib.mkIf config.my.theme.windowBorders {
         opts.winborder = config.my.theme.windowBorders;
       })
 
@@ -119,7 +116,9 @@ in
             settings = {
               flavour = "mocha";
               integrations = {
-                # cmp = true;
+                blink_cmp = lib.mkIf (config.blink-cmp.enable && config.my.theme.windowBorders) {
+                  style = "bordered";
+                };
                 gitsigns = config.plugins.gitsigns.enable;
                 treesitter = config.plugins.treesitter.enable;
                 mini = {
