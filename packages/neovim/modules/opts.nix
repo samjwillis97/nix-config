@@ -23,11 +23,6 @@
 
     errorbells = false;
 
-    foldenable = true;
-    foldlevel = 99;
-    foldlevelstart = 99;
-    foldcolumn = "0";
-
     splitbelow = true;
     splitright = true;
 
