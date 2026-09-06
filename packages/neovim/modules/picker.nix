@@ -71,7 +71,7 @@
             options.desc = "Open grep for word under cursor";
           }
           {
-            key = "<leader><leader>";
+            key = "<leader>aa";
             action = "<CMD>lua Snacks.picker.pickers()<CR>";
             options.desc = "List all available pickers";
           }

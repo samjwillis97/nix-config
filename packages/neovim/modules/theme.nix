@@ -227,6 +227,20 @@ in
           };
         };
       })
+
+      (lib.mkIf config.my.languages.dap {
+        highlightOverride = with themeRainbowLookup.${config.my.theme.theme}; {
+          DapBreakpoint = {
+            fg = RainbowRed;
+          };
+          DapLogPoint = {
+            fg = RainbowBlue;
+          };
+          DapStopped = {
+            fg = RainbowGreen;
+          };
+        };
+      })
     ]
   );
 }

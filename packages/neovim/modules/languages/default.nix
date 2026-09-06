@@ -140,5 +140,108 @@ in
       };
     })
 
+    (lib.mkIf config.my.languages.dap {
+      keymaps = [
+        {
+          key = "<leader>bb";
+          action = "<cmd>lua require('dap').toggle_breakpoint()<CR>";
+        }
+        {
+          key = "<leader>dd";
+          action = "<cmd>lua require('dap').continue()<CR>";
+        }
+        {
+          key = "<leader><leader>";
+          action = "<cmd>lua require('dap').terminate()<CR>";
+        }
+        {
+          key = "<up>";
+          action = "<cmd>lua require('dap').continue()<CR>";
+        }
+      ];
+
+      plugins = {
+
+        dap = {
+          enable = true;
+
+          lazyLoad.settings = lib.mkIf lazyLoadingEnabled {
+            event = "BufReadPre";
+          };
+
+          signs = {
+            "dapBreakpoint" = {
+              text = "";
+              texthl = "DapBreakpoint";
+              linehl = "DapBreakpoint";
+              numhl = "DapBreakpoint";
+            };
+            "dapBreakpointCondition" = {
+              text = "";
+              texthl = "DapBreakpoint";
+              linehl = "DapBreakpoint";
+              numhl = "DapBreakpoint";
+            };
+            "dapLogPoint" = {
+              text = "";
+              texthl = "DapLogPoint";
+              linehl = "DapLogPoint";
+              numhl = "DapLogPoint";
+            };
+            "dapStopped" = {
+              text = "";
+              texthl = "DapStopped";
+              linehl = "DapStopped";
+              numhl = "DapStopped";
+            };
+            "dapBreakpointRejected" = {
+              text = "";
+              texthl = "DapBreakpoint";
+              linehl = "DapBreakpoint";
+              numhl = "DapBreakpoint";
+            };
+          };
+        };
+
+        dap-view = {
+          enable = true;
+
+          lazyLoad.settings = lib.mkIf lazyLoadingEnabled {
+            cmd = [
+              "DapViewOpen"
+              "DapViewClose"
+              "DapViewToggle"
+              "DapViewWatch"
+            ];
+          };
+
+          settings = {
+            winbar = {
+              controls = {
+                enabled = true;
+                position = "right";
+              };
+            };
+            windows = {
+              position = "below";
+            };
+            auto_toggle = true;
+          };
+        };
+
+        dap-virtual-text = {
+          enable = true;
+
+          lazyLoad.settings = lib.mkIf lazyLoadingEnabled {
+            cmd = [
+              "DapViewOpen"
+              "DapViewClose"
+              "DapViewToggle"
+              "DapViewWatch"
+            ];
+          };
+        };
+      };
+    })
   ];
 }
