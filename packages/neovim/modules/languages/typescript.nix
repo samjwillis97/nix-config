@@ -33,6 +33,36 @@
           enable = true;
         };
       }
+
+      (lib.mkIf config.my.languages.typescript.lsp {
+        plugins.lsp.servers = {
+          ts_ls.enable = true;
+          eslint.enable = true;
+        };
+      })
+
+      (lib.mkIf config.my.languages.typescript.formatter {
+        plugins.conform-nvim.settings = {
+          formatters_by_ft.typescript = [ "prettier" ];
+
+          # Prettier with dynamic lookup
+          formatters = {
+            prettier.__raw = ''
+              function(bufnr)
+                local prettierExists = vim.fn.executable('prettier') == 1
+                if prettierExists == true then
+                  prettierScript = "prettier"
+                else
+                  prettierScript = ""
+                end
+                return {
+                  command = prettierScript,
+                }
+              end
+            '';
+          };
+        };
+      })
     ]
   );
 }
