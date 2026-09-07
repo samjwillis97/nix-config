@@ -46,12 +46,53 @@ let
       }
       {
         my = {
-          # git.enable = true;
-          #
-          # theme = {
-          #   rainbowBrackets = true;
-          #   rainbowIndents = true;
-          # };
+          git.enable = true;
+
+          treesitter = {
+            showContext = true;
+          };
+
+          theme = {
+            rainbowBrackets = true;
+            indents = {
+              enable = true;
+              rainbow = false;
+            };
+          };
+
+          icons.enable = true;
+
+          completions = {
+            engine = "blink-cmp";
+            copilot = {
+              suggestion.enabled = true;
+              nextEdits.enabled = false;
+            };
+          };
+
+          languages = {
+            formatter = true;
+            lsp = true;
+            dap = true;
+
+            nix.enable = true;
+          };
+
+          picker = {
+            enable = true;
+            engine = "snacks";
+          };
+
+          explorer = {
+            engine = "snacks";
+            windowBorders = true;
+          };
+
+          statusline.engine = "mini";
+
+          folding.engine = "ufo";
+
+          code-diff.enable = true;
         };
       }
     ]
