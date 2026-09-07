@@ -15,6 +15,12 @@
       default = "vinegar";
       description = "The file explorer engine to use.";
     };
+
+    windowBorders = lib.mkOption {
+      type = lib.types.bool;
+      default = config.my.theme.windowBorders;
+      description = "The border style for the file explorer window.";
+    };
   };
 
   config = lib.mkMerge [
@@ -48,7 +54,7 @@
               max_width = 100;
               min_height = 2;
               box = "vertical";
-              border = config.my.theme.windowBorders;
+              border = config.my.explorer.windowBorders;
               title = "{title}";
               title_pos = "center";
               __unkeyed-1 = {
