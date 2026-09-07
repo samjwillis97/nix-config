@@ -53,6 +53,17 @@
       plugins.nvim-ufo = {
         enable = true;
 
+        settings.provider_selector = lib.nixvim.utils.mkRaw ''
+          function(bufnr)
+            -- Diffview virtual buffers have non-file URIs that clangd rejects.
+            if vim.api.nvim_buf_get_name(bufnr):match("^diffview://") then
+              return ""
+            end
+
+            return { "lsp", "indent" }
+          end
+        '';
+
         # Load when reading a buffer or using fold operations
         lazyLoad.settings = lib.mkIf config.my.lazyLoading.enable {
           event = "BufReadPost";
