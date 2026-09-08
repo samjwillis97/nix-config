@@ -143,16 +143,23 @@
           pkgs,
           ...
         }:
+        let
+          nvimPkgs = import inputs.unstable {
+            system = pkgs.stdenv.hostPlatform.system;
+            config.allowUnfree = true;
+          };
+        in
         {
           formatter = pkgs.nixfmt-tree;
 
           packages = {
             f = pkgs.callPackage ./packages/f { };
-            neovim-full = pkgs.callPackage ./packages/neovim/full.nix {
-              inherit inputs;
+            neovim = self.lib.mkNeovim {
+              pkgs = nvimPkgs;
             };
-            neovim = pkgs.callPackage ./packages/neovim/base.nix {
-              inherit inputs;
+            neovim-full = self.lib.mkNeovim {
+              pkgs = nvimPkgs;
+              modules = [ ./packages/neovim/profiles/full.nix ];
             };
           };
 
