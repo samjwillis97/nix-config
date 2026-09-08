@@ -7,6 +7,20 @@
       description = "Enable treesitter support";
     };
 
+    grammars = lib.mkOption {
+      type = lib.types.listOf lib.types.package;
+      default = with config.plugins.treesitter.package.builtGrammars; [
+        json
+        toml
+        yaml
+        markdown
+        bash
+        nix
+      ];
+      description = "Install these treesitter grammars, for all use `config.plugins.treesitter.package.allGrammars
+`";
+    };
+
     showContext = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -24,6 +38,8 @@
           lazyLoad.settings = lib.mkIf config.my.lazyLoading.enable {
             event = "BufReadPost";
           };
+
+          grammarPackages = config.my.treesitter.grammars;
 
           nixvimInjections = true;
           nixGrammars = true;

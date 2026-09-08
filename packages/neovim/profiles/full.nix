@@ -1,9 +1,11 @@
+{ config, ... }:
 {
   my = {
     git.enable = true;
 
     treesitter = {
       showContext = true;
+      grammars = config.plugins.treesitter.package.allGrammars;
     };
 
     theme = {
