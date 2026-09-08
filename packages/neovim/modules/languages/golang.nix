@@ -6,7 +6,11 @@
 }:
 {
   options.my.languages.golang = {
-    enable = lib.mkEnableOption "Enable golang language support";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = config.my.languages.all;
+      description = "Enable Go language support";
+    };
 
     lsp = lib.mkOption {
       type = lib.types.bool;

@@ -14,6 +14,7 @@ in
   imports = languageModules;
 
   options.my.languages = {
+    all = lib.mkEnableOption "Enable all language support";
     lsp = lib.mkEnableOption "Enable language server protocol support";
     dap = lib.mkEnableOption "Enable debug adapter protocol support";
     formatter = lib.mkEnableOption "Enable code formatter support";

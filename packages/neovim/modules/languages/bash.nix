@@ -6,7 +6,11 @@
 }:
 {
   options.my.languages.bash = {
-    enable = lib.mkEnableOption "Enable bash language support";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = config.my.languages.all;
+      description = "Enable bash language support";
+    };
 
     lsp = lib.mkOption {
       type = lib.types.bool;

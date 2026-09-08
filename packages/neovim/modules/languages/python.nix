@@ -6,7 +6,11 @@
 }:
 {
   options.my.languages.python = {
-    enable = lib.mkEnableOption "Enable python language support";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = config.my.languages.all;
+      description = "Enable nix language support";
+    };
 
     lsp = lib.mkOption {
       type = lib.types.bool;

@@ -5,7 +5,11 @@
 }:
 {
   options.my.languages.typescript = {
-    enable = lib.mkEnableOption "Enable typescript language support";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = config.my.languages.all;
+      description = "Enable typescript language support";
+    };
 
     lsp = lib.mkOption {
       type = lib.types.bool;

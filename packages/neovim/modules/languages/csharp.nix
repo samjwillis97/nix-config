@@ -6,7 +6,11 @@
 }:
 {
   options.my.languages.csharp = {
-    enable = lib.mkEnableOption "Enable csharp language support";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = config.my.languages.all;
+      description = "Enable C# language support";
+    };
 
     lsp = lib.mkOption {
       type = lib.types.bool;
