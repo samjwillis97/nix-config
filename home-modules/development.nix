@@ -42,17 +42,11 @@ in
         my.f.enable = true;
 
         home.packages = with pkgs; [
-          neovim-full
-
           # JSON Tooling
           jq
           jless
 
         ];
-
-        home.sessionVariables = {
-          EDITOR = pkgs.lib.getExe pkgs.neovim;
-        };
 
         programs = {
           direnv = {

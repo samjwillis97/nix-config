@@ -5,6 +5,11 @@
   ...
 }:
 let
+  baseLib = lib;
+
+  nixvimLib = import ./packages/neovim/lib.nix {
+    inherit (inputs) nixvim;
+  };
   # base on: https://github.com/ehllie/ez-configs/blob/eb320b3a6032a30e5fa67bebbaf381e6552f9441/flake-module.nix#L169
   # scan directory and return an attribute set of nix modules, where the key is the module name and the value is the path to the module.
   readModules =
@@ -103,10 +108,22 @@ let
         };
       };
     };
+
 in
 {
   config.flake = rec {
     inherit nixosModules darwinModules homeModules;
+    lib = nixvimLib;
+
+    nixvimModules = {
+      default = ./packages/neovim/module.nix;
+      full = {
+        imports = [
+          ./packages/neovim/module.nix
+          ./packages/neovim/profiles/full.nix
+        ];
+      };
+    };
 
     nixosConfigurations = builtins.mapAttrs (
       name: hostModule:
@@ -172,11 +189,11 @@ in
     ) darwinHosts;
 
     cloudflareHosts = builtins.mapAttrs (_name: host: {
-      routes = lib.mapAttrs (name: route: {
+      routes = baseLib.mapAttrs (name: route: {
         inherit (route) subdomain;
         internalHost = name;
       }) host.config.my.ingress.routes;
-    }) (lib.filterAttrs (_name: host: host.config.my.cloudflared.enable) nixosConfigurations);
+    }) (baseLib.filterAttrs (_name: host: host.config.my.cloudflared.enable) nixosConfigurations);
 
     deploy.nodes = builtins.mapAttrs (
       name: host:
@@ -193,11 +210,11 @@ in
           path = inputs.deploy-rs.lib.${system}.activate.nixos host;
         };
       }
-    ) (lib.filterAttrs (_name: host: host.config.my.deploy-rs.enable) nixosConfigurations);
+    ) (baseLib.filterAttrs (_name: host: host.config.my.deploy-rs.enable) nixosConfigurations);
 
     githubActions =
       let
-        deployConfigurations = lib.filterAttrs (
+        deployConfigurations = baseLib.filterAttrs (
           _name: host: host.config.my.deploy-rs.githubActions.enable
         ) nixosConfigurations;
         deployChecks = builtins.foldl' (
@@ -217,28 +234,28 @@ in
         dixChecks =
           let
             entries =
-              (lib.mapAttrsToList (name: host: {
+              (baseLib.mapAttrsToList (name: host: {
                 system = host.config.nixpkgs.hostPlatform.system;
                 name = "nixosConfiguration-${name}";
                 drv = host.config.system.build.toplevel;
-              }) (lib.filterAttrs (_name: host: host.config.my.dix.enable) nixosConfigurations))
-              ++ (lib.mapAttrsToList
+              }) (baseLib.filterAttrs (_name: host: host.config.my.dix.enable) nixosConfigurations))
+              ++ (baseLib.mapAttrsToList
                 (name: host: {
                   system = host.pkgs.stdenv.hostPlatform.system;
                   name = "homeConfiguration-${name}";
                   drv = host.activationPackage;
                 })
                 (
-                  lib.filterAttrs (
-                    _name: host: lib.attrByPath [ "config" "my" "dix" "enable" ] false host
+                  baseLib.filterAttrs (
+                    _name: host: baseLib.attrByPath [ "config" "my" "dix" "enable" ] false host
                   ) homeConfigurations
                 )
               )
-              ++ (lib.mapAttrsToList (name: host: {
+              ++ (baseLib.mapAttrsToList (name: host: {
                 system = host.config.nixpkgs.hostPlatform.system;
                 name = "darwinConfiguration-${name}";
                 drv = host.system;
-              }) (lib.filterAttrs (_name: host: host.config.my.dix.enable) darwinConfigurations));
+              }) (baseLib.filterAttrs (_name: host: host.config.my.dix.enable) darwinConfigurations));
           in
           builtins.foldl' (
             checks: check:
@@ -251,7 +268,7 @@ in
           ) { } entries;
       in
       (inputs.nix-github-actions.lib.mkGithubMatrix {
-        checks = lib.getAttrs [
+        checks = baseLib.getAttrs [
           "x86_64-linux"
         ] self.checks;
       })
