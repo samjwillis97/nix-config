@@ -1300,12 +1300,13 @@ func runListFZF(ctx context.Context, cfg appConfig, stdin io.Reader, stdout, std
 	for _, record := range records {
 		label := logicalLabel(cfg, record)
 		byRow[label+"\x00"+canonicalPath(record.Path)] = record
-		input.WriteString(label)
-		input.WriteByte('\t')
-		input.WriteString(record.Path)
+
+		display := record.Path[(len(cfg.root) + len(cfg.domain) + 2):]
+		input.WriteString(display)
 		input.WriteByte('\n')
 	}
-	cmd := exec.CommandContext(ctx, "fzf", "--print-query", "--scheme=path", "--preview=git -C {2} --no-pager show")
+	previewString := "--preview=git -C " + cfg.root + "/" + cfg.domain + "/{} --no-pager show"
+	cmd := exec.CommandContext(ctx, "fzf", "--print-query", "--scheme=path", previewString)
 	cmd.Stdin = strings.NewReader(input.String())
 	var out, errOut bytes.Buffer
 	cmd.Stdout = &out
