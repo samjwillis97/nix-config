@@ -162,6 +162,7 @@
         inputs.home-manager.flakeModules.home-manager
         inputs.git-hooks.flakeModule
         inputs.terranix.flakeModule
+        inputs.treefmt-nix.flakeModule
         ./flake-module.nix
       ];
 
@@ -185,8 +186,6 @@
           };
         in
         {
-          formatter = pkgs.nixfmt-tree;
-
           packages = {
             f = pkgs.callPackage ./packages/f { };
             neovim = self.lib.mkNeovim {
@@ -235,12 +234,20 @@
             };
           };
 
+          treefmt = {
+            programs = {
+              nixfmt.enable = true;
+              shellcheck.enable = false;
+              prettier.enable = true;
+              gofmt.enable = true;
+            };
+          };
+
           pre-commit.settings.hooks = {
-            nixfmt.enable = true;
+            treefmt.enable = true;
             deadnix.enable = true;
             statix.enable = true;
             flake-checker.enable = true;
-            prettier.enable = true;
             actionlint.enable = true;
             detect-aws-credentials.enable = true;
             detect-private-keys.enable = true;
