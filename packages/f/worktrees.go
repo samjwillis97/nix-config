@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -164,6 +165,268 @@ func discoverAnchorCandidates(scope string) ([]string, []string, []error) {
 		}
 	}
 	return anchors, fallbackRoots, discoveryErrors
+}
+
+// fastGitMarkerAt validates enough of a .git marker to avoid listing arbitrary
+// directories, without invoking Git. Full Git identity remains authoritative
+// whenever a listing selection is opened or another command reconciles state.
+func fastGitMarkerAt(path string) bool {
+	marker := filepath.Join(path, ".git")
+	info, err := os.Lstat(marker)
+	if err != nil || info.Mode()&os.ModeSymlink != 0 {
+		return false
+	}
+	if info.IsDir() {
+		for _, name := range []string{"HEAD", "config"} {
+			child, childErr := os.Stat(filepath.Join(marker, name))
+			if childErr != nil || !child.Mode().IsRegular() {
+				return false
+			}
+		}
+		return true
+	}
+	if !info.Mode().IsRegular() {
+		return false
+	}
+	data, err := os.ReadFile(marker)
+	if err != nil {
+		return false
+	}
+	const prefix = "gitdir: "
+	line := strings.TrimSpace(string(data))
+	if !strings.HasPrefix(line, prefix) {
+		return false
+	}
+	adminDir := filepath.Clean(strings.TrimSpace(strings.TrimPrefix(line, prefix)))
+	if !filepath.IsAbs(adminDir) {
+		adminDir = filepath.Join(path, adminDir)
+	}
+	adminInfo, err := os.Stat(adminDir)
+	if err != nil || !adminInfo.IsDir() {
+		return false
+	}
+	for _, name := range []string{"HEAD", "commondir", "gitdir"} {
+		child, childErr := os.Stat(filepath.Join(adminDir, name))
+		if childErr != nil || !child.Mode().IsRegular() {
+			return false
+		}
+	}
+	back, err := os.ReadFile(filepath.Join(adminDir, "gitdir"))
+	return err == nil && filepath.Clean(strings.TrimSpace(string(back))) == filepath.Clean(marker)
+}
+
+// linkedWorktreePaths reads Git's administrative gitdir pointers without
+// invoking Git or descending into the anchor's source tree.
+func linkedWorktreePaths(anchor, scope string) ([]string, error) {
+	gitPath := filepath.Join(anchor, ".git")
+	gitInfo, err := os.Lstat(gitPath)
+	if err != nil {
+		return nil, err
+	}
+	adminRoot := ""
+	if gitInfo.IsDir() {
+		adminRoot = filepath.Join(gitPath, "worktrees")
+	} else if gitInfo.Mode().IsRegular() {
+		data, readErr := os.ReadFile(gitPath)
+		if readErr != nil {
+			return nil, readErr
+		}
+		const prefix = "gitdir: "
+		line := strings.TrimSpace(string(data))
+		if !strings.HasPrefix(line, prefix) {
+			return nil, fmt.Errorf("invalid gitdir pointer %s", gitPath)
+		}
+		adminDir := filepath.Clean(strings.TrimSpace(strings.TrimPrefix(line, prefix)))
+		if !filepath.IsAbs(adminDir) {
+			adminDir = filepath.Join(anchor, adminDir)
+		}
+		commonData, readErr := os.ReadFile(filepath.Join(adminDir, "commondir"))
+		if readErr != nil {
+			return nil, readErr
+		}
+		commonDir := strings.TrimSpace(string(commonData))
+		if !filepath.IsAbs(commonDir) {
+			commonDir = filepath.Join(adminDir, commonDir)
+		}
+		adminRoot = filepath.Join(filepath.Clean(commonDir), "worktrees")
+	} else {
+		return nil, nil
+	}
+	entries, err := os.ReadDir(adminRoot)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	paths := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if entry.Type()&os.ModeSymlink != 0 || !entry.IsDir() {
+			continue
+		}
+		gitdirPath := filepath.Join(adminRoot, entry.Name(), "gitdir")
+		data, readErr := os.ReadFile(gitdirPath)
+		if readErr != nil {
+			continue
+		}
+		worktreeGitdir := filepath.Clean(strings.TrimSpace(string(data)))
+		if !filepath.IsAbs(worktreeGitdir) || filepath.Base(worktreeGitdir) != ".git" {
+			continue
+		}
+		worktree := filepath.Dir(worktreeGitdir)
+		if !pathInside(worktree, scope) {
+			continue
+		}
+		info, statErr := os.Lstat(worktree)
+		if statErr != nil || info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+			continue
+		}
+		if fastGitMarkerAt(worktree) {
+			paths = append(paths, filepath.Clean(worktree))
+		}
+	}
+	sort.Strings(paths)
+	return paths, nil
+}
+
+// discoverFilesystemWorktrees finds marker-bearing directories without invoking
+// Git or statting every file. It is used only for the non-destructive listing
+// modes; selected paths are revalidated against Git before they are opened.
+func discoverFilesystemWorktrees(scope string) ([]string, error) {
+	scope = canonicalPath(scope)
+	info, err := os.Stat(scope)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !info.IsDir() {
+		return nil, fmt.Errorf("workspace scope %s is not a directory", scope)
+	}
+	owners, err := os.ReadDir(scope)
+	if err != nil {
+		return nil, fmt.Errorf("walk %s: %w", scope, err)
+	}
+	paths := make([]string, 0)
+	var walkErrors []error
+	var walk func(string)
+	walk = func(path string) {
+		entries, readErr := os.ReadDir(path)
+		if readErr != nil {
+			walkErrors = append(walkErrors, fmt.Errorf("walk %s: %w", path, readErr))
+			return
+		}
+		if fastGitMarkerAt(path) {
+			paths = append(paths, filepath.Clean(path))
+			linked, linkedErr := linkedWorktreePaths(path, scope)
+			if linkedErr != nil && !errors.Is(linkedErr, os.ErrNotExist) {
+				walkErrors = append(walkErrors, fmt.Errorf("inspect linked worktrees in %s: %w", path, linkedErr))
+			} else {
+				paths = append(paths, linked...)
+			}
+			return
+		}
+		for _, entry := range entries {
+			if entry.Type()&os.ModeSymlink != 0 || !entry.IsDir() || entry.Name() == ".git" {
+				continue
+			}
+			child := filepath.Join(path, entry.Name())
+			if skipDiscoverySubtree(entry.Name()) {
+				if fastGitMarkerAt(child) {
+					paths = append(paths, filepath.Clean(child))
+				}
+				continue
+			}
+			walk(child)
+		}
+	}
+	for _, owner := range owners {
+		if owner.Type()&os.ModeSymlink != 0 || !owner.IsDir() || owner.Name() == ".git" {
+			continue
+		}
+		ownerPath := filepath.Join(scope, owner.Name())
+		repos, readErr := os.ReadDir(ownerPath)
+		if readErr != nil {
+			walkErrors = append(walkErrors, fmt.Errorf("walk %s: %w", ownerPath, readErr))
+			continue
+		}
+		for _, repo := range repos {
+			if repo.Type()&os.ModeSymlink != 0 || !repo.IsDir() || repo.Name() == ".git" {
+				continue
+			}
+			repoPath := filepath.Join(ownerPath, repo.Name())
+			repoAnchor := fastGitMarkerAt(repoPath)
+			if repoAnchor {
+				paths = append(paths, filepath.Clean(repoPath))
+				linked, linkedErr := linkedWorktreePaths(repoPath, scope)
+				if linkedErr != nil && !errors.Is(linkedErr, os.ErrNotExist) {
+					walkErrors = append(walkErrors, fmt.Errorf("inspect linked worktrees in %s: %w", repoPath, linkedErr))
+				} else {
+					paths = append(paths, linked...)
+				}
+				continue
+			}
+			walk(repoPath)
+		}
+	}
+	sort.Strings(paths)
+	paths = slices.Compact(paths)
+	if len(walkErrors) != 0 {
+		return paths, walkErrors[0]
+	}
+	return paths, nil
+}
+
+func fastListInventory(ctx context.Context, cfg appConfig, stderr io.Writer) (*inventory, *advisoryStore, map[usageKey]sql.NullInt64) {
+	scope := canonicalPath(scopeRoot(cfg))
+	paths, err := discoverFilesystemWorktrees(scope)
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "Warning: %v\n", err)
+	}
+	inv := &inventory{scope: scope}
+	for _, path := range paths {
+		inv.records = append(inv.records, &inventoryRecord{
+			gitWorktreeRecord: gitWorktreeRecord{Path: path, Branch: filesystemBranch(scope, path)},
+			InScope:           true,
+		})
+	}
+	store, storeErr := openStore(ctx, cfg.getenv)
+	if storeErr != nil {
+		_, _ = fmt.Fprintf(stderr, "Warning: SQLite advisory state unavailable: %v\n", storeErr)
+		return inv, nil, nil
+	}
+	usage, usageErr := store.usage(ctx)
+	if usageErr != nil {
+		_, _ = fmt.Fprintf(stderr, "Warning: SQLite usage read failed: %v\n", usageErr)
+		usage = nil
+	}
+	usageByPath := make(map[string]usageKey, len(usage))
+	for key := range usage {
+		usageByPath[key.path] = key
+	}
+	for _, record := range inv.records {
+		if key, ok := usageByPath[filepath.Clean(record.Path)]; ok {
+			record.Common = key.common
+		}
+	}
+	return inv, store, usage
+}
+
+func filesystemBranch(scope, path string) string {
+	rel, err := filepath.Rel(scope, path)
+	if err != nil {
+		return ""
+	}
+	parts := strings.Split(rel, string(filepath.Separator))
+	if len(parts) < 3 {
+		return ""
+	}
+	branch, err := url.PathUnescape(strings.Join(parts[2:], "/"))
+	if err != nil {
+		return strings.Join(parts[2:], "/")
+	}
+	return branch
 }
 
 func discoverInventory(ctx context.Context, cfg appConfig) (*inventory, error) {
@@ -339,6 +602,25 @@ func discoverInventory(ctx context.Context, cfg appConfig) (*inventory, error) {
 		}
 	}
 	return inv, nil
+}
+
+func sortedFastListRecords(inv *inventory, usage map[usageKey]sql.NullInt64) []*inventoryRecord {
+	records := append([]*inventoryRecord(nil), inv.records...)
+	usageByPath := make(map[string]sql.NullInt64, len(usage))
+	for key, value := range usage {
+		usageByPath[key.path] = value
+	}
+	sort.Slice(records, func(i, j int) bool {
+		a, b := usageByPath[records[i].Path], usageByPath[records[j].Path]
+		if a.Valid != b.Valid {
+			return a.Valid
+		}
+		if a.Valid && a.Int64 != b.Int64 {
+			return a.Int64 > b.Int64
+		}
+		return records[i].Path < records[j].Path
+	})
+	return records
 }
 
 func (inv *inventory) familyForCommon(common string) *repoFamily {
@@ -934,19 +1216,11 @@ func unixMillis(now func() time.Time) int64 {
 }
 
 func runList(ctx context.Context, cfg appConfig, stdout, stderr io.Writer) error {
-	inv, store, _ := prepareInventory(ctx, cfg, stderr)
+	inv, store, usage := fastListInventory(ctx, cfg, stderr)
 	if store != nil {
 		defer store.close()
 	}
-	var usage map[usageKey]sql.NullInt64
-	if store != nil {
-		var err error
-		usage, err = store.usage(ctx)
-		if err != nil {
-			_, _ = fmt.Fprintf(stderr, "Warning: SQLite usage read failed: %v\n", err)
-		}
-	}
-	records := sortedLiveRecords(inv, usage)
+	records := sortedFastListRecords(inv, usage)
 	for _, record := range records {
 		_, _ = fmt.Fprintln(stdout, record.Path)
 	}
@@ -994,20 +1268,33 @@ func logicalLabel(cfg appConfig, record *inventoryRecord) string {
 	return cfg.domain + "/" + branch
 }
 
+func resolveListedRecord(ctx context.Context, cfg appConfig, path string) (*inventoryRecord, error) {
+	family, err := enumerateFamily(ctx, path, scopeRoot(cfg))
+	if err != nil {
+		return nil, fmt.Errorf("could not validate listed worktree %s: %w", path, err)
+	}
+	for i := range family.records {
+		record := &family.records[i]
+		if canonicalPath(record.Path) != canonicalPath(path) {
+			continue
+		}
+		if !record.InScope {
+			return nil, fmt.Errorf("listed worktree %s is outside the configured workspace root", path)
+		}
+		if !liveInventoryRecord(record) {
+			return nil, fmt.Errorf("listed worktree %s is not live", path)
+		}
+		return record, nil
+	}
+	return nil, fmt.Errorf("listed path %s is not a Git worktree", path)
+}
+
 func runListFZF(ctx context.Context, cfg appConfig, stdin io.Reader, stdout, stderr io.Writer) error {
-	inv, store, _ := prepareInventory(ctx, cfg, stderr)
+	inv, store, usage := fastListInventory(ctx, cfg, stderr)
 	if store != nil {
 		defer store.close()
 	}
-	var usage map[usageKey]sql.NullInt64
-	if store != nil {
-		var usageErr error
-		usage, usageErr = store.usage(ctx)
-		if usageErr != nil {
-			_, _ = fmt.Fprintf(stderr, "Warning: SQLite usage read failed: %v\n", usageErr)
-		}
-	}
-	records := sortedLiveRecords(inv, usage)
+	records := sortedFastListRecords(inv, usage)
 	var input strings.Builder
 	byRow := make(map[string]*inventoryRecord)
 	for _, record := range records {
@@ -1048,9 +1335,13 @@ func runListFZF(ctx context.Context, cfg appConfig, stdin io.Reader, stdout, std
 		if len(selection) != 2 {
 			return fmt.Errorf("fzf returned an unknown selection")
 		}
-		record := byRow[selection[0]+"\x00"+canonicalPath(selection[1])]
-		if record == nil {
+		candidate := byRow[selection[0]+"\x00"+canonicalPath(selection[1])]
+		if candidate == nil {
 			return fmt.Errorf("fzf returned an unknown selection")
+		}
+		record, err := resolveListedRecord(ctx, cfg, candidate.Path)
+		if err != nil {
+			return err
 		}
 		if err := openTmux(ctx, cfg, record, stdin, stdout, stderr); err != nil {
 			return err

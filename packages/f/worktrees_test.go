@@ -171,6 +171,113 @@ func TestDiscoverInventoryFindsDeepOnlyAnchor(t *testing.T) {
 	}
 }
 
+func TestDiscoverFilesystemWorktreesIncludesDirectAnchorChildren(t *testing.T) {
+	root := t.TempDir()
+	repo := filepath.Join(root, "test.invalid", "acme", "demo")
+	gitTestCommand(t, "", "init", "--initial-branch=main", repo)
+	gitTestCommand(t, repo, "config", "user.name", "f test")
+	gitTestCommand(t, repo, "config", "user.email", "f@example.invalid")
+	gitTestCommand(t, repo, "config", "commit.gpgsign", "false")
+	gitTestCommand(t, repo, "commit", "--allow-empty", "-m", "initial")
+	child := filepath.Join(repo, "feature")
+	gitTestCommand(t, repo, "worktree", "add", child, "--detach")
+	unrelated := filepath.Join(repo, "src", "nested")
+	if err := os.MkdirAll(unrelated, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(unrelated, ".git"), []byte("not a worktree"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	paths, err := discoverFilesystemWorktrees(filepath.Join(root, "test.invalid"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := make(map[string]bool, len(paths))
+	for _, path := range paths {
+		seen[canonicalPath(path)] = true
+	}
+	if !seen[canonicalPath(repo)] || !seen[canonicalPath(child)] {
+		t.Fatalf("paths=%v want direct anchor %q and linked child %q", paths, repo, child)
+	}
+	if len(paths) != 2 {
+		t.Fatalf("paths=%v want only direct anchor and linked child", paths)
+	}
+	authoritative, err := discoverInventory(context.Background(), appConfig{root: root, domain: "test.invalid"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := make(map[string]bool)
+	for _, record := range authoritative.inScopeRecords() {
+		if liveInventoryRecord(record) {
+			want[canonicalPath(record.Path)] = true
+		}
+	}
+	if len(seen) != len(want) {
+		t.Fatalf("fast paths=%v authoritative live paths=%v", seen, want)
+	}
+	for path := range want {
+		if !seen[path] {
+			t.Fatalf("fast listing omitted live path %q", path)
+		}
+	}
+}
+
+func TestDiscoverFilesystemWorktreesExpandsDeepAnchorChildren(t *testing.T) {
+	root := t.TempDir()
+	anchor := filepath.Join(root, "test.invalid", "acme", "demo", "feature", "login")
+	gitTestCommand(t, "", "init", "--initial-branch=main", anchor)
+	gitTestCommand(t, anchor, "config", "user.name", "f test")
+	gitTestCommand(t, anchor, "config", "user.email", "f@example.invalid")
+	gitTestCommand(t, anchor, "config", "commit.gpgsign", "false")
+	gitTestCommand(t, anchor, "commit", "--allow-empty", "-m", "initial")
+	sibling := filepath.Join(root, "test.invalid", "acme", "demo", "feature", "other")
+	gitTestCommand(t, anchor, "worktree", "add", sibling, "--detach")
+
+	paths, err := discoverFilesystemWorktrees(filepath.Join(root, "test.invalid"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := make(map[string]bool, len(paths))
+	for _, path := range paths {
+		seen[canonicalPath(path)] = true
+	}
+	if len(seen) != 2 || !seen[canonicalPath(anchor)] || !seen[canonicalPath(sibling)] {
+		t.Fatalf("paths=%v want deep anchor %q and its linked sibling %q", paths, anchor, sibling)
+	}
+}
+
+func TestRunListDoesNotReconcileGitBeforePrinting(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "test.invalid", "acme", "demo", "main")
+	gitTestCommand(t, "", "init", "--initial-branch=main", path)
+	gitTestCommand(t, path, "config", "user.name", "f test")
+	gitTestCommand(t, path, "config", "user.email", "f@example.invalid")
+	gitTestCommand(t, path, "config", "commit.gpgsign", "false")
+	gitTestCommand(t, path, "commit", "--allow-empty", "-m", "initial")
+	bogus := filepath.Join(root, "test.invalid", "acme", "demo", "bogus")
+	if err := os.MkdirAll(bogus, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bogus, ".git"), []byte("unvalidated marker"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tools := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tools, "git"), []byte("#!/bin/sh\nexit 99\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", tools+string(filepath.ListSeparator)+os.Getenv("PATH"))
+	state := filepath.Join(filepath.Dir(root), "state")
+	var stdout, stderr bytes.Buffer
+	code := run(context.Background(), []string{"-r", root, "-g", "test.invalid", "-L"}, strings.NewReader(""), &stdout, &stderr, testEnv(root, state), time.Now)
+	if code != 0 {
+		t.Fatalf("list code=%d stderr=%s", code, stderr.String())
+	}
+	if got := strings.TrimSpace(stdout.String()); got != canonicalPath(path) {
+		t.Fatalf("list=%q want %q", got, canonicalPath(path))
+	}
+}
+
 func TestRunCreatesEscapedWorktreesAndListsAuthoritativeGit(t *testing.T) {
 	root, _ := setupLocalRemote(t)
 	state := filepath.Join(filepath.Dir(root), "state")
