@@ -46,6 +46,8 @@ in
           jq
           jless
 
+          # Http tooling
+          httpcraft
         ];
 
         programs = {

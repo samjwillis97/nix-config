@@ -113,6 +113,13 @@
       };
     };
 
+    httpcraft = {
+      url = "github:samjwillis97/shc-ai";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+      };
+    };
+
     # Media Server
     nixflix = {
       url = "github:kiriwalawren/nixflix";
