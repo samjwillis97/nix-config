@@ -2,6 +2,8 @@
   description = "My main nix config";
 
   inputs = {
+    systems.url = "github:nix-systems/default";
+
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
@@ -25,6 +27,7 @@
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";
+        treefmt-nix.follows = "treefmt-nix";
       };
     };
 
@@ -70,6 +73,7 @@
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";
+        systems.follows = "systems";
       };
     };
 
@@ -85,6 +89,7 @@
         flake-parts.follows = "flake-parts";
         base16.follows = "base16";
         nur.follows = "nur";
+        systems.follows = "systems";
       };
     };
 
@@ -106,6 +111,8 @@
       url = "github:numtide/llm-agents.nix";
       inputs = {
         flake-parts.follows = "flake-parts";
+        treefmt-nix.follows = "treefmt-nix";
+        systems.follows = "systems";
       };
     };
 
@@ -119,6 +126,7 @@
       inputs = {
         nixpkgs.follows = "unstable";
         flake-parts.follows = "flake-parts";
+        systems.follows = "systems";
       };
     };
 
@@ -129,10 +137,21 @@
       };
     };
 
+    # Code formatter
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+      };
+    };
+
     # Media Server
     nixflix = {
       url = "github:kiriwalawren/nixflix";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        treefmt-nix.follows = "treefmt-nix";
+      };
     };
   };
 
