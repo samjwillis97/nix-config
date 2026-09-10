@@ -1,4 +1,8 @@
-cache_dir="$HOME/.cache/tmux-session-history"
+# shellcheck shell=bash
+
+session_cache_dir() {
+  printf '%s' "$HOME/.cache/tmux-session-history"
+}
 
 encode_session_name() {
   local name="$1"

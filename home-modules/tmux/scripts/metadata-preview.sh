@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 session_target="${1:-}"
 
 if [ -z "$session_target" ]; then

@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 session_list=$(tmux-session-list)
 
 if [ -z "$session_list" ]; then

@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+cache_dir=$(session_cache_dir)
 current_session=$(tmux display-message -p '#{session_name}' 2>/dev/null)
 
 # Two arrays: sessions with MRU history and sessions without

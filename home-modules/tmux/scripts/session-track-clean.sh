@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+cache_dir=$(session_cache_dir)
 session_name="${1:-}"
 if [ -z "$session_name" ]; then
   exit 0
