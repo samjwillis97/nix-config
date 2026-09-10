@@ -1,4 +1,9 @@
+{ inputs, ... }:
 {
+  imports = [
+    inputs.nixos-wsl.nixosModules.default
+  ];
+
   config = {
     nixpkgs.hostPlatform = {
       system = "x86_64-linux";
