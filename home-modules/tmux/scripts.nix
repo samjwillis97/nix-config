@@ -26,6 +26,14 @@ let
     ];
     text = common + "\n" + builtins.readFile ./scripts/session-list.sh;
   };
+  tmux-metadata-preview = pkgs.writeShellApplication {
+    name = "tmux-metadata-preview";
+    runtimeInputs = [
+      pkgs.tmux
+      pkgs.coreutils
+    ];
+    text = builtins.readFile ./scripts/metadata-preview.sh;
+  };
 
   tmux-session-picker = pkgs.writeShellApplication {
     name = "tmux-session-picker";
@@ -34,6 +42,7 @@ let
       pkgs.coreutils
       pkgs.fzf
       tmux-session-list
+      tmux-metadata-preview
     ]
     ++ lib.optional fEnabled pkgs.f;
     text =
@@ -48,6 +57,7 @@ in
     tmux-session-track
     tmux-session-track-clean
     tmux-session-list
+    tmux-metadata-preview
     tmux-session-picker
     ;
 }
