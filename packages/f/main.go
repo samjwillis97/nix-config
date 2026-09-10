@@ -222,7 +222,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 	cfg := appConfig{root: opts.root, domain: opts.domain, getenv: getenv, now: now}
 	switch opts.mode {
 	case modeSync:
-		if err := runSync(ctx, cfg, stdout, stderr, stdin); err != nil {
+		if err := runSync(ctx, cfg, stderr); err != nil {
 			return 1
 		}
 		return 0
@@ -241,7 +241,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 			printUsage(stderr)
 			return 2
 		}
-		if err := runCleanup(ctx, cfg, opts.mode == modeClean, days, stdin, stdout, stderr); err != nil {
+		if err := runCleanup(ctx, cfg, opts.mode == modeClean, days, stdin, stderr); err != nil {
 			return 1
 		}
 		return 0
@@ -259,7 +259,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 		}
 		return 0
 	case modeDelete:
-		if err := runDelete(ctx, cfg, opts.target, stdin, stdout, stderr); err != nil {
+		if err := runDelete(ctx, cfg, stdin, stderr); err != nil {
 			if exitErr, ok := err.(exitCodeError); ok {
 				return exitErr.code
 			}
@@ -267,11 +267,6 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 		}
 		return 0
 	default:
-		if opts.target == "" {
-			_, _ = fmt.Fprintln(stderr, "Error: target is required")
-			printUsage(stderr)
-			return 2
-		}
 		rc, err := runTarget(ctx, cfg, opts.target, opts.printOnly, opts.ensureOnly, stdin, stdout, stderr)
 		if err != nil {
 			if rc != 0 {
@@ -285,15 +280,6 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 
 func main() {
 	os.Exit(run(context.Background(), os.Args[1:], os.Stdin, os.Stdout, os.Stderr, os.Getenv, time.Now))
-}
-
-func stdinIsTerminal(r io.Reader) bool {
-	f, ok := r.(*os.File)
-	if !ok {
-		return false
-	}
-	info, err := f.Stat()
-	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }
 
 type exitCodeError struct {

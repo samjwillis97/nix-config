@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -111,85 +113,178 @@ func TestParseRemoteHeadAndPorcelainZ(t *testing.T) {
 		t.Fatalf("remote head=%q err=%v", branch, err)
 	}
 	data := []byte("worktree /tmp/main\x00HEAD abc\x00branch refs/heads/main\x00\x00worktree /tmp/link\x00HEAD def\x00detached\x00\x00")
-	records, err := parseWorktreePorcelain(data)
-	if err != nil || len(records) != 2 {
-		t.Fatalf("records=%+v err=%v", records, err)
+	records := parseWorktreePorcelain(data)
+	if len(records) != 2 {
+		t.Fatalf("records=%+v", records)
 	}
 	if !records[0].Primary || records[0].Branch != "main" || records[1].Branch != "" || !records[1].Detached {
 		t.Fatalf("records=%+v", records)
 	}
 }
 
-func TestDiscoverInventoryExcludesGeneratedSubtrees(t *testing.T) {
+func TestCanonicalDiscoveryUsesFixedDepth(t *testing.T) {
 	root := t.TempDir()
-	scope := filepath.Join(root, "github.com", "acme")
-	generated := filepath.Join(scope, "unmanaged", ".direnv", "nested", "tree")
-	if err := os.MkdirAll(generated, 0o755); err != nil {
+	scope := filepath.Join(root, "test.invalid")
+	primary := filepath.Join(scope, "acme", "demo", "main")
+	gitTestCommand(t, "", "init", "--initial-branch=main", primary)
+	gitTestCommand(t, primary, "config", "user.name", "f test")
+	gitTestCommand(t, primary, "config", "user.email", "f@example.invalid")
+	gitTestCommand(t, primary, "config", "commit.gpgsign", "false")
+	gitTestCommand(t, primary, "commit", "--allow-empty", "-m", "initial")
+	linked := filepath.Join(scope, "acme", "demo", "feature%2Flogin")
+	gitTestCommand(t, primary, "worktree", "add", "-b", "feature/login", linked)
+	noncanonical := filepath.Join(scope, "acme", "demo", "legacy", "deep")
+	if err := os.MkdirAll(filepath.Dir(noncanonical), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(generated, ".git"), []byte("not a repository"), 0o644); err != nil {
+	gitTestCommand(t, primary, "worktree", "add", "-b", "legacy/deep", noncanonical)
+
+	deep := filepath.Join(scope, "acme", "deep", "repo", "feature", "login")
+	gitTestCommand(t, "", "init", "--initial-branch=main", deep)
+	outside := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(outside, "repo", "branch"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(outside, "repo"), filepath.Join(scope, "symlink-owner")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(outside, "repo"), filepath.Join(scope, "acme", "symlink-repo")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(outside, "repo", "branch"), filepath.Join(scope, "acme", "demo", "symlink-branch")); err != nil {
 		t.Fatal(err)
 	}
 
-	anchor := filepath.Join(scope, "named", "node_modules")
-	gitTestCommand(t, "", "init", "--initial-branch=main", anchor)
-	gitTestCommand(t, anchor, "config", "user.name", "f test")
-	gitTestCommand(t, anchor, "config", "user.email", "f@example.invalid")
-	gitTestCommand(t, anchor, "config", "commit.gpgsign", "false")
-	gitTestCommand(t, anchor, "commit", "--allow-empty", "-m", "initial")
-
-	inv, err := discoverInventory(context.Background(), appConfig{root: root, domain: "github.com"})
+	inv, err := discoverInventory(context.Background(), appConfig{root: root, domain: "test.invalid"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(inv.errors) != 0 || len(inv.families) != 1 || len(inv.families[0].records) != 1 {
-		t.Fatalf("inventory errors=%v families=%v", inv.errors, inv.families)
+	if len(inv.errors) != 0 {
+		t.Fatalf("inventory errors=%v", inv.errors)
 	}
-	if got := canonicalPath(inv.families[0].records[0].Path); got != canonicalPath(anchor) {
-		t.Fatalf("anchor path=%q want %q", got, anchor)
+	seen := make(map[string]*inventoryRecord)
+	for _, record := range inv.managedRecords() {
+		seen[canonicalPath(record.Path)] = record
 	}
-}
-
-func TestDiscoverInventoryFindsDeepOnlyAnchor(t *testing.T) {
-	root := t.TempDir()
-	anchor := filepath.Join(root, "github.com", "acme", "demo", "feature", "login")
-	gitTestCommand(t, "", "init", "--initial-branch=main", anchor)
-	gitTestCommand(t, anchor, "config", "user.name", "f test")
-	gitTestCommand(t, anchor, "config", "user.email", "f@example.invalid")
-	gitTestCommand(t, anchor, "config", "commit.gpgsign", "false")
-	gitTestCommand(t, anchor, "commit", "--allow-empty", "-m", "initial")
-
-	inv, err := discoverInventory(context.Background(), appConfig{root: root, domain: "github.com"})
+	if len(seen) != 2 || seen[canonicalPath(primary)] == nil || seen[canonicalPath(linked)] == nil {
+		t.Fatalf("managed records=%v", seen)
+	}
+	if seen[canonicalPath(linked)].Branch != "feature/login" {
+		t.Fatalf("linked branch=%q", seen[canonicalPath(linked)].Branch)
+	}
+	if _, ok := seen[canonicalPath(deep)]; ok {
+		t.Fatalf("deep-only worktree was discovered: %s", deep)
+	}
+	if len(inv.families) != 1 || len(inv.families[0].records) != 3 {
+		t.Fatalf("family records=%v", inv.families)
+	}
+	var noncanonicalRecord *inventoryRecord
+	for i := range inv.families[0].records {
+		record := &inv.families[0].records[i]
+		if canonicalPath(record.Path) == canonicalPath(noncanonical) {
+			noncanonicalRecord = record
+			if record.Managed {
+				t.Fatal("noncanonical record is managed")
+			}
+		}
+	}
+	if noncanonicalRecord == nil {
+		t.Fatalf("family records=%v", inv.families[0].records)
+	}
+	found, err := findBranchRecord(inv.families[0], "legacy/deep")
+	if err != nil || found == nil || canonicalPath(found.Path) != canonicalPath(noncanonical) {
+		t.Fatalf("branch lookup=%v err=%v", found, err)
+	}
+	state := filepath.Join(root, "state")
+	cfg := appConfig{root: root, domain: "test.invalid", now: func() time.Time { return time.Unix(100, 0) }, getenv: func(key string) string {
+		if key == "XDG_STATE_HOME" {
+			return state
+		}
+		return ""
+	}}
+	store, err := openStore(context.Background(), cfg.getenv)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(inv.errors) != 0 || len(inv.families) != 1 || len(inv.families[0].records) != 1 {
-		t.Fatalf("inventory errors=%v families=%v", inv.errors, inv.families)
+	defer store.close()
+	if err := store.reconcileFamily(context.Background(), inv.families[0]); err != nil {
+		t.Fatal(err)
 	}
-	if got := canonicalPath(inv.families[0].records[0].Path); got != canonicalPath(anchor) {
-		t.Fatalf("anchor path=%q want %q", got, anchor)
+	if err := os.WriteFile(filepath.Join(noncanonical, "import-only"), []byte("unmanaged"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(filepath.Join(noncanonical, "import-only"), time.Unix(2, 0), time.Unix(2, 0)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := importFilesystem(context.Background(), cfg, inv, store, false, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	usageRows, err := store.usage(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	noncanonicalUsage, ok := usageRows[pathKey(inv.families[0].common, noncanonical)]
+	if !ok || noncanonicalUsage.Valid {
+		t.Fatalf("noncanonical usage=%+v present=%v", noncanonicalUsage, ok)
+	}
+	var listOut, listErr bytes.Buffer
+	if err := runList(context.Background(), cfg, &listOut, &listErr); err != nil {
+		t.Fatalf("list err=%v stderr=%s", err, listErr.String())
+	}
+	listSeen := make(map[string]bool)
+	for _, line := range strings.Split(strings.TrimSpace(listOut.String()), "\n") {
+		if line != "" {
+			listSeen[canonicalPath(line)] = true
+		}
+	}
+	if len(listSeen) != 2 || !listSeen[canonicalPath(primary)] || !listSeen[canonicalPath(linked)] || listSeen[canonicalPath(noncanonical)] {
+		t.Fatalf("list=%v", listSeen)
+	}
+	usage := map[usageKey]sql.NullInt64{
+		pathKey(inv.families[0].common, noncanonical): {Valid: true, Int64: 0},
+		pathKey(inv.families[0].common, linked):       {Valid: true, Int64: 0},
+	}
+	for _, candidate := range collectCleanupCandidates(cfg, inv, usage, 1, context.Background(), io.Discard) {
+		if canonicalPath(candidate.record.Path) == canonicalPath(noncanonical) {
+			t.Fatal("noncanonical record became a cleanup candidate")
+		}
+	}
+	spec, err := parseTarget(cfg, "acme/demo/legacy/deep")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := resolveTarget(context.Background(), cfg, inv, spec, false, io.Discard); err == nil || !strings.Contains(err.Error(), "canonical workspace layout") {
+		t.Fatalf("direct noncanonical target error=%v", err)
 	}
 }
 
-func TestDiscoverFilesystemWorktreesIncludesDirectAnchorChildren(t *testing.T) {
+func TestCanonicalFastListUsesValidatedMarkers(t *testing.T) {
 	root := t.TempDir()
-	repo := filepath.Join(root, "test.invalid", "acme", "demo")
-	gitTestCommand(t, "", "init", "--initial-branch=main", repo)
-	gitTestCommand(t, repo, "config", "user.name", "f test")
-	gitTestCommand(t, repo, "config", "user.email", "f@example.invalid")
-	gitTestCommand(t, repo, "config", "commit.gpgsign", "false")
-	gitTestCommand(t, repo, "commit", "--allow-empty", "-m", "initial")
-	child := filepath.Join(repo, "feature")
-	gitTestCommand(t, repo, "worktree", "add", child, "--detach")
-	unrelated := filepath.Join(repo, "src", "nested")
-	if err := os.MkdirAll(unrelated, 0o755); err != nil {
+	scope := filepath.Join(root, "test.invalid")
+	primary := filepath.Join(scope, "acme", "demo", "main")
+	gitTestCommand(t, "", "init", "--initial-branch=main", primary)
+	gitTestCommand(t, primary, "config", "user.name", "f test")
+	gitTestCommand(t, primary, "config", "user.email", "f@example.invalid")
+	gitTestCommand(t, primary, "config", "commit.gpgsign", "false")
+	gitTestCommand(t, primary, "commit", "--allow-empty", "-m", "initial")
+	linked := filepath.Join(scope, "acme", "demo", "feature%2Flogin")
+	gitTestCommand(t, primary, "worktree", "add", "-b", "feature/login", linked)
+	bogus := filepath.Join(scope, "acme", "demo", "bogus")
+	if err := os.MkdirAll(bogus, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(unrelated, ".git"), []byte("not a worktree"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(bogus, ".git"), []byte("not a git marker"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	outside := t.TempDir()
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(scope, "acme", "demo", "symlink-branch")); err != nil {
 		t.Fatal(err)
 	}
 
-	paths, err := discoverFilesystemWorktrees(filepath.Join(root, "test.invalid"))
+	paths, err := discoverFilesystemWorktrees(scope)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,53 +292,30 @@ func TestDiscoverFilesystemWorktreesIncludesDirectAnchorChildren(t *testing.T) {
 	for _, path := range paths {
 		seen[canonicalPath(path)] = true
 	}
-	if !seen[canonicalPath(repo)] || !seen[canonicalPath(child)] {
-		t.Fatalf("paths=%v want direct anchor %q and linked child %q", paths, repo, child)
+	if len(seen) != 2 || !seen[canonicalPath(primary)] || !seen[canonicalPath(linked)] {
+		t.Fatalf("paths=%v", paths)
 	}
-	if len(paths) != 2 {
-		t.Fatalf("paths=%v want only direct anchor and linked child", paths)
+	if got := filesystemBranch(scope, linked); got != "feature/login" {
+		t.Fatalf("filesystem branch=%q", got)
 	}
-	authoritative, err := discoverInventory(context.Background(), appConfig{root: root, domain: "test.invalid"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := make(map[string]bool)
-	for _, record := range authoritative.inScopeRecords() {
-		if liveInventoryRecord(record) {
-			want[canonicalPath(record.Path)] = true
+	state := filepath.Join(root, "state")
+	getenv := func(key string) string {
+		if key == "XDG_STATE_HOME" {
+			return state
 		}
+		return ""
 	}
-	if len(seen) != len(want) {
-		t.Fatalf("fast paths=%v authoritative live paths=%v", seen, want)
+	inv, store, _ := fastListInventory(context.Background(), appConfig{root: root, domain: "test.invalid", getenv: getenv}, io.Discard)
+	if store != nil {
+		defer store.close()
 	}
-	for path := range want {
-		if !seen[path] {
-			t.Fatalf("fast listing omitted live path %q", path)
+	if len(inv.records) != 2 {
+		t.Fatalf("fast inventory=%v", inv.records)
+	}
+	for _, record := range inv.records {
+		if !record.InScope || !record.Managed {
+			t.Fatalf("record flags=%+v", record)
 		}
-	}
-}
-
-func TestDiscoverFilesystemWorktreesExpandsDeepAnchorChildren(t *testing.T) {
-	root := t.TempDir()
-	anchor := filepath.Join(root, "test.invalid", "acme", "demo", "feature", "login")
-	gitTestCommand(t, "", "init", "--initial-branch=main", anchor)
-	gitTestCommand(t, anchor, "config", "user.name", "f test")
-	gitTestCommand(t, anchor, "config", "user.email", "f@example.invalid")
-	gitTestCommand(t, anchor, "config", "commit.gpgsign", "false")
-	gitTestCommand(t, anchor, "commit", "--allow-empty", "-m", "initial")
-	sibling := filepath.Join(root, "test.invalid", "acme", "demo", "feature", "other")
-	gitTestCommand(t, anchor, "worktree", "add", sibling, "--detach")
-
-	paths, err := discoverFilesystemWorktrees(filepath.Join(root, "test.invalid"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	seen := make(map[string]bool, len(paths))
-	for _, path := range paths {
-		seen[canonicalPath(path)] = true
-	}
-	if len(seen) != 2 || !seen[canonicalPath(anchor)] || !seen[canonicalPath(sibling)] {
-		t.Fatalf("paths=%v want deep anchor %q and its linked sibling %q", paths, anchor, sibling)
 	}
 }
 
@@ -332,7 +404,7 @@ func TestRunCreatesEscapedWorktreesAndListsAuthoritativeGit(t *testing.T) {
 	}
 }
 
-func TestRunFZFQueryCancellationAndTmuxFailures(t *testing.T) {
+func TestRunFZFSelectionQueryAndStatuses(t *testing.T) {
 	root, _ := setupLocalRemote(t)
 	state := filepath.Join(filepath.Dir(root), "state")
 	if code, _, stderr := invokeRun(t, root, state, "-e", "acme/demo/main"); code != 0 {
@@ -341,6 +413,7 @@ func TestRunFZFQueryCancellationAndTmuxFailures(t *testing.T) {
 	mainPath := filepath.Join(root, "test.invalid", "acme", "demo", "main")
 	tools := t.TempDir()
 	tmuxLog := filepath.Join(tools, "tmux.log")
+	argsLog := filepath.Join(tools, "fzf-args.log")
 	writeTool := func(name, content string) {
 		t.Helper()
 		path := filepath.Join(tools, name)
@@ -355,13 +428,18 @@ func TestRunFZFQueryCancellationAndTmuxFailures(t *testing.T) {
 		code := run(context.Background(), append([]string{"-r", root, "-g", "test.invalid"}, args...), strings.NewReader(input), &stdout, &stderr, testEnv(root, state), func() time.Time { return time.Unix(2_000_000_000, 0) })
 		return code, stdout.String(), stderr.String()
 	}
-	writeTool("fzf", fmt.Sprintf("#!/bin/sh\nprintf 'test.invalid/acme/demo/main\\ntest.invalid/acme/demo/main\\t%s\\n'\nexit 0\n", mainPath))
+	writeTool("fzf", fmt.Sprintf("#!/bin/sh\nprintf '%%s\\n' \"$*\" >> %q\nIFS= read -r row\nprintf '\\n%%s\\n' \"$row\"\nexit 0\n", argsLog))
 	code, _, stderr := runWithInput("", "-l")
-	if code != 0 || !strings.Contains(stderr, "") {
+	if code != 0 {
 		t.Fatalf("fzf select code=%d stderr=%s", code, stderr)
 	}
-	if data, err := os.ReadFile(tmuxLog); err != nil || !strings.Contains(string(data), "attach-session") {
-		t.Fatalf("tmux attach log=%q err=%v", data, err)
+	argsData, err := os.ReadFile(argsLog)
+	if err != nil || !strings.Contains(string(argsData), "--delimiter=\\t") || !strings.Contains(string(argsData), "--with-nth=1") {
+		t.Fatalf("fzf args=%q err=%v", argsData, err)
+	}
+	tmuxData, err := os.ReadFile(tmuxLog)
+	if err != nil || !strings.Contains(string(tmuxData), "new-session") || !strings.Contains(string(tmuxData), mainPath) {
+		t.Fatalf("tmux selection log=%q err=%v", tmuxData, err)
 	}
 	before, _ := os.ReadFile(tmuxLog)
 	writeTool("fzf", "#!/bin/sh\nexit 130\n")
@@ -372,17 +450,60 @@ func TestRunFZFQueryCancellationAndTmuxFailures(t *testing.T) {
 	if string(before) != string(after) {
 		t.Fatal("fzf cancellation opened tmux")
 	}
-	writeTool("fzf", "#!/bin/sh\nprintf 'acme/demo/newbranch\\n'\nexit 1\n")
+	writeTool("fzf", "#!/bin/sh\ncat >/dev/null\nprintf 'acme/demo/newbranch\\n'\nexit 1\n")
 	if code, _, stderr := runWithInput("", "-l"); code != 0 {
 		t.Fatalf("fzf query code=%d stderr=%s", code, stderr)
 	}
-	writeTool("fzf", "#!/bin/sh\nprintf 'acme/demo/bad..branch\\n'\nexit 1\n")
+	newPath := filepath.Join(root, "test.invalid", "acme", "demo", "newbranch")
+	if _, err := os.Stat(newPath); err != nil {
+		t.Fatalf("query-created worktree missing: %v", err)
+	}
+	writeTool("fzf", "#!/bin/sh\ncat >/dev/null\nprintf 'acme/demo/bad..branch\\n'\nexit 1\n")
 	if code, _, _ := runWithInput("", "-l"); code != 2 {
 		t.Fatalf("malformed fzf query code=%d", code)
 	}
 	writeTool("fzf", "#!/bin/sh\nexit 2\n")
 	if code, _, _ := runWithInput("", "-l"); code != 1 {
 		t.Fatalf("fzf error code=%d", code)
+	}
+}
+
+func TestTmuxSessionNameFallback(t *testing.T) {
+	tools := t.TempDir()
+	logPath := filepath.Join(tools, "tmux.log")
+	if err := os.WriteFile(filepath.Join(tools, "tmux"), []byte(fmt.Sprintf("#!/bin/sh\nprintf '%%s\\n' \"$*\" >> %q\ncase \"$1\" in has-session) exit 1;; list-panes) echo 'no server' >&2; exit 1;; esac\nexit 0\n", logPath)), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", tools+string(filepath.ListSeparator)+os.Getenv("PATH"))
+	path := filepath.Join(t.TempDir(), "outside")
+	if err := os.Mkdir(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cfg := appConfig{root: filepath.Join(t.TempDir(), "code"), domain: "test.invalid", getenv: func(key string) string {
+		if key == "TMUX" {
+			return "1"
+		}
+		return ""
+	}}
+	record := &inventoryRecord{gitWorktreeRecord: gitWorktreeRecord{Path: path, Branch: "branch"}}
+	want := tmuxSessionName(cfg, record)
+	if err := openTmux(context.Background(), cfg, record, strings.NewReader(""), io.Discard, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	_ = tmuxWorktreeActive(context.Background(), cfg, record)
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	var hasSessions []string
+	for _, line := range lines {
+		if strings.HasPrefix(line, "has-session ") {
+			hasSessions = append(hasSessions, line)
+		}
+	}
+	if len(hasSessions) != 2 || hasSessions[0] != "has-session -t "+want || hasSessions[1] != hasSessions[0] {
+		t.Fatalf("has-session calls=%v want %q", hasSessions, want)
 	}
 }
 

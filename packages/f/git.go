@@ -113,7 +113,7 @@ type gitWorktreeRecord struct {
 	PruneReason string
 }
 
-func parseWorktreePorcelain(data []byte) ([]gitWorktreeRecord, error) {
+func parseWorktreePorcelain(data []byte) []gitWorktreeRecord {
 	// Git's -z form uses NUL terminated records. Older Git releases retain
 	// newline separators between fields, so accept both forms without ever
 	// splitting a path on whitespace.
@@ -183,7 +183,7 @@ func parseWorktreePorcelain(data []byte) ([]gitWorktreeRecord, error) {
 		records[i].Path = canonicalPath(records[i].Path)
 		records[i].Primary = i == 0
 	}
-	return records, nil
+	return records
 }
 
 func gitWorktrees(ctx context.Context, anchor string) ([]gitWorktreeRecord, error) {
@@ -191,7 +191,7 @@ func gitWorktrees(ctx context.Context, anchor string) ([]gitWorktreeRecord, erro
 	if err != nil {
 		return nil, err
 	}
-	return parseWorktreePorcelain(out)
+	return parseWorktreePorcelain(out), nil
 }
 
 func gitStatusDirty(ctx context.Context, path string) (bool, error) {

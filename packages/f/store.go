@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -241,21 +240,16 @@ func (s *advisoryStore) marker(ctx context.Context) (bool, error) {
 }
 
 func (s *advisoryStore) reconcileFamily(ctx context.Context, family *repoFamily) error {
-	current, err := gitWorktrees(ctx, family.anchor)
-	if err != nil {
-		return err
+	if family == nil {
+		return fmt.Errorf("cannot reconcile an empty worktree family")
 	}
-	return s.reconcileFamilyRecords(ctx, family, current)
-}
-
-func (s *advisoryStore) reconcileFamilyRecords(ctx context.Context, family *repoFamily, current []gitWorktreeRecord) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
 	seen := make(map[string]struct{})
-	for _, record := range current {
+	for _, record := range family.records {
 		if record.Path == "" {
 			continue
 		}
@@ -375,42 +369,11 @@ func (s *advisoryStore) applyImport(ctx context.Context, scans []importScan, com
 	return summary, nil
 }
 
-func (s *advisoryStore) listRowsForCommon(ctx context.Context, common string) (map[string]struct{}, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT worktree_path FROM worktree_usage WHERE common_git_dir = ?", common)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := make(map[string]struct{})
-	for rows.Next() {
-		var path string
-		if err := rows.Scan(&path); err != nil {
-			return nil, err
-		}
-		out[canonicalPath(path)] = struct{}{}
-	}
-	return out, rows.Err()
-}
-
 func usageValue(rows map[usageKey]sql.NullInt64, common, path string) sql.NullInt64 {
 	if rows == nil {
 		return sql.NullInt64{}
 	}
 	return rows[usageKey{common: canonicalPath(common), path: canonicalPath(path)}]
-}
-
-func sortUsageKeys(rows map[usageKey]sql.NullInt64) []usageKey {
-	keys := make([]usageKey, 0, len(rows))
-	for key := range rows {
-		keys = append(keys, key)
-	}
-	sort.Slice(keys, func(i, j int) bool {
-		if keys[i].common == keys[j].common {
-			return keys[i].path < keys[j].path
-		}
-		return keys[i].common < keys[j].common
-	})
-	return keys
 }
 
 func canonicalPath(path string) string {
