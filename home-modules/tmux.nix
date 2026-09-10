@@ -5,6 +5,8 @@
   ...
 }:
 let
+  fEnabled = config.my.f.enable;
+
   # MRU tracking cache directory. Also referenced in tmux-metadata-preview.nix.
   cache_dir = "$HOME/.cache/tmux-session-history";
 
@@ -115,7 +117,7 @@ let
   '';
 
   tmux-session-picker = pkgs.writeShellScriptBin "tmux-session-picker" ''
-    session_list=$(${tmux-session-list})
+    session_list=$(${lib.getExe tmux-session-list})
 
     if [ -z "$session_list" ]; then
       ${pkgs.tmux}/bin/tmux display-message "No other sessions"
@@ -135,8 +137,8 @@ let
         --preview-window=right:60% \
         --header=$'enter: switch | ctrl-x: kill | ctrl-r: rename | ctrl-f: find' \
         --expect='ctrl-r' \
-        --bind="ctrl-f:become(${pkgs.f}/bin/f -l)" \
-        --bind="ctrl-x:execute-silent(${pkgs.tmux}/bin/tmux kill-session -t '{2}')+reload(tmux-session-list)" \
+        ${lib.optionalString fEnabled ''--bind="ctrl-f:become(${pkgs.f}/bin/f -l)" \''}
+        --bind="ctrl-x:execute-silent(${pkgs.tmux}/bin/tmux kill-session -t '{2}')+reload(${lib.getExe tmux-session-list})" \
         --no-sort \
         --border=none)
 
@@ -222,7 +224,7 @@ in
 
         # Better sessions
         ${
-          if config.my.f.enable then
+          if fEnabled then
             ''
               bind-key -r f display-popup -E -w 80% -h 80% "${pkgs.f}/bin/f -l"
             ''
@@ -235,13 +237,13 @@ in
         set-option -ga terminal-overrides ',xterm-256color:Tc'
 
         # Track session usage (MRU) - records timestamp when switching to a session
-        set-hook -g client-session-changed 'run-shell "${tmux-session-track} \"#{session_name}\""'
+        set-hook -g client-session-changed 'run-shell "${lib.getExe tmux-session-track} \"#{session_name}\""'
 
         # Clean up MRU tracking file when a session is destroyed
-        set-hook -g session-closed 'run-shell "${tmux-session-track-clean} \"#{hook_session}\""'
+        set-hook -g session-closed 'run-shell "${lib.getExe tmux-session-track-clean} \"#{hook_session}\""'
 
         # fzf session picker
-        bind s display-popup -E -w 80% -h 80% "${tmux-session-picker}"
+        bind s display-popup -E -w 80% -h 80% "${lib.getExe tmux-session-picker}"
 
         # Enable scrolling
         set -g mouse on

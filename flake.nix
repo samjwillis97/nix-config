@@ -133,7 +133,7 @@
     httpcraft = {
       url = "github:samjwillis97/shc-ai";
       inputs = {
-        nixpkgs.follows = "nixpkgs";
+        # nixpkgs.follows = "nixpkgs";
       };
     };
 

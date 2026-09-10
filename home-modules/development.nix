@@ -47,7 +47,7 @@ in
           jless
 
           # Http tooling
-          httpcraft
+          # httpcraft
 
           # Nix tooling
           nix-auth
