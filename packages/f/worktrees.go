@@ -734,6 +734,7 @@ func addWorktree(ctx context.Context, cfg appConfig, spec targetSpec, family *re
 		return nil, family, err
 	}
 	var args []string
+	configurePush := false
 	if local {
 		args = worktreeAddArgs(spec.path, spec.branch, true, false, "")
 	} else {
@@ -762,10 +763,19 @@ func addWorktree(ctx context.Context, cfg appConfig, spec targetSpec, family *re
 				return nil, family, fmt.Errorf("origin/%s is not available after fetch", defaultBranch)
 			}
 			args = worktreeAddArgs(spec.path, spec.branch, false, false, defaultBranch)
+			configurePush = true
 		}
 	}
 	if err := gitRun(ctx, family.anchor, args, nil, io.Discard, stderr); err != nil {
 		return nil, family, err
+	}
+	if configurePush {
+		if err := gitRun(ctx, family.anchor, []string{"config", "branch." + spec.branch + ".remote", "origin"}, nil, io.Discard, stderr); err != nil {
+			return nil, family, err
+		}
+		if err := gitRun(ctx, family.anchor, []string{"config", "branch." + spec.branch + ".merge", "refs/heads/" + spec.branch}, nil, io.Discard, stderr); err != nil {
+			return nil, family, err
+		}
 	}
 	fresh, err := enumerateFamily(ctx, family.anchor, scopeRoot(cfg))
 	if err != nil {
