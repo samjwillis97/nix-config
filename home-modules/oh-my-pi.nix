@@ -116,7 +116,7 @@ let
           task = "openai-codex/gpt-5.6-luna:high";
           smol = "openai-codex/gpt-5.6-luna:low";
           slow = "openai-codex/gpt-5.6-terra:high";
-          plan = "openai-codex/gpt-5.6-terra:high";
+          plan = "openai-codex/gpt-6-astra:high";
           tiny = "openai-codex/gpt-5.4-nano";
           commit = "openai-codex/gpt-5.4-nano";
         }
