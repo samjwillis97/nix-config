@@ -237,7 +237,7 @@
           treefmt = {
             programs = {
               nixfmt.enable = true;
-              shellcheck.enable = false;
+              shellcheck.enable = true;
               prettier.enable = true;
               gofmt.enable = true;
             };

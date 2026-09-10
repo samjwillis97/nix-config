@@ -88,6 +88,23 @@ if [ -n "$session_name" ]; then
   lines+=("${dim}Path:     ${reset}${session_path}")
   lines+=("${dim}Created:  ${reset}${yellow}${created_label}${reset}")
   lines+=("${dim}Activity: ${reset}${yellow}${activity_label}${reset}")
+  lines+=("")
+  lines+=("${dim}Windows and panes:${reset}")
+  current_window=""
+  while IFS=$'\t' read -r window_index window_name pane_index pane_command pane_path pane_active; do
+    if [ "$window_index" != "$current_window" ]; then
+      lines+=("${dim}Window ${reset}${bold}${window_index}: ${window_name}${reset}")
+      current_window="$window_index"
+    fi
+
+    pane_marker=" "
+    if [ "$pane_active" -eq 1 ]; then
+      pane_marker="*"
+    fi
+    lines+=("  ${dim}${pane_marker} ${window_index}.${pane_index} ${reset}${cyan}${pane_command}${reset} ${dim}${pane_path}${reset}")
+  done < <(
+    tmux list-panes -s -t "$session_target" -F '#{window_index}	#{window_name}	#{pane_index}	#{pane_current_command}	#{pane_current_path}	#{pane_active}' 2>/dev/null
+  )
   lines+=("${dim}──────────────────────────────────────${reset}")
 else
   dim=$'\033[2m'
