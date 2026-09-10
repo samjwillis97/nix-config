@@ -468,6 +468,17 @@ func TestRunFZFSelectionQueryAndStatuses(t *testing.T) {
 	}
 }
 
+func TestTmuxSessionNameUsesRepositoryAndBranch(t *testing.T) {
+	cfg := appConfig{root: filepath.Join(t.TempDir(), "code"), domain: "github.com"}
+	record := &inventoryRecord{gitWorktreeRecord: gitWorktreeRecord{
+		Path:   filepath.Join(cfg.root, cfg.domain, "acme", "demo", "feature%2Flogin"),
+		Branch: "feature/login",
+	}}
+	if got, want := tmuxSessionName(cfg, record), "acme/demo/feature/login"; got != want {
+		t.Fatalf("tmux session name = %q, want %q", got, want)
+	}
+}
+
 func TestTmuxSessionNameFallback(t *testing.T) {
 	tools := t.TempDir()
 	logPath := filepath.Join(tools, "tmux.log")
@@ -486,7 +497,7 @@ func TestTmuxSessionNameFallback(t *testing.T) {
 		return ""
 	}}
 	record := &inventoryRecord{gitWorktreeRecord: gitWorktreeRecord{Path: path, Branch: "branch"}}
-	want := tmuxSessionName(cfg, record)
+	want := "branch"
 	if err := openTmux(context.Background(), cfg, record, strings.NewReader(""), io.Discard, io.Discard); err != nil {
 		t.Fatal(err)
 	}
