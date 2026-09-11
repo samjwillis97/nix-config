@@ -228,6 +228,7 @@
           devShells.default = pkgs.mkShell {
             shellHook = ''
               ${config.pre-commit.shellHook}
+              export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
               echo 1>&2 "Welcome to the development shell!"
             '';
 
