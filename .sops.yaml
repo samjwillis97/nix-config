@@ -3,6 +3,8 @@ keys:
   - &sam-personal-mac age19d25uasev50j02yjt574dt5t7ehzvftz0xsk4l4393vk7wh9udasxfkcrm
   - &staging-vm age1v9tm9nunv6gsvf4kkj5emm8nw5elnh7z79hsa9fzd6j9v52zy46slj0e0g
   - &teeny age16egjqzlqfukmyxgp3a60cr0xnheg9cw3gwzl5569hh2szyxhw5ksae60ug
+  - &wsl-personal age1ufx37x8dcwlx043w74q242kkr8r8hscrgqrnhce3e27dhysn4vesvlvtfk
+  - &sam-wsl-personal age1r0l9rjncdf6jvuujvvg6ps0wufs3aag3d5ysugqcv02laf3g840sel3s63
 
 creation_rules:
   - path_regex: ^secrets/development/secrets\.yaml$
@@ -10,6 +12,7 @@ creation_rules:
       - age:
           - *sam
           - *sam-personal-mac
+          - *sam-wsl-personal
           - *staging-vm
   - path_regex: ^secrets/media/secrets\.yaml$
     key_groups:
@@ -22,6 +25,7 @@ creation_rules:
       - age:
           - *sam
           - *sam-personal-mac
+          - *wsl-personal
           - *staging-vm
           - *teeny
   - path_regex: ^secrets/terranix/cloudflare\.yaml$
