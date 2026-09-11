@@ -6,14 +6,14 @@ This repository manages secrets with [SOPS](https://getsops.io/) and [sops-nix](
 
 There are two types of age identity:
 
-- **Editor identity:** belongs to a person or workstation and normally lives at `~/.config/sops/age/keys.txt`. It is used by the `sops` CLI to create, edit, and rekey files.
-- **Machine identity:** belongs to one NixOS machine and lives at `/var/lib/sops-nix/key.txt`. It is used by `sops-install-secrets.service` during activation.
+- **User/workstation identity:** belongs to one user on one workstation and normally lives at `~/.config/sops/age/keys.txt`. Home Manager uses it to decrypt user-owned secrets, and the `sops` CLI can use it to edit and rekey files.
+- **System machine identity:** belongs to one NixOS machine and lives at `/var/lib/sops-nix/key.txt`. It is used by `sops-install-secrets.service` to decrypt system and service secrets during activation.
 
 Only public `age1...` recipients belong in `.sops.yaml`. Never commit an `AGE-SECRET-KEY-...` identity.
 
-A SOPS file is encrypted to every recipient listed in its creation rule. Any one of those recipients can decrypt it. Normally each rule contains at least one editor recipient for recovery and the machine recipients that need that secret group.
+A SOPS file is encrypted to every recipient listed in its creation rule. Any one of those recipients can decrypt it. Keep user recipients on user-owned secret groups and system recipients on service-owned groups. Include an independently backed-up editor recipient for recovery.
 
-The NixOS module in `nixos-modules/sops.nix` generates a machine identity when one does not already exist:
+The NixOS module in `nixos-modules/sops.nix` generates a system machine identity when one does not already exist:
 
 ```nix
 sops.age = {
@@ -22,11 +22,11 @@ sops.age = {
 };
 ```
 
-The generated identity persists with the machine's storage. Deleting a VM disk also deletes its machine identity; use an editor identity to rekey its SOPS files to the replacement machine.
+The generated identity persists with the machine's storage. Deleting a VM disk also deletes its system identity; use an editor identity to rekey its SOPS files to the replacement machine.
 
 ## Repository layout
 
-Each secret group has an encrypted data file and a NixOS module declaring the runtime files to create:
+Each secret group has an encrypted data file and a Nix module declaring the runtime files to create:
 
 ```text
 .sops.yaml
@@ -52,6 +52,8 @@ Decrypted values are written to `/run/secrets` by default. Consumers must use th
 config.sops.secrets."tailscale-auth-key".path
 ```
 
+Keep secret ownership aligned with its consumer. NixOS services decrypt through the system machine identity, while Home Manager decrypts user credentials through the user's workstation identity. On `wsl-personal`, Tailscale uses the system identity and `sam`'s Git identity uses the separate Home Manager identity.
+
 ## Prerequisites
 
 Enter the development shell before running SOPS commands:
@@ -60,9 +62,9 @@ Enter the development shell before running SOPS commands:
 nix develop
 ```
 
-The shell provides `age` and `sops`. SOPS automatically discovers the editor identity at `~/.config/sops/age/keys.txt`.
+The shell provides `age` and `sops`. SOPS automatically discovers the current user's identity at `~/.config/sops/age/keys.txt`.
 
-To create a new editor identity:
+To create a new user/workstation identity:
 
 ```bash
 mkdir -p ~/.config/sops/age
@@ -72,37 +74,52 @@ chmod 600 ~/.config/sops/age/keys.txt
 age-keygen -y ~/.config/sops/age/keys.txt
 ```
 
-Back up the private editor identity securely. Losing every private identity listed for a file makes that file unrecoverable.
+Back up editor identities securely. A runtime-only workstation identity can instead be replaced by creating a new identity and rekeying its secret groups with an editor identity. Losing every private identity listed for a file makes that file unrecoverable.
 
 ## Adding a new machine
 
-### 1. Bootstrap its machine identity
+### 1. Bootstrap its system identity
 
-Ensure the machine imports `nixos-modules/sops.nix`, but do not yet import secret groups it cannot decrypt. Build and boot it once. During activation, sops-nix creates:
+A machine cannot activate a configuration that imports encrypted system secret groups until its private identity exists and its public recipient has been added to those groups. Create the identity explicitly on the new machine before its first secret-enabled activation. A secret-free activation is not sufficient because sops-nix only generates its age key when at least one secret is declared.
 
-```text
-/var/lib/sops-nix/key.txt
-```
-
-Obtain its public recipient on the machine:
+To pre-provision the identity:
 
 ```bash
-sudo age-keygen -y /var/lib/sops-nix/key.txt
+age_keygen="$(nix build --no-link --print-out-paths nixpkgs#age)/bin/age-keygen"
+sudo install -d -m 0700 /var/lib/sops-nix
+sudo "$age_keygen" -o /var/lib/sops-nix/key.txt
+sudo chmod 0600 /var/lib/sops-nix/key.txt
+sudo "$age_keygen" -y /var/lib/sops-nix/key.txt
 ```
 
-This prints only the public `age1...` recipient.
+The final command prints only the public `age1...` system recipient. Keep the private identity on the machine; do not copy it into the repository or reuse another machine's identity.
 
-### 2. Register the public recipient
+### 2. Bootstrap its Home Manager user identity
 
-Add an anchor under `keys` in `.sops.yaml`:
+For a workstation user with Home Manager secrets, create a second identity as that user:
+
+```bash
+age_keygen="$(nix build --no-link --print-out-paths nixpkgs#age)/bin/age-keygen"
+install -d -m 0700 ~/.config/sops/age
+"$age_keygen" -o ~/.config/sops/age/keys.txt
+chmod 0600 ~/.config/sops/age/keys.txt
+"$age_keygen" -y ~/.config/sops/age/keys.txt
+```
+
+The final command prints the public user recipient. Keep this key distinct from `/var/lib/sops-nix/key.txt`; do not copy an existing editor or workstation identity into the new user's home.
+
+### 3. Register the public recipients
+
+Add separate anchors under `keys` in `.sops.yaml`:
 
 ```yaml
 keys:
   - &desktop age1EDITOR_RECIPIENT
-  - &new-machine age1NEW_MACHINE_RECIPIENT
+  - &new-machine-system age1NEW_SYSTEM_RECIPIENT
+  - &new-machine-user age1NEW_USER_RECIPIENT
 ```
 
-Add that anchor only to creation rules for groups the machine needs:
+Add the system anchor only to service-owned groups:
 
 ```yaml
 creation_rules:
@@ -110,12 +127,22 @@ creation_rules:
     key_groups:
       - age:
           - *desktop
-          - *new-machine
+          - *new-machine-system
+```
+
+Add the user anchor only to Home Manager groups:
+
+```yaml
+  - path_regex: ^secrets/development/secrets\.yaml$
+    key_groups:
+      - age:
+          - *desktop
+          - *new-machine-user
 ```
 
 Keep alternative recipients under the same `age` entry. Multiple separate age key groups introduce threshold semantics rather than alternative recipients.
 
-### 3. Rekey existing files
+### 4. Rekey existing files
 
 Changing `.sops.yaml` does not modify existing encrypted files. Update each affected file:
 
@@ -123,9 +150,16 @@ Changing `.sops.yaml` does not modify existing encrypted files. Update each affe
 sops updatekeys --yes secrets/tailscale/secrets.yaml
 ```
 
+The `wsl-personal` host consumes both groups through different identities: add its system recipient only to the Tailscale rule and `sam`'s user recipient only to the development rule. Rekey both before the first activation:
+
+```bash
+sops updatekeys --yes secrets/tailscale/secrets.yaml
+sops updatekeys --yes secrets/development/secrets.yaml
+```
+
 The command must be run while an identity that can decrypt the current file is still available. Do not remove or destroy the old identity before rekeying and verifying.
 
-### 4. Import the group and rebuild
+### 5. Import the group and rebuild
 
 Add the group to the machine's imports:
 
@@ -152,7 +186,8 @@ After activation, verify without printing secret contents:
 
 ```bash
 sudo systemctl status sops-install-secrets.service
-sudo test -r /run/secrets/<secret-name>
+sudo test -r /run/secrets/<system-secret-name>
+test -r ~/.config/sops-nix/secrets/<home-secret-name>
 ```
 
 ## Creating a new secret in an existing group

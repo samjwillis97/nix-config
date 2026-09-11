@@ -1,7 +1,13 @@
-{ inputs, ... }:
+{
+  config,
+  inputs,
+  secretModules,
+  ...
+}:
 {
   imports = [
     inputs.nixos-wsl.nixosModules.default
+    secretModules.tailscale
   ];
 
   config = {
@@ -17,6 +23,13 @@
     my = {
       users = [ "sam" ];
       dix.enable = true;
+      home-manager.enable = true;
+      styling.enable = true;
+
+      tailscale = {
+        enable = true;
+        authKeyFile = config.sops.secrets."tailscale-auth-key".path;
+      };
     };
   };
 }

@@ -27,6 +27,11 @@
           authKeyFile = config.my.tailscale.authKeyFile;
         };
 
+        systemd.services.tailscaled-autoconnect = lib.mkIf (config.sops.secrets != { }) {
+          after = [ "sops-install-secrets.service" ];
+          requires = [ "sops-install-secrets.service" ];
+        };
+
         networking.firewall = {
           enable = true;
           trustedInterfaces = [ "tailscale0" ];
