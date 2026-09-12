@@ -1,0 +1,89 @@
+{
+  "name": "httpcraft",
+  "version": "1.0.0",
+  "description": "A powerful command-line HTTP client with YAML configuration, variable substitution, request chaining, and OAuth2 authentication support",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "httpcraft": "dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "schemas/**/*",
+    "examples/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "node --loader ts-node/esm src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:coverage:watch": "vitest --coverage",
+    "test:coverage:ui": "vitest --coverage --ui",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/samjwillis97/httpcraft.git"
+  },
+  "keywords": [
+    "http",
+    "cli",
+    "api",
+    "testing",
+    "oauth2",
+    "yaml",
+    "configuration",
+    "rest",
+    "client"
+  ],
+  "author": "Samuel Willis",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/samjwillis97/httpcraft/issues"
+  },
+  "homepage": "https://github.com/samjwillis97/httpcraft#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "@types/glob": "^8.1.0",
+    "@types/jsonpath-plus": "^5.0.5",
+    "@types/keytar": "^4.4.0",
+    "@types/node": "^22.15.29",
+    "@typescript-eslint/eslint-plugin": "^8.33.0",
+    "@typescript-eslint/parser": "^8.33.0",
+    "@vitest/coverage-v8": "^3.2.2",
+    "@vitest/ui": "^3.2.2",
+    "ajv": "^8.17.1",
+    "eslint": "^9.28.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.4.1",
+    "glob": "^11.0.0",
+    "prettier": "^3.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4",
+    "zod": "^3.25.56"
+  },
+  "dependencies": {
+    "@types/axios": "^0.9.36",
+    "@types/js-yaml": "^4.0.9",
+    "@types/xml2js": "^0.4.14",
+    "@types/yargs": "^17.0.33",
+    "axios": "^1.9.0",
+    "dayjs": "^1.11.13",
+    "js-yaml": "^4.1.0",
+    "jsonpath-plus": "^10.3.0",
+    "keytar": "^7.9.0",
+    "open": "^10.1.2",
+    "xml2js": "^0.6.2",
+    "yargs": "^18.0.0"
+  }
+}

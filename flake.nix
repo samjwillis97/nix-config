@@ -130,13 +130,6 @@
       };
     };
 
-    httpcraft = {
-      url = "github:samjwillis97/shc-ai";
-      inputs = {
-        # nixpkgs.follows = "nixpkgs";
-      };
-    };
-
     # Code formatter
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -188,6 +181,7 @@
         {
           packages = {
             f = pkgs.callPackage ./packages/f { };
+            httpcraft = pkgs.callPackage ./packages/httpcraft { };
             neovim = self.lib.mkNeovim {
               pkgs = nvimPkgs;
             };
@@ -196,6 +190,8 @@
               modules = [ ./packages/neovim/profiles/full.nix ];
             };
           };
+
+          checks.httpcraft = config.packages.httpcraft.tests.smoke;
 
           apps.deploy = inputs.deploy-rs.apps.${pkgs.stdenv.hostPlatform.system}.default;
 
@@ -285,7 +281,14 @@
 
                 # Remote deployment
                 deploy-rs
-              ]);
+
+                # HttpCraft development
+                nodejs_22
+                python3
+              ])
+              ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.pkg-config ];
+
+            buildInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.libsecret ];
           };
         };
     };
