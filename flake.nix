@@ -285,10 +285,7 @@
                 # HttpCraft development
                 nodejs_22
                 python3
-              ])
-              ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.pkg-config ];
-
-            buildInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.libsecret ];
+              ]);
           };
         };
     };

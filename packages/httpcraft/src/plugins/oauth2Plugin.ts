@@ -11,7 +11,7 @@ import http from 'http';
 import { URL } from 'url';
 import axios from 'axios';
 import open from 'open';
-import keytar from 'keytar';
+import * as keytar from '@napi-rs/keyring/keytar.js';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';

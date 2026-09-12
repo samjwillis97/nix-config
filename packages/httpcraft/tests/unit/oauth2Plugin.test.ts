@@ -19,14 +19,13 @@ vi.mock('crypto', () => ({
   ...mockCrypto,
 }));
 
-// Mock keytar module
+// Mock keyring module
 const mockKeytar = {
   getPassword: vi.fn(),
   setPassword: vi.fn(),
   deletePassword: vi.fn(),
 };
-vi.mock('keytar', () => ({
-  default: mockKeytar,
+vi.mock('@napi-rs/keyring/keytar.js', () => ({
   ...mockKeytar,
 }));
 

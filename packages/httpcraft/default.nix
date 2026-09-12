@@ -1,10 +1,7 @@
 {
   lib,
-  stdenv,
   buildNpmPackage,
   nodejs_22,
-  pkg-config,
-  libsecret,
   runCommand,
   python3,
 }:
@@ -27,36 +24,10 @@ let
       ];
     };
 
-    npmDepsHash = "sha256-h9Tyh0HAzLvn20mGIYHmKFyu/0nHWRa83XqC6HWd2+0=";
+    npmDepsHash = "sha256-WXqMVIiuj/IGnLl5NgR+c3cjRIj76+qiKHKpEtpN8CE=";
     npmBuildScript = "build";
     npmPackFlags = [ "--ignore-scripts" ];
     npmDepsFetcherVersion = 1;
-    env.npm_config_build_from_source = "true";
-    # keytar 7.9.0's node-addon-api 4.3.0 uses an out-of-range enum sentinel
-    # rejected by current Clang. Skip the generic rebuild, patch that dependency,
-    # then rebuild keytar explicitly before the normal TypeScript build.
-    npmRebuildFlags = [ "--ignore-scripts" ];
-    preBuild = ''
-      substituteInPlace node_modules/node-addon-api/napi.h \
-        --replace-fail \
-          '    static const napi_typedarray_type unknown_array_type = static_cast<napi_typedarray_type>(-1);' \
-          '    static const int unknown_array_type = -1;'
-      substituteInPlace node_modules/node-addon-api/napi.h \
-        --replace-fail \
-          '        : unknown_array_type;' \
-          '        : static_cast<napi_typedarray_type>(unknown_array_type);'
-      substituteInPlace node_modules/node-addon-api/napi-inl.h \
-        --replace-fail \
-          '_type(TypedArray::unknown_array_type)' \
-          '_type(static_cast<napi_typedarray_type>(TypedArray::unknown_array_type))'
-      substituteInPlace node_modules/node-addon-api/napi-inl.h \
-        --replace-fail \
-          'if (_type == TypedArray::unknown_array_type)' \
-          'if (_type == static_cast<napi_typedarray_type>(TypedArray::unknown_array_type))'
-      npm rebuild --offline keytar
-    '';
-    nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [ pkg-config ];
-    buildInputs = lib.optionals stdenv.hostPlatform.isLinux [ libsecret ];
 
     passthru.tests.smoke =
       runCommand "httpcraft-smoke"
