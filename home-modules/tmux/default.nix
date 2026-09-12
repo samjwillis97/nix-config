@@ -4,6 +4,13 @@
   pkgs,
   ...
 }:
+let
+  fEnabled = config.my.f.enable;
+
+  scripts = import ./scripts.nix {
+    inherit lib pkgs fEnabled;
+  };
+in
 {
   options.my.tmux = {
     enable = lib.mkEnableOption "tmux";
@@ -61,7 +68,7 @@
 
         # Better sessions
         ${
-          if config.my.f.enable then
+          if fEnabled then
             ''
               bind-key -r f display-popup -E -w 80% -h 80% "${pkgs.f}/bin/f -l"
             ''
@@ -72,6 +79,15 @@
         # Enabled 256 Color
         set -g default-terminal "tmux-256color"
         set-option -ga terminal-overrides ',xterm-256color:Tc'
+
+        # Track session usage (MRU) - records timestamp when switching to a session
+        set-hook -g client-session-changed 'run-shell "${lib.getExe scripts.tmux-session-track} \"#{session_name}\""'
+
+        # Clean up MRU tracking file when a session is destroyed
+        set-hook -g session-closed 'run-shell "${lib.getExe scripts.tmux-session-track-clean} \"#{hook_session}\""'
+
+        # fzf session picker
+        bind s display-popup -E -w 80% -h 80% "${lib.getExe scripts.tmux-session-picker}"
 
         # Enable scrolling
         set -g mouse on

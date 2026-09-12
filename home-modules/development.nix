@@ -46,6 +46,11 @@ in
           jq
           jless
 
+          # Http tooling
+          httpcraft
+
+          # Nix tooling
+          nix-auth
         ];
 
         programs = {

@@ -1,0 +1,95 @@
+# examples/features/profiles/multiple_profiles.yaml
+# Demonstrates multiple profiles and Phase 13 enhanced profile merging
+#
+# Phase 13 Enhanced Behavior:
+# - If config.defaultProfile is set, CLI profiles are ADDED to default profiles
+# - Use --no-default-profile to get the old behavior (CLI profiles only)
+# - Example: with defaultProfile: ["env_prod", "region_us_east"]
+#   httpcraft --profile user_admin ...
+#   combines: env_prod + region_us_east + user_admin
+#
+# Old behavior (pre-Phase 13):
+# httpcraft --profile env_prod --profile region_us_east --profile user_admin ...
+#
+# New equivalent with --no-default-profile:
+# httpcraft --no-default-profile --profile env_prod --profile region_us_east --profile user_admin ...
+
+# Optional: Set default profiles for improved UX
+# config:
+#   defaultProfile: ["env_prod", "region_us_east"]  # Uncomment to enable enhanced merging
+
+profiles:
+  env_prod:
+    baseUrl: 'https://prod.example.com/api'
+    logLevel: 'INFO'
+  env_dev:
+    baseUrl: 'https://dev.example.com/api'
+    logLevel: 'DEBUG'
+
+  region_us_east:
+    datacenter: 'use1'
+    latencyTarget: '100ms'
+  region_eu_west:
+    datacenter: 'euw1'
+    latencyTarget: '150ms'
+
+  user_admin:
+    role: 'admin'
+    apiKey: 'admin_secret_key'
+  user_viewer:
+    role: 'viewer'
+    apiKey: 'viewer_public_key'
+
+apis:
+  # API definitions pick up variables like {{profile.baseUrl}}, {{profile.apiKey}} etc.
+  # The effective value depends on which profiles are active and the merge strategy.
+  #
+  # Profile Precedence (Phase 13):
+  # 1. Default profiles (if config.defaultProfile is set)
+  # 2. CLI profiles (in order specified)
+  # Later profiles override earlier ones for the same variable.
+  #
+  # Examples:
+  # - With defaultProfile: ["env_prod", "region_us_east"]
+  #   httpcraft --profile user_admin ...
+  #   Result: env_prod → region_us_east → user_admin
+  #   Variables: baseUrl from env_prod, datacenter from region_us_east, role/apiKey from user_admin
+  #
+  # - Override default profiles:
+  #   httpcraft --no-default-profile --profile env_dev --profile user_admin ...
+  #   Result: env_dev → user_admin (no default profiles)
+  #
+  # - Multiple CLI profiles:
+  #   httpcraft --profile user_admin --profile env_dev ...
+  #   Result: env_prod → region_us_east → user_admin → env_dev
+  #   (env_dev overrides env_prod baseUrl and logLevel)
+
+  metricsService:
+    baseUrl: '{{profile.baseUrl}}' # Will be from env_prod, env_dev, etc.
+    endpoints:
+      getLogs:
+        path: '/logs'
+        params:
+          level: '{{profile.logLevel}}' # From environment profile
+          datacenter: '{{profile.datacenter}}' # From region profile
+        headers:
+          X-Api-Key: '{{profile.apiKey}}' # From user profile
+          X-User-Role: '{{profile.role}}' # From user profile
+
+
+# Usage Examples:
+#
+# Traditional explicit approach (still works):
+# httpcraft --profile env_prod --profile region_us_east --profile user_admin metricsService getLogs
+#
+# Enhanced approach with config.defaultProfile: ["env_prod", "region_us_east"]:
+# httpcraft --profile user_admin metricsService getLogs  # Shorter, easier!
+#
+# Switch environment while keeping defaults:
+# httpcraft --profile env_dev --profile user_admin metricsService getLogs
+# Result: env_prod → region_us_east → env_dev → user_admin
+# (env_dev overrides env_prod settings)
+#
+# Override defaults entirely:
+# httpcraft --no-default-profile --profile env_dev --profile user_admin metricsService getLogs
+# Result: env_dev → user_admin (no default profiles)

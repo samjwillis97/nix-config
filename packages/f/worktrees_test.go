@@ -351,7 +351,7 @@ func TestRunListDoesNotReconcileGitBeforePrinting(t *testing.T) {
 }
 
 func TestRunCreatesEscapedWorktreesAndListsAuthoritativeGit(t *testing.T) {
-	root, _ := setupLocalRemote(t)
+	root, bare := setupLocalRemote(t)
 	state := filepath.Join(filepath.Dir(root), "state")
 	code, out, stderr := invokeRun(t, root, state, "-e", "acme/demo/main")
 	if code != 0 {
@@ -376,6 +376,22 @@ func TestRunCreatesEscapedWorktreesAndListsAuthoritativeGit(t *testing.T) {
 	if branch != "feature/login" {
 		t.Fatalf("branch=%q", branch)
 	}
+	gitTestCommand(t, featurePath, "config", "user.name", "f test")
+	gitTestCommand(t, featurePath, "config", "user.email", "f@example.invalid")
+	gitTestCommand(t, featurePath, "config", "commit.gpgsign", "false")
+	gitTestCommand(t, featurePath, "config", "push.default", "simple")
+	gitTestCommand(t, featurePath, "config", "push.autoSetupRemote", "false")
+	if err := os.WriteFile(filepath.Join(featurePath, "pushed.txt"), []byte("pushed\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	gitTestCommand(t, featurePath, "add", "pushed.txt")
+	gitTestCommand(t, featurePath, "commit", "-m", "push branch")
+	gitTestCommand(t, featurePath, "push")
+	upstream := strings.TrimSpace(gitTestCommand(t, featurePath, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"))
+	if upstream != "origin/feature/login" {
+		t.Fatalf("upstream=%q want origin/feature/login", upstream)
+	}
+	gitTestCommand(t, bare, "show-ref", "--verify", "refs/heads/feature/login")
 	if _, err := os.Stat(filepath.Join(featurePath, "local-only")); !os.IsNotExist(err) {
 		t.Fatalf("untracked file copied into linked worktree: err=%v", err)
 	}
@@ -468,6 +484,17 @@ func TestRunFZFSelectionQueryAndStatuses(t *testing.T) {
 	}
 }
 
+func TestTmuxSessionNameUsesRepositoryAndBranch(t *testing.T) {
+	cfg := appConfig{root: filepath.Join(t.TempDir(), "code"), domain: "github.com"}
+	record := &inventoryRecord{gitWorktreeRecord: gitWorktreeRecord{
+		Path:   filepath.Join(cfg.root, cfg.domain, "acme", "demo", "feature%2Flogin"),
+		Branch: "feature/login",
+	}}
+	if got, want := tmuxSessionName(cfg, record), "acme/demo/feature/login"; got != want {
+		t.Fatalf("tmux session name = %q, want %q", got, want)
+	}
+}
+
 func TestTmuxSessionNameFallback(t *testing.T) {
 	tools := t.TempDir()
 	logPath := filepath.Join(tools, "tmux.log")
@@ -486,7 +513,7 @@ func TestTmuxSessionNameFallback(t *testing.T) {
 		return ""
 	}}
 	record := &inventoryRecord{gitWorktreeRecord: gitWorktreeRecord{Path: path, Branch: "branch"}}
-	want := tmuxSessionName(cfg, record)
+	want := "branch"
 	if err := openTmux(context.Background(), cfg, record, strings.NewReader(""), io.Discard, io.Discard); err != nil {
 		t.Fatal(err)
 	}

@@ -4,9 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -736,6 +734,7 @@ func addWorktree(ctx context.Context, cfg appConfig, spec targetSpec, family *re
 		return nil, family, err
 	}
 	var args []string
+	configurePush := false
 	if local {
 		args = worktreeAddArgs(spec.path, spec.branch, true, false, "")
 	} else {
@@ -764,10 +763,19 @@ func addWorktree(ctx context.Context, cfg appConfig, spec targetSpec, family *re
 				return nil, family, fmt.Errorf("origin/%s is not available after fetch", defaultBranch)
 			}
 			args = worktreeAddArgs(spec.path, spec.branch, false, false, defaultBranch)
+			configurePush = true
 		}
 	}
 	if err := gitRun(ctx, family.anchor, args, nil, io.Discard, stderr); err != nil {
 		return nil, family, err
+	}
+	if configurePush {
+		if err := gitRun(ctx, family.anchor, []string{"config", "branch." + spec.branch + ".remote", "origin"}, nil, io.Discard, stderr); err != nil {
+			return nil, family, err
+		}
+		if err := gitRun(ctx, family.anchor, []string{"config", "branch." + spec.branch + ".merge", "refs/heads/" + spec.branch}, nil, io.Discard, stderr); err != nil {
+			return nil, family, err
+		}
 	}
 	fresh, err := enumerateFamily(ctx, family.anchor, scopeRoot(cfg))
 	if err != nil {
@@ -1062,29 +1070,17 @@ func tmuxSessionName(cfg appConfig, record *inventoryRecord) string {
 	if branch == "" {
 		branch = "detached-" + record.HEAD
 	}
-	slug := cfg.domain + "-" + branch
+	name := branch
 	if pathInside(record.Path, scopeRoot(cfg)) {
 		if rel, err := filepath.Rel(scopeRoot(cfg), record.Path); err == nil {
 			parts := strings.Split(rel, string(filepath.Separator))
 			if len(parts) >= 2 {
-				slug = parts[0] + "-" + parts[1] + "-" + branch
+				name = strings.Join(parts[:2], "/") + "/" + branch
 			}
 		}
 	}
-	var b strings.Builder
-	for _, r := range slug {
-		if (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' || r == '-' {
-			b.WriteRune(r)
-		} else {
-			b.WriteByte('-')
-		}
-	}
-	slugBytes := []byte(b.String())
-	if len(slugBytes) > 48 {
-		slugBytes = slugBytes[:48]
-	}
-	hash := sha256.Sum256([]byte(canonicalPath(record.Path)))
-	return "f-" + string(slugBytes) + "-" + hex.EncodeToString(hash[:])[:12]
+	// tmux normalizes dots in session names to underscores.
+	return strings.ReplaceAll(name, ".", "_")
 }
 
 func recordUsage(ctx context.Context, store *advisoryStore, record *inventoryRecord, now func() time.Time, stderr io.Writer) {

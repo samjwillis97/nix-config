@@ -2,6 +2,8 @@
   description = "My main nix config";
 
   inputs = {
+    systems.url = "github:nix-systems/default";
+
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
@@ -16,6 +18,16 @@
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";
+      };
+    };
+
+    # Authenticated nix github interactions
+    nix-auth = {
+      url = "github:numtide/nix-auth";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+        treefmt-nix.follows = "treefmt-nix";
       };
     };
 
@@ -61,6 +73,7 @@
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";
+        systems.follows = "systems";
       };
     };
 
@@ -76,6 +89,7 @@
         flake-parts.follows = "flake-parts";
         base16.follows = "base16";
         nur.follows = "nur";
+        systems.follows = "systems";
       };
     };
 
@@ -97,6 +111,8 @@
       url = "github:numtide/llm-agents.nix";
       inputs = {
         flake-parts.follows = "flake-parts";
+        treefmt-nix.follows = "treefmt-nix";
+        systems.follows = "systems";
       };
     };
 
@@ -110,13 +126,25 @@
       inputs = {
         nixpkgs.follows = "unstable";
         flake-parts.follows = "flake-parts";
+        systems.follows = "systems";
+      };
+    };
+
+    # Code formatter
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
       };
     };
 
     # Media Server
     nixflix = {
       url = "github:kiriwalawren/nixflix";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        treefmt-nix.follows = "treefmt-nix";
+      };
     };
   };
 
@@ -127,6 +155,7 @@
         inputs.home-manager.flakeModules.home-manager
         inputs.git-hooks.flakeModule
         inputs.terranix.flakeModule
+        inputs.treefmt-nix.flakeModule
         ./flake-module.nix
       ];
 
@@ -150,10 +179,9 @@
           };
         in
         {
-          formatter = pkgs.nixfmt-tree;
-
           packages = {
             f = pkgs.callPackage ./packages/f { };
+            httpcraft = pkgs.callPackage ./packages/httpcraft { };
             neovim = self.lib.mkNeovim {
               pkgs = nvimPkgs;
             };
@@ -162,6 +190,8 @@
               modules = [ ./packages/neovim/profiles/full.nix ];
             };
           };
+
+          checks.httpcraft = config.packages.httpcraft.tests.smoke;
 
           apps.deploy = inputs.deploy-rs.apps.${pkgs.stdenv.hostPlatform.system}.default;
 
@@ -200,12 +230,20 @@
             };
           };
 
+          treefmt = {
+            programs = {
+              nixfmt.enable = true;
+              shellcheck.enable = true;
+              prettier.enable = true;
+              gofmt.enable = true;
+            };
+          };
+
           pre-commit.settings.hooks = {
-            nixfmt.enable = true;
+            treefmt.enable = true;
             deadnix.enable = true;
             statix.enable = true;
             flake-checker.enable = true;
-            prettier.enable = true;
             actionlint.enable = true;
             detect-aws-credentials.enable = true;
             detect-private-keys.enable = true;
@@ -243,6 +281,10 @@
 
                 # Remote deployment
                 deploy-rs
+
+                # HttpCraft development
+                nodejs_22
+                python3
               ]);
           };
         };
