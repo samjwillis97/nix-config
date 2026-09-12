@@ -4,9 +4,7 @@
   ...
 }:
 {
-  imports = [
-    secretModules.development
-  ];
+  imports = [ secretModules.development ];
 
   config = {
     home = {

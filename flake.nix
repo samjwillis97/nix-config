@@ -31,6 +31,12 @@
       };
     };
 
+    # WSL
+    nixos-wsl = {
+      url = "github:nix-community/NixOS-WSL/main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Darwin
     nix-darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
@@ -260,6 +266,7 @@
           devShells.default = pkgs.mkShell {
             shellHook = ''
               ${config.pre-commit.shellHook}
+              export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
               echo 1>&2 "Welcome to the development shell!"
             '';
 
