@@ -11,7 +11,7 @@
 
   home = {
     username = "samuel.willis";
-    stateVersion = "23.11";
+    stateVersion = "24.05";
   };
 
   my = {
