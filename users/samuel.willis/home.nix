@@ -27,6 +27,7 @@
 
     omp = {
       enable = true;
+      sandbox = true;
       settings = {
         provider = "github-copilot";
       };
