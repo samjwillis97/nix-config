@@ -42,21 +42,6 @@ let
 
     export CDPATH="$CDPATH:../:../../"
 
-    # See: https://discourse.nixos.org/t/brew-not-on-path-on-m1-mac/26770/4
-    # Cache brew shellenv to avoid repeated subprocess calls
-    ${
-      if pkgs.stdenv.hostPlatform.isDarwin then
-        ''
-          if [[ ! -f ~/.cache/brew_shellenv.zsh ]] || [[ /opt/homebrew/bin/brew -nt ~/.cache/brew_shellenv.zsh ]]; then
-            mkdir -p ~/.cache
-            /opt/homebrew/bin/brew shellenv > ~/.cache/brew_shellenv.zsh
-          fi
-          source ~/.cache/brew_shellenv.zsh
-        ''
-      else
-        ""
-    }
-
     if [[ -t 0 && -t 1 ]]; then
       # Seems to be a problem once I removed oh-mh-zsh, delete key would enter a ~
       bindkey "^[[3~" delete-char
