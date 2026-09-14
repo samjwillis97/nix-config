@@ -1,7 +1,10 @@
+{ lib, ... }:
 {
   nixpkgs.hostPlatform = {
     system = "aarch64-darwin";
   };
+
+  ids.gids.nixbld = 30000;
 
   my = {
     users = [ "samuel.willis" ];
@@ -12,7 +15,9 @@
     dix.enable = true;
   };
 
-  system.primaryUser = "samuel.willis";
-
-  system.stateVersion = 5;
+  system = {
+    primaryUser = "samuel.willis";
+    defaults.dock.orientation = lib.mkForce "bottom";
+    stateVersion = 5;
+  };
 }
