@@ -33,7 +33,7 @@
       auto-optimise-store = true;
       trusted-users = [
         "root"
-        "admin"
+        "@admin"
       ];
       experimental-features = [
         "nix-command"

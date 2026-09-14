@@ -192,15 +192,13 @@ let
       "/nix/var/nix/daemon-socket"
     ];
     roFiles = [
-      "$TMPDIR/agenix/ssh-key"
-      "$TMPDIR/agenix/ssh-key.pub"
     ];
     roDirs = [
       "$HOME/code"
     ];
     allowNix = true;
     allowUnixSockets = true;
-    allowedLocatPorts = null;
+    allowedLocalPorts = null;
     allowedDomains = {
       # Copilot required domains (MITM-filtered)
       "githubcopilot.com" = "*";

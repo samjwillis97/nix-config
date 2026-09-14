@@ -5,6 +5,7 @@ keys:
   - &teeny age16egjqzlqfukmyxgp3a60cr0xnheg9cw3gwzl5569hh2szyxhw5ksae60ug
   - &wsl-personal age1ufx37x8dcwlx043w74q242kkr8r8hscrgqrnhce3e27dhysn4vesvlvtfk
   - &sam-wsl-personal age1r0l9rjncdf6jvuujvvg6ps0wufs3aag3d5ysugqcv02laf3g840sel3s63
+  - &samuelwillis-work-mac age1z3t4dprs8qc8fd7l24977pnz6uvxllcl4xp7xq0y6y2y9yl3p4jssfewjq
 
 creation_rules:
   - path_regex: ^secrets/development/secrets\.yaml$
@@ -13,6 +14,7 @@ creation_rules:
           - *sam
           - *sam-personal-mac
           - *sam-wsl-personal
+          - *samuelwillis-work-mac
           - *staging-vm
   - path_regex: ^secrets/media/secrets\.yaml$
     key_groups:
