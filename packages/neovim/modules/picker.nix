@@ -82,7 +82,14 @@
 
           settings = {
             picker = {
-              layout = "default";
+              layout = {
+                cycle = true;
+                preset.__raw = ''
+                  function()
+                    return vim.o.columns >= 120 and "default" or "vertical"
+                  end
+                '';
+              };
 
               sources = {
                 files = {
