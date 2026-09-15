@@ -20,6 +20,7 @@ creation_rules:
     key_groups:
       - age:
           - *sam
+          - *sam-wsl-personal
           - *teeny
   - path_regex: ^secrets/media/secrets\.yaml$
     key_groups:
