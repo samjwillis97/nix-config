@@ -41,10 +41,10 @@ in
 
     databaseInitScript = lib.mkOption {
       type = pathOrString;
-      default = ./supernotedb.sql;
+      default = "/etc/supernote/supernotedb.sql";
       description = ''
-        Path to the supernotedb.sql file downloaded from Supernote. The file
-        is mounted read-only into MariaDB for first-time database setup.
+        Path to the supernotedb.sql file mounted read-only into MariaDB for
+        first-time database setup. The default uses the bundled schema.
       '';
     };
 
@@ -200,6 +200,10 @@ in
     in
     {
       my.virtualisation.containers.enable = true;
+      environment.etc."supernote/supernotedb.sql" = {
+        source = ./supernotedb.sql;
+        mode = "0640";
+      };
 
       assertions = [
         {
