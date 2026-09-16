@@ -46,23 +46,18 @@ nix eval --json .#nixosConfigurations.staging-vm.config.environment.systemPackag
 
 ### Supernote database initialization
 
-The Supernote module expects the schema file downloaded from Supernote at
-`/var/lib/supernote/supernotedb.sql` before `supernote-mariadb.service` can
-start:
-
-```sh
-curl --fail --location \
-    --output /tmp/supernotedb.sql \
-    https://supernote-private-cloud.supernote.com/cloud/supernotedb.sql
-sudo install -o root -g root -m 0640 \
-    /tmp/supernotedb.sql \
-    /var/lib/supernote/supernotedb.sql
-rm /tmp/supernotedb.sql
-sudo systemctl start supernote-mariadb.service
-sudo systemctl restart supernote-service.service
-```
+The Supernote module packages `nixos-modules/supernote/supernotedb.sql` and
+uses it as the default `my.supernote.databaseInitScript`. It is mounted
+read-only into MariaDB, so a fresh deployment does not need a separate
+database download.
 
 The database container only executes the mounted SQL file while initializing
 an empty data directory. If MariaDB has already initialized its data
-directory, import an updated schema manually inside the container instead of
-recreating the data directory.
+directory, import the schema manually inside the container:
+
+```sh
+sudo podman exec supernote-mariadb sh -c \
+    'mariadb -uroot -p"$MYSQL_ROOT_PASSWORD" supernotedb \
+        < /docker-entrypoint-initdb.d/supernotedb.sql'
+sudo systemctl restart supernote-service.service
+```
