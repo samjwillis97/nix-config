@@ -35,11 +35,10 @@
 
       supernote = {
         enable = true;
-
         secrets = {
-          mysqlRootPassword = config.sops.secrets."supernote/mysql-root-password".path;
-          mysqlPassword = config.sops.secrets."supernote/mysql-password".path;
-          redisPassword = config.sops.secrets."supernote/redis-password".path;
+          mysqlRootPassword = "supernote/mysql-root-password";
+          mysqlPassword = "supernote/mysql-password";
+          redisPassword = "supernote/redis-password";
         };
       };
 

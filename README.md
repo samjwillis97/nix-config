@@ -19,6 +19,18 @@ Directory entries can be either `<name>.nix` or `<name>/default.nix`. See each d
 
 ## Useful commands
 
+`nixosConfigurations.<name>` is the complete `nixosSystem` value. It contains functions such as `extendModules`, so the complete value cannot be encoded as JSON. Select a serializable leaf instead:
+
+```
+nix eval --json .#nixosConfigurations.teeny.config.system.build.toplevel.drvPath
+```
+
+To inspect a scalar through the complete configuration value, use `--apply`:
+
+```
+nix eval --json .#nixosConfigurations.teeny --apply 'system: system.config.system.stateVersion'
+```
+
 ### Getting closure size of build
 
 ```

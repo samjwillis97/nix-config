@@ -25,19 +25,16 @@ in
     secrets = {
       mysqlRootPassword = lib.mkOption {
         type = lib.types.str;
-        default = "supernote/mysql-root-password";
         description = "Name of the SOPS secret containing the MariaDB root password.";
       };
 
       mysqlPassword = lib.mkOption {
         type = lib.types.str;
-        default = "supernote/mysql-password";
         description = "Name of the SOPS secret containing the Supernote MariaDB password.";
       };
 
       redisPassword = lib.mkOption {
         type = lib.types.str;
-        default = "supernote/redis-password";
         description = "Name of the SOPS secret containing the Redis password.";
       };
     };
