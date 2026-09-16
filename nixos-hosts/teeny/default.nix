@@ -35,6 +35,7 @@
 
       supernote = {
         enable = true;
+        ingress.enable = true;
         secrets = {
           mysqlRootPassword = "supernote/mysql-root-password";
           mysqlPassword = "supernote/mysql-password";

@@ -61,3 +61,16 @@ sudo podman exec supernote-mariadb sh -c \
         < /docker-entrypoint-initdb.d/supernotedb.sql'
 sudo systemctl restart supernote-service.service
 ```
+
+### Supernote ingress
+
+On `teeny`, `my.supernote.ingress.enable = true` publishes Supernote through
+the shared Cloudflare Tunnel and local Nginx ingress. The public hostname
+defaults to `supernote-teeny.<your Cloudflare zone>`, while Nginx proxies the
+request to the Supernote HTTP service on port `19072`.
+
+The route mirrors the vendor's Nginx requirements: a 20 GB request body limit,
+the recommended proxy buffers and headers, long proxy timeouts, and a
+dedicated WebSocket-compatible `/socket.io/` location. The vendor's documented
+main HTTP route also handles automatic synchronization, so port `18072` is not
+published as a separate Cloudflare route.

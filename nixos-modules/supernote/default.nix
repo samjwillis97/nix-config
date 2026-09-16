@@ -16,6 +16,8 @@ in
   options.my.supernote = {
     enable = lib.mkEnableOption "Supernote private cloud";
 
+    ingress.enable = lib.mkEnableOption "Supernote private cloud ingress route";
+
     dataDir = lib.mkOption {
       type = pathOrString;
       default = "/var/lib/supernote";
@@ -221,6 +223,49 @@ in
           message = "my.supernote.https.certificateFile and keyFile must be set together.";
         }
       ];
+
+      my.ingress.routes.supernote = lib.mkIf cfg.ingress.enable {
+        upstream = "http://127.0.0.1:${toString cfg.httpPort}";
+        websockets = false;
+      };
+
+      services.nginx = lib.mkIf cfg.ingress.enable {
+        virtualHosts.supernote = {
+          locations."/".extraConfig = ''
+            proxy_set_header X-Forwarded-Scheme $scheme;
+            proxy_set_header X-Forwarded-Port $server_port;
+
+            proxy_buffering on;
+            proxy_buffer_size 4k;
+            proxy_buffers 8 4k;
+
+            proxy_connect_timeout 6000s;
+            proxy_send_timeout 6000s;
+            proxy_read_timeout 6000s;
+          '';
+
+          extraConfig = ''
+            client_max_body_size 20480m;
+
+            location ~ ^/socket.io/(.*) {
+              proxy_ignore_client_abort on;
+              proxy_http_version 1.1;
+              proxy_connect_timeout 60s;
+              proxy_read_timeout 3600s;
+              proxy_send_timeout 3600s;
+              proxy_set_header X-NginX-Proxy true;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection "$connection_upgrade";
+              proxy_pass http://127.0.0.1:${toString cfg.httpPort};
+              proxy_redirect off;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+          '';
+        };
+      };
 
       systemd.tmpfiles.rules = map (directory: "d ${directory} 0750 root root -") [
         cfg.dataDir
