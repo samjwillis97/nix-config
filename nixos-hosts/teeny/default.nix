@@ -10,6 +10,7 @@
     secretModules.tailscale
     secretModules.cloudflared
     secretModules.media
+    secretModules.supernote
   ];
 
   config = {
@@ -30,6 +31,15 @@
       actual = {
         enable = true;
         ingress.enable = true;
+      };
+
+      supernote = {
+        enable = true;
+        secrets = {
+          mysqlRootPassword = "supernote/mysql-root-password";
+          mysqlPassword = "supernote/mysql-password";
+          redisPassword = "supernote/redis-password";
+        };
       };
 
       media = {
