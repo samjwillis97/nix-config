@@ -137,13 +137,13 @@ in
 
       notelib = lib.mkOption {
         type = lib.types.str;
-        default = "docker.io/supernote/notelib:latest";
+        default = "docker.io/supernote/notelib:6.9.3";
         description = "Supernote note conversion image.";
       };
 
       service = lib.mkOption {
         type = lib.types.str;
-        default = "docker.io/supernote/supernote-service:latest";
+        default = "docker.io/supernote/supernote-service:26.06.04";
         description = "Supernote private cloud service image.";
       };
     };
