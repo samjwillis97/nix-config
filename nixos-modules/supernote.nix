@@ -22,12 +22,24 @@ in
       description = "Directory for Supernote private cloud persistent data.";
     };
 
-    environmentFile = lib.mkOption {
-      type = pathOrString;
-      description = ''
-        Environment file containing MYSQL_ROOT_PASSWORD, MYSQL_PASSWORD, and
-        REDIS_PASSWORD. Keep this file outside the Nix store.
-      '';
+    secrets = {
+      mysqlRootPassword = lib.mkOption {
+        type = lib.types.str;
+        default = "supernote/mysql-root-password";
+        description = "Name of the SOPS secret containing the MariaDB root password.";
+      };
+
+      mysqlPassword = lib.mkOption {
+        type = lib.types.str;
+        default = "supernote/mysql-password";
+        description = "Name of the SOPS secret containing the Supernote MariaDB password.";
+      };
+
+      redisPassword = lib.mkOption {
+        type = lib.types.str;
+        default = "supernote/redis-password";
+        description = "Name of the SOPS secret containing the Redis password.";
+      };
     };
 
     databaseInitScript = lib.mkOption {
@@ -80,6 +92,18 @@ in
         type = pathOrString;
         default = "${config.my.supernote.dataDir}/sndata/cert";
         description = "Directory containing the custom HTTPS certificate and key.";
+      };
+
+      certificateFile = lib.mkOption {
+        type = lib.types.nullOr pathOrString;
+        default = null;
+        description = "Optional SOPS-decrypted custom HTTPS certificate file.";
+      };
+
+      keyFile = lib.mkOption {
+        type = lib.types.nullOr pathOrString;
+        default = null;
+        description = "Optional SOPS-decrypted custom HTTPS private key file.";
       };
 
       certificateName = lib.mkOption {
@@ -144,6 +168,34 @@ in
         "supernote-notelib"
         "supernote-service"
       ];
+      secretEnvironmentFile = "/run/supernote/environment";
+      sopsSecretNames = [
+        cfg.secrets.mysqlRootPassword
+        cfg.secrets.mysqlPassword
+        cfg.secrets.redisPassword
+      ];
+      sopsSecretsConfigured = lib.all (name: builtins.hasAttr name config.sops.secrets) sopsSecretNames;
+      secretPlaceholder = name: config.sops.placeholder.${name};
+      certificateFiles = cfg.https.certificateFile != null && cfg.https.keyFile != null;
+      certificateVolumes =
+        if certificateFiles then
+          [
+            "${cfg.https.certificateFile}:/etc/nginx/cert/${cfg.https.certificateName}:ro"
+            "${cfg.https.keyFile}:/etc/nginx/cert/${cfg.https.keyName}:ro"
+          ]
+        else
+          [ "${cfg.https.certificateDirectory}:/etc/nginx/cert" ];
+      certificateConditions =
+        if certificateFiles then
+          [
+            cfg.https.certificateFile
+            cfg.https.keyFile
+          ]
+        else
+          [
+            "${cfg.https.certificateDirectory}/${cfg.https.certificateName}"
+            "${cfg.https.certificateDirectory}/${cfg.https.keyName}"
+          ];
       sndataDir = "${cfg.dataDir}/sndata";
       databaseDataDir = "${cfg.dataDir}/mariadb";
       redisDataDir = "${cfg.dataDir}/redis";
@@ -154,8 +206,18 @@ in
 
       assertions = [
         {
+          assertion = sopsSecretsConfigured;
+          message = "my.supernote.secrets must reference declared sops.secrets entries.";
+        }
+        {
           assertion = cfg.https.enable || cfg.https.domain == null;
           message = "my.supernote.https.domain requires my.supernote.https.enable.";
+        }
+        {
+          assertion =
+            (cfg.https.certificateFile == null && cfg.https.keyFile == null)
+            || (cfg.https.certificateFile != null && cfg.https.keyFile != null);
+          message = "my.supernote.https.certificateFile and keyFile must be set together.";
         }
       ];
 
@@ -171,6 +233,17 @@ in
         "${sndataDir}/logs/web"
         "${sndataDir}/recycle"
       ];
+
+      sops.templates."supernote-environment" = lib.mkIf sopsSecretsConfigured {
+        path = secretEnvironmentFile;
+        mode = "0400";
+        content = ''
+          MYSQL_ROOT_PASSWORD=${secretPlaceholder cfg.secrets.mysqlRootPassword}
+          MYSQL_PASSWORD=${secretPlaceholder cfg.secrets.mysqlPassword}
+          REDIS_PASSWORD=${secretPlaceholder cfg.secrets.redisPassword}
+        '';
+        restartUnits = map (name: "${name}.service") containerNames;
+      };
 
       systemd.services = lib.mkMerge [
         {
@@ -199,30 +272,26 @@ in
           };
 
           supernote-mariadb.unitConfig.ConditionPathExists = [
-            cfg.environmentFile
+            secretEnvironmentFile
             cfg.databaseInitScript
           ];
-          supernote-redis.unitConfig.ConditionPathExists = cfg.environmentFile;
+          supernote-redis.unitConfig.ConditionPathExists = secretEnvironmentFile;
           supernote-service.unitConfig.ConditionPathExists = [
-            cfg.environmentFile
+            secretEnvironmentFile
           ]
-          ++ lib.optionals (cfg.https.domain != null) [
-            "${cfg.https.certificateDirectory}/${cfg.https.certificateName}"
-            "${cfg.https.certificateDirectory}/${cfg.https.keyName}"
-          ];
+          ++ lib.optionals (cfg.https.domain != null) certificateConditions;
         }
         (lib.genAttrs containerNames (_: {
           requires = [ "supernote-network.service" ];
           after = [ "supernote-network.service" ];
         }))
       ];
-
       virtualisation.oci-containers.containers = {
         supernote-mariadb = {
           image = cfg.images.mariadb;
           serviceName = "supernote-mariadb";
           networks = [ cfg.networkName ];
-          environmentFiles = [ cfg.environmentFile ];
+          environmentFiles = [ secretEnvironmentFile ];
           environment = {
             MYSQL_DATABASE = "supernotedb";
             MYSQL_USER = cfg.databaseUser;
@@ -237,7 +306,7 @@ in
           image = cfg.images.redis;
           serviceName = "supernote-redis";
           networks = [ cfg.networkName ];
-          environmentFiles = [ cfg.environmentFile ];
+          environmentFiles = [ secretEnvironmentFile ];
           cmd = [
             "sh"
             "-c"
@@ -261,7 +330,7 @@ in
             "supernote-redis"
             "supernote-notelib"
           ];
-          environmentFiles = [ cfg.environmentFile ];
+          environmentFiles = [ secretEnvironmentFile ];
           environment = {
             DB_HOSTNAME = "supernote-mariadb";
             MYSQL_DATABASE = "supernotedb";
@@ -288,7 +357,7 @@ in
             "${sndataDir}/convert:/home/supernote/convert"
             "/etc/localtime:/etc/localtime:ro"
           ]
-          ++ lib.optional (cfg.https.domain != null) "${cfg.https.certificateDirectory}:/etc/nginx/cert";
+          ++ lib.optionals (cfg.https.domain != null) certificateVolumes;
         };
       };
     }

@@ -16,6 +16,11 @@ creation_rules:
           - *sam-wsl-personal
           - *samuelwillis-work-mac
           - *staging-vm
+  - path_regex: ^secrets/supernote/secrets\.yaml$
+    key_groups:
+      - age:
+          - *sam
+          - *teeny
   - path_regex: ^secrets/media/secrets\.yaml$
     key_groups:
       - age:
