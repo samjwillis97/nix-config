@@ -30,8 +30,20 @@
           config = rec {
             modifier = "Mod4";
             terminal = "ghostty";
+
+            workspaceAutoBackAndForth = true;
+            workspaceLayout = "default";
+
+            focus = {
+              followMouse = false;
+            };
+
             keybindings = {
               "${modifier}+Return" = "exec ${terminal}";
+              "${modifier}+Shift+q" = "kill";
+
+              "${modifier}+n" = "exec ${lib.getExe config.programs.firefox.package}";
+              "${modifier}+d" = "exec ${lib.getExe pkgs.wmenu}";
             };
           };
 
