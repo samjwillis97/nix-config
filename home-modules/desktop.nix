@@ -16,12 +16,16 @@
       })
 
       (lib.mkIf (!pkgs.stdenv.hostPlatform.isDarwin) {
+        # auto mounting of external storage devices
+        services.udiskie.enable = true;
+
         wayland.windowManager.sway = {
           enable = true;
           wrapperFeatures.gtk = true;
-          # package = pkgs.swayfx;
+          package = pkgs.swayfx;
 
-          checkConfig = true;
+          # required false for swayfx
+          checkConfig = false;
 
           config = rec {
             modifier = "Mod4";
@@ -30,6 +34,13 @@
               "${modifier}+Return" = "exec ${terminal}";
             };
           };
+
+          extraConfig = ''
+            shadows enable
+            corner_radius 11
+            blur_radius 7
+            blur_passes 2
+          '';
         };
       })
     ]

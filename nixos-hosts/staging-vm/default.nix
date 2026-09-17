@@ -32,7 +32,7 @@
       desktop.enable = true;
 
       media = {
-        enable = true;
+        enable = false;
 
         jellyfin = {
           enable = true;
@@ -98,7 +98,7 @@
         authKeyFile = config.sops.secrets."tailscale-auth-key".path;
       };
 
-      virtualisation.containers.enable = true;
+      virtualisation.containers.enable = false;
 
       deploy-rs = {
         enable = true;
