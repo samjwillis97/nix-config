@@ -11,8 +11,12 @@
       mako # notifications
     ];
 
-    # secrets
-    services.gnome.gnome-keyring.enable = true;
+    services = {
+      # secrets
+      gnome.gnome-keyring.enable = true;
+      # auto mounting of external storage devices
+      udisks2.enable = true;
+    };
 
     # allows the greeter to unlock keyring
     security.pam.services = {
@@ -23,10 +27,22 @@
     # allows home manager
     security.polkit.enable = true;
 
+    # Window manager
     programs.sway = {
       enable = true;
-      # package = pkgs.swayfx;
+      package = pkgs.swayfx;
       wrapperFeatures.gtk = true;
+    };
+
+    # screen sharing
+    xdg.portal = {
+      enable = true;
+      wlr.enable = true;
+    };
+    services.pipewire = {
+      enable = true;
+      alsa.enable = true;
+      pulse.enable = true;
     };
 
     # systemd services
