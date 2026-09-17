@@ -6,6 +6,8 @@
 }:
 {
   config = lib.mkIf config.my.desktop.enable {
+    hardware.graphics.enable = true;
+
     environment.systemPackages = with pkgs; [
       wl-clipboard
       mako # notifications
