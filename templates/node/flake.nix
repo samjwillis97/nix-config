@@ -39,6 +39,7 @@
           devShells.default = pkgs.mkShell {
             shellHook = ''
               ${config.pre-commit.shellHook}
+              export PATH="$PATH:$PWD/node_modules/.bin"
             '';
 
             packages =
