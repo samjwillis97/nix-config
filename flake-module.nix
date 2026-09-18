@@ -122,7 +122,7 @@ in
 
     templates = builtins.mapAttrs (name: module: {
       description = "Template module for ${name}";
-      path = module;
+      path = dirOf module;
     }) templateModules;
 
     nixvimModules = {
