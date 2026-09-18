@@ -37,6 +37,11 @@ let
 
   groupModules = readModules { dir = ./groups; };
 
+  templateModules = readModules {
+    dir = ./templates;
+    entryPoint = "flake.nix";
+  };
+
   userHomeModules = readModules {
     dir = ./users;
     entryPoint = "home.nix";
@@ -114,6 +119,11 @@ in
   config.flake = rec {
     inherit nixosModules darwinModules homeModules;
     lib = nixvimLib;
+
+    templates = builtins.mapAttrs (name: module: {
+      description = "Template module for ${name}";
+      path = module;
+    }) templateModules;
 
     nixvimModules = {
       default = ./packages/neovim/module.nix;
