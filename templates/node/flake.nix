@@ -10,8 +10,12 @@
   };
 
   outputs =
-    inputs@{ flake-parts }:
+    inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
+      imports = [
+        inputs.git-hooks.flakeModule
+      ];
+
       systems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -35,6 +39,7 @@
           devShells.default = pkgs.mkShell {
             shellHook = ''
               ${config.pre-commit.shellHook}
+              export PATH="$PATH:$PWD/node_modules/.bin"
             '';
 
             packages =
