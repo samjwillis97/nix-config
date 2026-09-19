@@ -31,7 +31,7 @@
           # required false for swayfx
           checkConfig = false;
 
-          config = {
+          config = rec {
             modifier = "Mod4";
 
             up = "k";
@@ -64,14 +64,26 @@
                   9
                   0
                 ];
+
+                workspaceBindings = lib.genAttrs workspaces (workspace: {
+                  "${modifier}+${workspace}" = "workspace ${workspace}";
+                  "${modifier}+Shift+${workspace}" = "move container to workspace ${workspace}";
+                });
               in
               {
-                "${modifier}+Return" = "exec $terminal";
+                "${modifier}+Return" = "exec ${terminal}";
                 "${modifier}+Shift+q" = "kill";
 
                 "${modifier}+n" = "exec ${lib.getExe config.programs.firefox.package}";
-                "${modifier}+d" = "exec $menu";
-              };
+                "${modifier}+d" = "exec ${menu}";
+
+                "${modifier}+s" = "split v";
+                "${modifier}+v" = "split h";
+
+                "${modifier}+Shift+minus" = "move scratchpad";
+                "${modifier}+minus" = "scratchpad show";
+              }
+              // workspaceBindings;
           };
 
           gaps = {
