@@ -50,11 +50,10 @@
     # systemd services
     # kanshi is an output configuration daemon
     systemd.user.services.kanshi = {
+      enable = true;
       description = "kanshi daemon";
-      environment = {
-        WAYLAND_DISPLAY = "wayland-1";
-        DISPLAY = ":0";
-      };
+      wantedBy = [ ];
+      after = [ ];
       serviceConfig = {
         Type = "simple";
         ExecStart = "${lib.getExe pkgs.kanshi} -c kanshi_config_file";

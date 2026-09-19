@@ -16,12 +16,38 @@
       })
 
       (lib.mkIf (!pkgs.stdenv.hostPlatform.isDarwin) {
-        # auto mounting of external storage devices
-        services.udiskie.enable = true;
-
         home.packages = with pkgs; [
           wmenu
         ];
+
+        services = {
+          # auto mounting of external storage devices
+          udiskie.enable = true;
+
+          # monitor setup
+          kanshi = {
+            enable = true;
+
+            systemdTarget = "";
+
+            profiles = {
+              study = {
+                outputs = [
+                  {
+                    criteria = "DP-3";
+                    position = "0,0";
+                    mode = "2560x1440@180Hz";
+                  }
+                  {
+                    criteria = "DP-2";
+                    position = "2560,0";
+                    mode = "2560x1440@180Hz";
+                  }
+                ];
+              };
+            };
+          };
+        };
 
         wayland.windowManager.sway = {
           enable = true;
@@ -32,7 +58,7 @@
           checkConfig = false;
 
           config = rec {
-            modifier = "Mod4";
+            modifier = "Mod1";
 
             up = "k";
             down = "j";
@@ -40,13 +66,20 @@
             right = "l";
 
             terminal = "ghostty";
-            menu = "wmenu";
+            menu = "wmenu-run";
 
             workspaceAutoBackAndForth = true;
             workspaceLayout = "default";
 
             focus = {
               followMouse = false;
+            };
+
+            input = {
+              "*" = {
+                repeat_delay = "250";
+                repeat_rate = "50";
+              };
             };
 
             keybindings =
@@ -84,6 +117,16 @@
 
                 "${modifier}+Shift+minus" = "move scratchpad";
                 "${modifier}+minus" = "scratchpad show";
+
+                "${modifier}+${up}" = "focus up";
+                "${modifier}+${down}" = "focus down";
+                "${modifier}+${left}" = "focus left";
+                "${modifier}+${right}" = "focus right";
+
+                "${modifier}+Shift+${up}" = "move up";
+                "${modifier}+Shift+${down}" = "move down";
+                "${modifier}+Shift+${left}" = "move left";
+                "${modifier}+Shift+${right}" = "move right";
               }
               // workspaceBindings;
           };
