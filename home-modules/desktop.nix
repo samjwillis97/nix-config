@@ -57,55 +57,76 @@
           # required false for swayfx
           checkConfig = false;
 
-          config = rec {
-            modifier = "Mod1";
+          config =
+            let
+              modifier = config.wayland.windowManager.sway.config.modifier;
 
-            up = "k";
-            down = "j";
-            left = "h";
-            right = "l";
+              workspaces = [
+                "1"
+                "2"
+                "3"
+                "4"
+                "5"
+                "6"
+                "7"
+                "8"
+                "9"
+                "0"
+              ];
 
-            terminal = "ghostty";
-            menu = "wmenu-run";
+              workspaceBindings = lib.mergeAttrsList (
+                map (workspace: {
+                  "${modifier}+${workspace}" = "workspace ${workspace}";
+                  "${modifier}+Shift+${workspace}" = "move container to workspace ${workspace}";
+                }) workspaces
+              );
 
-            workspaceAutoBackAndForth = true;
-            workspaceLayout = "default";
+              gameModeName = "Gaming B)";
+            in
+            rec {
+              modifier = "Mod1";
 
-            focus = {
-              followMouse = false;
-            };
+              up = "k";
+              down = "j";
+              left = "h";
+              right = "l";
 
-            input = {
-              "*" = {
-                repeat_delay = "250";
-                repeat_rate = "50";
+              terminal = "ghostty";
+              menu = "wmenu-run";
+
+              workspaceAutoBackAndForth = true;
+              workspaceLayout = "default";
+
+              focus = {
+                followMouse = false;
               };
-            };
 
-            keybindings =
-              let
-                modifier = config.wayland.windowManager.sway.config.modifier;
-                workspaces = [
-                  "1"
-                  "2"
-                  "3"
-                  "4"
-                  "5"
-                  "6"
-                  "7"
-                  "8"
-                  "9"
-                  "0"
-                ];
+              input = {
+                "*" = {
+                  accel_profile = "flat";
+                  repeat_delay = "250";
+                  repeat_rate = "50";
+                };
+              };
 
-                workspaceBindings = lib.mergeAttrsList (
-                  map (workspace: {
-                    "${modifier}+${workspace}" = "workspace ${workspace}";
-                    "${modifier}+Shift+${workspace}" = "move container to workspace ${workspace}";
-                  }) workspaces
-                );
-              in
-              {
+              modes =
+                let
+                  createMode =
+                    bindings:
+                    (
+                      bindings
+                      // {
+                        "Escape" = "mode default";
+                        "Return" = "mode default";
+                      }
+                    );
+                in
+                {
+                  # Gaming mode only keeps workspace bindings and nothing else
+                  "${gameModeName}" = createMode workspaceBindings;
+                };
+
+              keybindings = {
                 "${modifier}+Return" = "exec ${terminal}";
                 "${modifier}+Shift+q" = "kill";
 
@@ -127,9 +148,14 @@
                 "${modifier}+Shift+${down}" = "move down";
                 "${modifier}+Shift+${left}" = "move left";
                 "${modifier}+Shift+${right}" = "move right";
+
+                "${modifier}+space" = "floating toggle";
+                "${modifier}+Control+space" = "sticky toggle";
+
+                "${modifier}+Shift+g" = ''mode "${gameModeName}"'';
               }
               // workspaceBindings;
-          };
+            };
 
           # gaps = {
           #   inner = 15;
