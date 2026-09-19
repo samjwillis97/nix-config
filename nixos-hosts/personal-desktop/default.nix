@@ -17,6 +17,8 @@
 
       styling.enable = true;
 
+      gaming.enable = true;
+
       desktop.enable = true;
 
       tailscale = {
