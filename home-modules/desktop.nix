@@ -53,22 +53,24 @@
               let
                 modifier = config.wayland.windowManager.sway.config.modifier;
                 workspaces = [
-                  1
-                  2
-                  3
-                  4
-                  5
-                  6
-                  7
-                  8
-                  9
-                  0
+                  "1"
+                  "2"
+                  "3"
+                  "4"
+                  "5"
+                  "6"
+                  "7"
+                  "8"
+                  "9"
+                  "0"
                 ];
 
-                workspaceBindings = lib.genAttrs workspaces (workspace: {
-                  "${modifier}+${workspace}" = "workspace ${workspace}";
-                  "${modifier}+Shift+${workspace}" = "move container to workspace ${workspace}";
-                });
+                workspaceBindings = lib.mergeAttrsList (
+                  map (workspace: {
+                    "${modifier}+${workspace}" = "workspace ${workspace}";
+                    "${modifier}+Shift+${workspace}" = "move container to workspace ${workspace}";
+                  }) workspaces
+                );
               in
               {
                 "${modifier}+Return" = "exec ${terminal}";
@@ -86,10 +88,10 @@
               // workspaceBindings;
           };
 
-          gaps = {
-            inner = 15;
-            outer = 15;
-          };
+          # gaps = {
+          #   inner = 15;
+          #   outer = 15;
+          # };
 
           extraSessionCommands = ''
             # give Sway a little time to startup before starting kanshi.
