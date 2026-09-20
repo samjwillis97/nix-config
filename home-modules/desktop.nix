@@ -28,7 +28,7 @@
           kanshi = {
             enable = true;
 
-            systemdTarget = "";
+            systemdTarget = "sway-session.target";
 
             profiles = {
               study = {
@@ -96,6 +96,13 @@
 
               workspaceAutoBackAndForth = true;
               workspaceLayout = "default";
+
+              startup = [
+                {
+                  command = "${pkgs.kanshi}/bin/kanshictl reload";
+                  always = true;
+                }
+              ];
 
               focus = {
                 followMouse = false;
@@ -183,11 +190,6 @@
               }
               // workspaceBindings;
             };
-
-          extraSessionCommands = ''
-            # give Sway a little time to startup before starting kanshi.
-            exec sleep 5; systemctl --user start kanshi.service
-          '';
 
           extraConfig = ''
             # app specific fixes
