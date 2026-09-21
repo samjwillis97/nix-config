@@ -55,7 +55,7 @@
           swayidle =
             let
               display = status: "${pkgs.sway}/bin/swaymsg 'output * power ${status}'";
-              lock = "${config.programs.swaylock.package}/bin/swaylock --daemonize";
+              lock = "if ! ${pkgs.procps}/bin/pgrep --exact --uid $(${pkgs.coreutils}/bin/id -u) swaylock >/dev/null; then ${config.programs.swaylock.package}/bin/swaylock --daemonize; fi";
             in
             {
               enable = true;
@@ -83,7 +83,7 @@
               events = [
                 {
                   event = "before-sleep";
-                  # adding duplicated entries for the same event may not work
+                  # Avoid trying to lock again when suspend follows the idle lock.
                   command = (display "off") + "; " + lock;
                 }
                 {
@@ -135,6 +135,7 @@
               );
 
               gameModeName = "Gaming B)";
+              powerManagementMode = " : Screen [l]ock, [e]xit, [s]uspend, [h]ibernate, [R]eboot, [S]hutdown";
             in
             rec {
               modifier = "Mod1";
@@ -189,6 +190,15 @@
                 {
                   # Gaming mode only keeps workspace bindings and nothing else
                   "${gameModeName}" = createMode workspaceBindings;
+
+                  "${powerManagementMode}" = createMode {
+                    "l" = "mode default, exec ${config.programs.swaylock.package}/bin/swaylock";
+                    "e" = "exit";
+                    "s" = "mode default, exec ${pkgs.systemd}/bin/systemctl suspend";
+                    "h" = "mode default, exec ${pkgs.systemd}/bin/systemctl hibernate";
+                    "R" = "mode default, exec ${pkgs.systemd}/bin/systemctl reboot";
+                    "S" = "mode default, exec ${pkgs.systemd}/bin/systemctl poweroff";
+                  };
                 };
 
               bars = [
@@ -240,6 +250,13 @@
                 "${modifier}+Shift+w" = "layout toggle tabbed split";
 
                 "${modifier}+Shift+g" = ''mode "${gameModeName}"'';
+                "${modifier}+Escape" = ''mode "${powerManagementMode}"'';
+
+                # Multimedia keys
+                "XF86AudioRaiseVolume" =
+                  "exec ${pkgs.wireplumber}/bin/wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+";
+                "XF86AudioLowerVolume" = "exec ${pkgs.wireplumber}/bin/wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-";
+                "XF86AudioMute" = "exec ${pkgs.wireplumber}/bin/wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
               }
               // workspaceBindings;
             };
