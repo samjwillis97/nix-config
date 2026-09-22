@@ -124,6 +124,11 @@ let
         { };
   };
 
+  configFile = yamlFormat.generate "omp-config.yml" settings;
+  dapFile = jsonFormat.generate "omp-dap.json" {
+    adapters = dapAdapters;
+  };
+
   allowedGetDomains = [
     "githubusercontent.com"
     "npmjs.org"
@@ -186,17 +191,17 @@ let
       "$HOME/.omp"
       "$HOME/.npm"
       "$HOME/.cache"
+      "$HOME/.local/state/agent-sandbox"
       "$HOME/.config/gh"
       "$HOME/.config/git"
       "$HOME/.config/httpcraft"
-      "/nix/var/nix/daemon-socket"
     ];
     roFiles = [
     ];
     roDirs = [
       "$HOME/code"
     ];
-    allowNix = true;
+    allowNix = false;
     allowUnixSockets = true;
     allowedLocalPorts = null;
     allowedDomains = {
@@ -241,11 +246,17 @@ in
   config = lib.mkIf config.my.omp.enable (
     lib.mkMerge [
       {
-        home.file = {
-          ".omp/agent/config.yml".source = yamlFormat.generate "omp-config.yml" settings;
-          ".omp/agent/dap.json".source = jsonFormat.generate "omp-dap.json" {
-            adapters = dapAdapters;
-          };
+        # OMP locks and atomically rewrites its configuration. Home Manager's
+        # normal store symlinks are read-only and are not visible through the
+        # sandbox's enclosing ~/.omp bind, so install regular writable files.
+        home.activation.ompConfig = {
+          before = [ ];
+          after = [ "writeBoundary" ];
+          data = ''
+            run mkdir -p "$HOME/.omp/agent"
+            run install -m 600 ${configFile} "$HOME/.omp/agent/config.yml"
+            run install -m 600 ${dapFile} "$HOME/.omp/agent/dap.json"
+          '';
         };
       }
 

@@ -49,7 +49,17 @@ in
   config = lib.mkMerge [
     (lib.mkIf config.my.git.enable {
       programs = {
-        difftastic.enable = true;
+        difftastic = {
+          enable = true;
+          git = {
+            enable = false;
+          };
+        };
+
+        delta = {
+          enable = true;
+          enableGitIntegration = true;
+        };
 
         gh = {
           enable = true;
