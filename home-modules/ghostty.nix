@@ -30,6 +30,8 @@ in
             font-feature = "-calt";
             font-thicken = true;
             shell-integration-features = "no-cursor, title";
+            confirm-close-surface = false;
+            resize-overlay = "never";
           };
         };
       }
