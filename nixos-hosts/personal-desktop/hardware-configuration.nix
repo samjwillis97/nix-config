@@ -11,29 +11,37 @@
 {
   imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
 
-  boot.initrd.availableKernelModules = [
-    "nvme"
-    "xhci_pci"
-    "ahci"
-    "usbhid"
-    "usb_storage"
-    "sd_mod"
-  ];
-  boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [
-    "kvm-intel"
-    "kvm-amd"
-  ];
-  boot.extraModulePackages = [ ];
+  boot = {
+    initrd.availableKernelModules = [
+      "nvme"
+      "xhci_pci"
+      "ahci"
+      "usbhid"
+      "usb_storage"
+      "sd_mod"
+    ];
+    initrd.kernelModules = [ ];
+    kernelModules = [
+      "kvm-intel"
+      "kvm-amd"
+    ];
+    extraModulePackages = [ ];
 
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/f407f015-f752-41df-8ace-b5c1c5aa1074";
-    fsType = "ext4";
+    # Use the systemd-boot EFI boot loader.
+    loader.systemd-boot.enable = true;
+    loader.efi.canTouchEfiVariables = true;
   };
 
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/4E31-0D82";
-    fsType = "vfat";
+  fileSystems = {
+    "/" = {
+      device = "/dev/disk/by-uuid/f407f015-f752-41df-8ace-b5c1c5aa1074";
+      fsType = "ext4";
+    };
+
+    "/boot" = {
+      device = "/dev/disk/by-uuid/4E31-0D82";
+      fsType = "vfat";
+    };
   };
 
   swapDevices = [ { device = "/dev/disk/by-uuid/a83c32c8-5ac8-425b-be31-de71de85d6e9"; } ];
@@ -42,24 +50,25 @@
   # (the default) this is the recommended approach. When using systemd-networkd it's
   # still possible to use this option, but it's recommended to use it in conjunction
   # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
-  networking.useDHCP = lib.mkDefault true;
-  networking.wireless.enable = true;
+  networking = {
+    useDHCP = lib.mkDefault true;
+    wireless.enable = true;
 
-  networking.nameservers = [
-    "1.1.1.1"
-    "8.8.8.8"
-  ];
-  networking.interfaces.wlp7s0.useDHCP = lib.mkDefault true;
+    nameservers = [
+      "1.1.1.1"
+      "8.8.8.8"
+    ];
+    interfaces.wlp7s0.useDHCP = lib.mkDefault true;
+  };
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
-  hardware.graphics.enable = true;
-  hardware.graphics.enable32Bit = true;
+  hardware = {
+    cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
-  # Use the systemd-boot EFI boot loader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+    graphics.enable = true;
+    graphics.enable32Bit = true;
+  };
 
   system.stateVersion = "22.11";
 }

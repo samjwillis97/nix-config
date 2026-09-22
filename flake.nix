@@ -63,7 +63,7 @@
 
     # PRE-COMMIT HOOKS
     git-hooks.url = "github:cachix/git-hooks.nix";
-    git-hooks.inputs.nixpkgs.follows = "nixpkgs";
+    git-hooks.inputs.nixpkgs.follows = "unstable";
 
     # SECRETS
     sops-nix.url = "github:Mic92/sops-nix";
