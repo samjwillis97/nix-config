@@ -86,7 +86,7 @@
                 cycle = true;
                 preset.__raw = ''
                   function()
-                    return vim.o.columns >= 120 and "default" or "vertical"
+                    return vim.o.columns >= 120 and "default" or "dropdown"
                   end
                 '';
               };
@@ -119,13 +119,31 @@
         keymaps = [
           {
             key = "<leader>ca";
-            action = "<CMD>require(`actions-preview`).code_actions<CR>";
+            action = "<CMD>lua require('actions-preview').code_actions()<CR>";
             options.desc = "Open code actions";
           }
         ];
 
         plugins.actions-preview = {
           enable = true;
+
+          settings = {
+            highlight_command = [
+              (lib.nixvim.mkRaw ''
+                require('actions-preview.highlight').delta '${pkgs.delta}/bin/delta --side-by-side'
+              '')
+            ];
+
+            snacks = {
+              layout = {
+                preset.__raw = ''
+                  function()
+                    return vim.o.columns >= 120 and "bottom" or "dropdown"
+                  end
+                '';
+              };
+            };
+          };
 
           lazyLoad.settings = lib.mkIf config.my.lazyLoading.enable {
             keys = [
