@@ -189,7 +189,9 @@
                 in
                 {
                   # Gaming mode only keeps workspace bindings and nothing else
-                  "${gameModeName}" = createMode workspaceBindings;
+                  "${gameModeName}" = workspaceBindings // {
+                    "${modifier}+Shift+g" = "floating_modifier ${modifier}, mode default";
+                  };
 
                   "${powerManagementMode}" = createMode {
                     "l" = "mode default, exec ${config.programs.swaylock.package}/bin/swaylock";
@@ -249,7 +251,7 @@
 
                 "${modifier}+Shift+w" = "layout toggle tabbed split";
 
-                "${modifier}+Shift+g" = ''mode "${gameModeName}"'';
+                "${modifier}+Shift+g" = ''floating_modifier none, mode "${gameModeName}"'';
                 "${modifier}+Escape" = ''mode "${powerManagementMode}"'';
 
                 # Multimedia keys
