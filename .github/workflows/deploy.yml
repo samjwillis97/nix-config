@@ -59,12 +59,20 @@ jobs:
         env:
           NIX_ATTR: ${{ matrix.attr }}
         run: nix build --no-link -L ".#$NIX_ATTR"
-      - name: Connect to Tailscale
+      - id: tailscale
+        name: Connect to Tailscale
+        continue-on-error: true
         uses: tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888 # v4.1.3
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           ping: ${{ matrix.name }}
+      - name: Skip unreachable host
+        if: steps.tailscale.outcome == 'failure'
+        env:
+          DEPLOY_HOST: ${{ matrix.name }}
+        run: echo "Skipping deployment because ${DEPLOY_HOST} is unreachable"
       - name: Configure SSH
+        if: steps.tailscale.outcome == 'success'
         env:
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
@@ -86,6 +94,7 @@ jobs:
           EOF
           chmod 0600 "$HOME/.ssh/config"
       - name: Deploy host
+        if: steps.tailscale.outcome == 'success'
         env:
           DEPLOY_HOST: ${{ matrix.name }}
         run: nix run .#deploy -- ".#$DEPLOY_HOST"
