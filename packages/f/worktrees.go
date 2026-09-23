@@ -315,6 +315,8 @@ func discoverInventory(ctx context.Context, cfg appConfig) (*inventory, error) {
 	return inv, nil
 }
 
+// sortedFastListRecords orders used worktrees from newest to oldest, followed
+// by never-used worktrees.
 func sortedFastListRecords(inv *inventory, usage map[usageKey]sql.NullInt64) []*inventoryRecord {
 	records := append([]*inventoryRecord(nil), inv.records...)
 	usageByPath := make(map[string]sql.NullInt64, len(usage))

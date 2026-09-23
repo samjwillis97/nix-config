@@ -41,10 +41,10 @@ while IFS=$'\t' read -r name windows attached; do
 done < <(tmux list-sessions \
   -F '#{session_name}	#{session_windows}	#{session_attached}' 2>/dev/null)
 
-# Output MRU sessions sorted by timestamp descending (most recent first)
+# Output MRU sessions sorted by timestamp ascending (most recent last)
 if [ ${#mru_entries[@]} -gt 0 ]; then
   printf '%s\n' "${mru_entries[@]}" \
-    | sort -t$'\t' -k1,1 -rn \
+    | sort -t$'\t' -k1,1 -n \
     | cut -f2-
 fi
 
