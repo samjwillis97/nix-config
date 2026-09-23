@@ -188,6 +188,7 @@
           packages = {
             f = pkgs.callPackage ./packages/f { };
             httpcraft = pkgs.callPackage ./packages/httpcraft { };
+            unreal-agent = pkgs.callPackage ./packages/unreal-agent { };
             neovim = self.lib.mkNeovim {
               pkgs = nvimPkgs;
             };

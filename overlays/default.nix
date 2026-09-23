@@ -17,6 +17,7 @@ in
       neovim-full = self.packages.${system}.neovim-full;
       f = self.packages.${system}.f;
       httpcraft = self.packages.${system}.httpcraft;
+      unreal-agent = self.packages.${system}.unreal-agent;
       nix-auth = inputs.nix-auth.packages.${system}.default;
     })
   ];
