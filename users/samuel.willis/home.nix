@@ -33,6 +33,8 @@
       };
     };
 
+    unreal-agent.enable = true;
+
     git = {
       enable = true;
 
