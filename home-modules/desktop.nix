@@ -146,7 +146,7 @@
               right = "l";
 
               terminal = "ghostty";
-              menu = "wmenu-run";
+              menu = "${pkgs.j4-dmenu-desktop}/bin/j4-dmenu-desktop --dmenu='${pkgs.wmenu}/bin/wmenu -i' --term=${terminal}";
 
               workspaceAutoBackAndForth = true;
               workspaceLayout = "default";
