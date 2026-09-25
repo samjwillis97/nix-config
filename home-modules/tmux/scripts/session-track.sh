@@ -7,4 +7,5 @@ fi
 
 mkdir -p "$cache_dir"
 encoded=$(encode_session_name "$session_name")
-printf '%s' "$(date +%s)" > "$cache_dir/$encoded"
+# Nanosecond precision keeps rapid session switches ordered deterministically.
+printf '%s' "$(date +%s%N)" > "$cache_dir/$encoded"
