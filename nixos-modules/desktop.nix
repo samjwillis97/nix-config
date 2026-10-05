@@ -10,7 +10,7 @@
 
     environment.systemPackages = with pkgs; [
       wl-clipboard
-      mako # notifications
+      xwayland-satellite
     ];
 
     services = {
@@ -23,41 +23,20 @@
     # allows the greeter to unlock keyring
     security.pam.services = {
       greetd.enableGnomeKeyring = true;
-      swaylock.enableGnomeKeyring = true;
     };
 
     # allows home manager
     security.polkit.enable = true;
 
-    # Window manager
-    programs.sway = {
+    programs.niri = {
       enable = true;
-      package = pkgs.swayfx;
-      wrapperFeatures.gtk = true;
+      useNautilus = false;
     };
 
-    # screen sharing
-    xdg.portal = {
-      enable = true;
-      wlr.enable = true;
-    };
     services.pipewire = {
       enable = true;
       alsa.enable = true;
       pulse.enable = true;
-    };
-
-    # systemd services
-    # kanshi is an output configuration daemon
-    systemd.user.services.kanshi = {
-      enable = true;
-      description = "kanshi daemon";
-      wantedBy = [ ];
-      after = [ ];
-      serviceConfig = {
-        Type = "simple";
-        ExecStart = "${lib.getExe pkgs.kanshi} -c kanshi_config_file";
-      };
     };
 
     # greeter
