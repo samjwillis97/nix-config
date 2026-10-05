@@ -17,27 +17,58 @@
 
       (lib.mkIf (!pkgs.stdenv.hostPlatform.isDarwin) (
         let
-          workspaces = [
-            "1"
-            "2"
-            "3"
-            "4"
-            "5"
-            "6"
-            "7"
-            "8"
-            "9"
-            "0"
-          ];
-          noctaliaExecutable = lib.getExe pkgs.noctalia;
+          noctaliaExecutable = lib.getExe config.programs.noctalia.package;
           ghosttyExecutable = lib.getExe config.programs.ghostty.package;
           firefoxExecutable = lib.getExe config.programs.firefox.package;
           monitorPowerOn = "${pkgs.niri}/bin/niri msg action power-on-monitors";
 
-          workspaceBindings = lib.concatMapStringsSep "\n" (workspace: ''
-            Mod+${workspace} allow-inhibiting=false repeat=false { focus-workspace "${workspace}"; }
-            Mod+Shift+${workspace} allow-inhibiting=false repeat=false { move-window-to-workspace "${workspace}"; }
-          '') workspaces;
+          gameModeStateFile = "${config.home.homeDirectory}/.local/state/niri/game-mode.kdl";
+          gameModeExit = pkgs.writeShellScript "niri-game-mode-exit" ''
+            set -eu
+            rm -f ${lib.escapeShellArg gameModeStateFile}
+            ${pkgs.niri}/bin/niri msg action load-config-file
+            ${noctaliaExecutable} msg notification-show "Game mode" "Disabled"
+          '';
+          gameModeConfig = pkgs.writeText "niri-game-mode.kdl" ''
+            // Switch niri's compositor modifier to Super so Alt-based game input
+            // is not consumed by the normal Mod bindings or mouse gestures.
+            input {
+              mod-key "Super"
+              mod-key-nested "Super"
+            }
+
+            binds {
+              Alt+Shift+G allow-inhibiting=false hotkey-overlay-title="Exit game mode" repeat=false { spawn "${gameModeExit}"; }
+              Alt+Tab allow-inhibiting=false repeat=false { focus-workspace-previous; }
+              Alt+Page_Down allow-inhibiting=false { focus-workspace-down; }
+              Alt+Page_Up allow-inhibiting=false { focus-workspace-up; }
+              Alt+Ctrl+Page_Down allow-inhibiting=false { move-column-to-workspace-down; }
+              Alt+Ctrl+Page_Up allow-inhibiting=false { move-column-to-workspace-up; }
+              Alt+U allow-inhibiting=false { focus-workspace-down; }
+              Alt+I allow-inhibiting=false { focus-workspace-up; }
+              Alt+Ctrl+U allow-inhibiting=false { move-column-to-workspace-down; }
+              Alt+Ctrl+I allow-inhibiting=false { move-column-to-workspace-up; }
+              Alt+WheelScrollDown allow-inhibiting=false cooldown-ms=150 { focus-workspace-down; }
+              Alt+WheelScrollUp allow-inhibiting=false cooldown-ms=150 { focus-workspace-up; }
+              Alt+Ctrl+WheelScrollDown allow-inhibiting=false cooldown-ms=150 { move-column-to-workspace-down; }
+              Alt+Ctrl+WheelScrollUp allow-inhibiting=false cooldown-ms=150 { move-column-to-workspace-up; }
+            }
+          '';
+          gameModeEnter = pkgs.writeShellScript "niri-game-mode-enter" ''
+            set -eu
+            state_file=${lib.escapeShellArg gameModeStateFile}
+            if [ -e "$state_file" ]; then
+              exit 0
+            fi
+            install -d -m 0755 "$(dirname "$state_file")"
+            temporary_file="$(mktemp "$state_file.XXXXXX")"
+            trap 'rm -f "$temporary_file"' EXIT
+            cp ${lib.escapeShellArg gameModeConfig} "$temporary_file"
+            chmod 0644 "$temporary_file"
+            mv "$temporary_file" "$state_file"
+            ${pkgs.niri}/bin/niri msg action load-config-file
+            ${noctaliaExecutable} msg notification-show "Game mode" "Enabled"
+          '';
 
           niriConfig = pkgs.writeText "niri-config.kdl" ''
             input {
@@ -64,19 +95,19 @@
             }
 
             output "DP-3" {
-              mode "2560x1440@180"
+              mode "2560x1440@180.002"
               scale 1
               position x=0 y=0
             }
 
             output "DP-2" {
-              mode "2560x1440@180"
+              mode "2560x1440@180.002"
               scale 1
               position x=2560 y=0
             }
 
-            ${lib.concatMapStringsSep "\n" (workspace: ''workspace "${workspace}"'') workspaces}
 
+            // Workspaces are intentionally dynamic and local to each output.
             layout {
               gaps 0
               default-column-width { proportion 0.5; }
@@ -120,20 +151,20 @@
               Mod+Escape repeat=false { spawn "${noctaliaExecutable}" "msg" "panel-toggle" "session"; }
               Mod+Comma repeat=false { spawn "${noctaliaExecutable}" "msg" "settings-toggle"; }
               Mod+Shift+C repeat=false { spawn "${noctaliaExecutable}" "msg" "panel-toggle" "control-center"; }
-              Mod+Ctrl+Escape allow-inhibiting=false repeat=false { spawn "${noctaliaExecutable}" "msg" "session" "lock"; }
+              Mod+Ctrl+Escape repeat=false { spawn "${noctaliaExecutable}" "msg" "session" "lock"; }
 
-              Mod+H allow-inhibiting=false { focus-column-left; }
-              Mod+J allow-inhibiting=false { focus-window-down; }
-              Mod+K allow-inhibiting=false { focus-window-up; }
-              Mod+L allow-inhibiting=false { focus-column-right; }
-              Mod+Shift+H allow-inhibiting=false { move-column-left; }
-              Mod+Shift+J allow-inhibiting=false { move-window-down; }
-              Mod+Shift+K allow-inhibiting=false { move-window-up; }
-              Mod+Shift+L allow-inhibiting=false { move-column-right; }
-              Mod+Ctrl+H allow-inhibiting=false { set-column-width "-10%"; }
-              Mod+Ctrl+L allow-inhibiting=false { set-column-width "+10%"; }
-              Mod+Ctrl+K allow-inhibiting=false { set-window-height "-10%"; }
-              Mod+Ctrl+J allow-inhibiting=false { set-window-height "+10%"; }
+              Mod+H { focus-column-left; }
+              Mod+J { focus-window-down; }
+              Mod+K { focus-window-up; }
+              Mod+L { focus-column-right; }
+              Mod+Shift+H { move-column-left; }
+              Mod+Shift+J { move-window-down; }
+              Mod+Shift+K { move-window-up; }
+              Mod+Shift+L { move-column-right; }
+              Mod+Ctrl+H { set-column-width "-10%"; }
+              Mod+Ctrl+L { set-column-width "+10%"; }
+              Mod+Ctrl+K { set-window-height "-10%"; }
+              Mod+Ctrl+J { set-window-height "+10%"; }
 
               Mod+Space repeat=false { toggle-window-floating; }
               Mod+Shift+Space repeat=false { switch-focus-between-floating-and-tiling; }
@@ -141,16 +172,29 @@
               Mod+S { consume-window-into-column; }
               Mod+V { expel-window-from-column; }
               Mod+Tab repeat=false { focus-workspace-previous; }
+              Mod+Page_Down { focus-workspace-down; }
+              Mod+Page_Up { focus-workspace-up; }
+              Mod+Ctrl+Page_Down { move-column-to-workspace-down; }
+              Mod+Ctrl+Page_Up { move-column-to-workspace-up; }
+              Mod+U { focus-workspace-down; }
+              Mod+I { focus-workspace-up; }
+              Mod+Ctrl+U { move-column-to-workspace-down; }
+              Mod+Ctrl+I { move-column-to-workspace-up; }
+              Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
+              Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
+              Mod+Ctrl+WheelScrollDown cooldown-ms=150 { move-column-to-workspace-down; }
+              Mod+Ctrl+WheelScrollUp cooldown-ms=150 { move-column-to-workspace-up; }
 
-              Mod+Ctrl+Left allow-inhibiting=false { focus-monitor-left; }
-              Mod+Ctrl+Right allow-inhibiting=false { focus-monitor-right; }
-              Mod+Ctrl+Shift+Left allow-inhibiting=false { move-window-to-monitor-left; }
-              Mod+Ctrl+Shift+Right allow-inhibiting=false { move-window-to-monitor-right; }
+              Mod+Ctrl+Left { focus-monitor-left; }
+              Mod+Ctrl+Right { focus-monitor-right; }
+              Mod+Ctrl+Shift+Left { move-window-to-monitor-left; }
+              Mod+Ctrl+Shift+Right { move-window-to-monitor-right; }
               Mod+O repeat=false { toggle-overview; }
               Mod+F repeat=false { maximize-column; }
               Mod+Shift+F repeat=false { fullscreen-window; }
               Mod+R repeat=false { switch-preset-column-width; }
-              Mod+Shift+G allow-inhibiting=false repeat=false { toggle-keyboard-shortcuts-inhibit; }
+              // Game mode dynamically disables compositor bindings while preserving workspaces.
+              Mod+Shift+G hotkey-overlay-title="Enter game mode" allow-inhibiting=false repeat=false { spawn "${gameModeEnter}"; }
               Mod+Shift+E repeat=false { quit; }
               Mod+Shift+Slash repeat=false { show-hotkey-overlay; }
 
@@ -162,8 +206,8 @@
               XF86AudioLowerVolume allow-when-locked=true repeat=false { spawn "${noctaliaExecutable}" "msg" "volume-down" "5"; }
               XF86AudioMute allow-when-locked=true repeat=false { spawn "${noctaliaExecutable}" "msg" "volume-mute"; }
 
-              ${workspaceBindings}
             }
+            include optional=true "${gameModeStateFile}"
 
             window-rule {
               match app-id=r#"(?i)^steam$"# title="^Friends$"
@@ -324,21 +368,40 @@
             lockscreen = {
               enabled = true;
               lock_before_suspend = true;
+              monitors = [
+                "DP-3"
+                "DP-2"
+              ];
+            };
+            lockscreen_widgets = {
+              enabled = true;
+              schema_version = 2;
+              widget_order = [
+                "lockscreen-login-box@DP-3"
+                "lockscreen-login-box@DP-2"
+              ];
+              widget."lockscreen-login-box@DP-3" = {
+                type = "login_box";
+                output = "DP-3";
+                cx = 1280.0;
+                cy = 720.0;
+                box_width = 810.0;
+                box_height = 196.0;
+                rotation = 0.0;
+              };
+              widget."lockscreen-login-box@DP-2" = {
+                type = "login_box";
+                output = "DP-2";
+                cx = 1280.0;
+                cy = 720.0;
+                box_width = 810.0;
+                box_height = 196.0;
+                rotation = 0.0;
+              };
             };
             idle.behavior.lock.enabled = false;
             idle.behavior."screen-off".enabled = false;
           };
-
-          noctaliaConfig = (pkgs.formats.toml { }).generate "noctalia-config.toml" noctaliaSettings;
-          noctaliaConfigChecked =
-            pkgs.runCommand "noctalia-config-checked"
-              {
-                nativeBuildInputs = [ pkgs.noctalia ];
-              }
-              ''
-                ${noctaliaExecutable} config validate ${noctaliaConfig}
-                cp ${noctaliaConfig} $out
-              '';
 
           paletteColors = {
             mPrimary = "#${config.lib.stylix.colors.base0D}";
@@ -357,34 +420,53 @@
             mShadow = "#${config.lib.stylix.colors.base00}";
             mHover = "#${config.lib.stylix.colors.base0C}";
             mOnHover = "#${config.lib.stylix.colors.base00}";
-          };
-          noctaliaPalette = (pkgs.formats.json { }).generate "noctalia-palette.json" {
-            dark = paletteColors;
+            terminal = {
+              background = "#${config.lib.stylix.colors.base00}";
+              foreground = "#${config.lib.stylix.colors.base05}";
+              cursor = "#${config.lib.stylix.colors.base05}";
+              cursorText = "#${config.lib.stylix.colors.base00}";
+              selectionBg = "#${config.lib.stylix.colors.base02}";
+              selectionFg = "#${config.lib.stylix.colors.base05}";
+              normal = {
+                black = "#${config.lib.stylix.colors.base00}";
+                red = "#${config.lib.stylix.colors.base08}";
+                green = "#${config.lib.stylix.colors.base0B}";
+                yellow = "#${config.lib.stylix.colors.base0A}";
+                blue = "#${config.lib.stylix.colors.base0D}";
+                magenta = "#${config.lib.stylix.colors.base0E}";
+                cyan = "#${config.lib.stylix.colors.base0C}";
+                white = "#${config.lib.stylix.colors.base05}";
+              };
+              bright = {
+                black = "#${config.lib.stylix.colors.base03}";
+                red = "#${config.lib.stylix.colors.base08}";
+                green = "#${config.lib.stylix.colors.base0B}";
+                yellow = "#${config.lib.stylix.colors.base0A}";
+                blue = "#${config.lib.stylix.colors.base0D}";
+                magenta = "#${config.lib.stylix.colors.base0E}";
+                cyan = "#${config.lib.stylix.colors.base0C}";
+                white = "#${config.lib.stylix.colors.base07}";
+              };
+            };
           };
         in
         {
-          home.packages = [ pkgs.noctalia ];
           home.sessionVariables.TERMINAL = ghosttyExecutable;
+          programs.noctalia = {
+            enable = true;
+            systemd.enable = true;
+            settings = noctaliaSettings;
+            customPalettes = {
+              stylix = {
+                dark = paletteColors;
+              };
+            };
+          };
+          home.activation.resetNiriGameMode = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            rm -f ${lib.escapeShellArg gameModeStateFile}
+          '';
 
           wayland.systemd.target = "graphical-session.target";
-
-          systemd.user.services.noctalia = {
-            Unit = {
-              Description = "Noctalia desktop shell";
-              After = [ "graphical-session.target" ];
-              PartOf = [ "graphical-session.target" ];
-              "X-Restart-Triggers" = [
-                "${noctaliaConfigChecked}"
-                "${noctaliaPalette}"
-              ];
-            };
-            Service = {
-              ExecStart = noctaliaExecutable;
-              Restart = "on-failure";
-              RestartSec = 1;
-            };
-            Install.WantedBy = [ "graphical-session.target" ];
-          };
 
           services.udiskie.enable = true;
 
@@ -418,8 +500,6 @@
 
           xdg.configFile = {
             "niri/config.kdl".source = niriConfigChecked;
-            "noctalia/config.toml".source = noctaliaConfigChecked;
-            "noctalia/palettes/stylix.json".source = noctaliaPalette;
           };
         }
       ))

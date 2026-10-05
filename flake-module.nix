@@ -93,11 +93,22 @@ let
           gaming.enable = lib.mkForce config.my.gaming.enable;
         };
       };
+      noctaliaHomeModule =
+        if pkgs.stdenv.hostPlatform.isDarwin then
+          {
+            options.programs.noctalia = lib.mkOption {
+              type = lib.types.attrs;
+              default = { };
+            };
+          }
+        else
+          inputs.noctalia.homeModules.default;
     in
     {
       config = lib.mkIf config.my.home-manager.enable {
         home-manager = {
           sharedModules = allHomeModules ++ [
+            noctaliaHomeModule
             sharedHostHomeModule
             inputs.sops-nix.homeManagerModules.sops
             inputs.direnv-instant.homeModules.direnv-instant
