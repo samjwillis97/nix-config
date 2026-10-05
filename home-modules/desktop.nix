@@ -27,7 +27,7 @@
             set -eu
             rm -f ${lib.escapeShellArg gameModeStateFile}
             ${pkgs.niri}/bin/niri msg action load-config-file
-            ${noctaliaExecutable} msg notification-show "Game mode" "Disabled"
+            ${noctaliaExecutable} msg plugin sam/game-mode:bar all set off >/dev/null 2>&1 || true
           '';
           gameModeConfig = pkgs.writeText "niri-game-mode.kdl" ''
             // Switch niri's compositor modifier to Super so Alt-based game input
@@ -67,7 +67,7 @@
             chmod 0644 "$temporary_file"
             mv "$temporary_file" "$state_file"
             ${pkgs.niri}/bin/niri msg action load-config-file
-            ${noctaliaExecutable} msg notification-show "Game mode" "Enabled"
+            ${noctaliaExecutable} msg plugin sam/game-mode:bar all set on >/dev/null 2>&1 || true
           '';
 
           niriConfig = pkgs.writeText "niri-config.kdl" ''
@@ -299,6 +299,10 @@
                 community_ids = [ ];
               };
             };
+            plugins = {
+              enabled = [ "sam/game-mode" ];
+              auto_update = "none";
+            };
             shell = {
               font_family = config.stylix.fonts.sansSerif.name;
               polkit_agent = true;
@@ -344,6 +348,7 @@
               ];
               center = [ "clock" ];
               end = [
+                "game-mode"
                 "media"
                 "tray"
                 "notifications"
@@ -352,6 +357,7 @@
                 "session"
               ];
             };
+            widget."game-mode".type = "sam/game-mode:bar";
             dock.enabled = false;
             notification = {
               enable_daemon = true;
@@ -498,6 +504,60 @@
             };
           };
 
+          xdg.dataFile = {
+            "noctalia/plugins/game-mode/plugin.toml".text = ''
+              id = "sam/game-mode"
+              name = "Game Mode"
+              version = "1.0.0"
+              plugin_api = 24
+              author = "sam"
+              license = "MIT"
+              description = "Shows the active Niri game mode in the Noctalia bar."
+
+              [[widget]]
+              id = "bar"
+              entry = "widget.luau"
+
+                [widget.actions]
+                middle = "none"
+            '';
+            "noctalia/plugins/game-mode/widget.luau".text = ''
+              local stateFile = "/home/sam/.local/state/niri/game-mode.kdl"
+              local enabled = false
+
+              local function render()
+                barWidget.setGlyph("device-gamepad")
+                if enabled then
+                  barWidget.setText("Game")
+                  barWidget.setGlyphColor("primary")
+                  barWidget.setTooltip("Game mode enabled")
+                  barWidget.setVisible(true)
+                else
+                  barWidget.setVisible(false)
+                end
+              end
+
+              local function refresh()
+                noctalia.runAsync({ "test", "-e", stateFile }, function(result)
+                  local nextEnabled = result.exitCode == 0
+                  if nextEnabled ~= enabled then
+                    enabled = nextEnabled
+                    render()
+                  end
+                end)
+              end
+
+              render()
+              refresh()
+
+              function onIpc(event, payload)
+                if event == "set" then
+                  enabled = payload == "on"
+                  render()
+                end
+              end
+            '';
+          };
           xdg.configFile = {
             "niri/config.kdl".source = niriConfigChecked;
           };

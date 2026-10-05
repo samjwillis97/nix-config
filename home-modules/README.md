@@ -39,6 +39,15 @@ The integration also propagates the host's `my.desktop.enable` and `my.work.enab
 
 Use `pkgs.stdenv.hostPlatform.isDarwin` or `.isLinux` when a user feature genuinely needs platform-specific behavior. Keep system-level settings in [`nixos-modules/`](../nixos-modules/README.md) or [`darwin-modules/`](../darwin-modules/README.md).
 
+### Desktop game mode
+
+The desktop module's Niri game mode is toggled with `Alt+Shift+G`. While it is
+active, Niri uses `Super` for its compositor bindings so the normal `Alt` game
+input passes through; the explicitly retained `Alt` workspace navigation
+bindings remain available. A local Noctalia plugin reads the same game-mode
+state marker and displays a `Game` indicator in the bar on each output while
+the mode is enabled.
+
 ## User configuration and state versions
 
 A user's `home.nix` is discovered from `users/<name>/home.nix` and attached when that user is selected and Home Manager is enabled on the host. It should set `home.username`, preserve the existing `home.stateVersion`, and enable the `my.*` features that user wants. `home.stateVersion` is Home Manager compatibility history, independent from a host's `system.stateVersion`; do not change either merely because a newer channel is available. See [`users/README.md`](../users/README.md) for the complete account/home matrix and [`nixos-hosts/`](../nixos-hosts/README.md) or [`darwin-hosts/`](../darwin-hosts/README.md) for host selection.
