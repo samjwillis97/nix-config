@@ -156,6 +156,12 @@
         treefmt-nix.follows = "treefmt-nix";
       };
     };
+
+    # Apple Music player
+    sidra = {
+      url = "github:wimpysworld/sidra";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

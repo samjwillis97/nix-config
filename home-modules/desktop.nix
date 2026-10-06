@@ -7,6 +7,12 @@
 {
   config = lib.mkIf config.my.desktop.enable (
     lib.mkMerge [
+      {
+        home.packages = with pkgs; [
+          sidra
+        ];
+      }
+
       (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
         home.packages = with pkgs.brewCasks; [
           raycast
@@ -328,6 +334,16 @@
               enabled = [ "sam/game-mode" ];
               auto_update = "none";
             };
+            location = {
+              auto_locate = false;
+              address = "Newcastle, Australia";
+            };
+            weather = {
+              enabled = true;
+              refresh_minutes = 30;
+              unit = "metric";
+              effects = true;
+            };
             shell = {
               font_family = config.stylix.fonts.sansSerif.name;
               polkit_agent = true;
@@ -374,6 +390,7 @@
               center = [ "clock" ];
               end = [
                 "game-mode"
+                "weather"
                 "media"
                 "tray"
                 "notifications"
