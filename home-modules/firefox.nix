@@ -25,18 +25,21 @@ in
           profiles.default = {
             id = 0;
 
-            extensions.packages = with pkgs.nur.repos.rycee.firefox-addons; [
-              decentraleyes
-              onepassword-password-manager
-              multi-account-containers
-              ublock-origin
-              i-dont-care-about-cookies
-              cookie-autodelete
-              terms-of-service-didnt-read
-              sponsorblock
-              okta-browser-plugin
-              tree-style-tab
-            ];
+            extensions = {
+              force = true;
+
+              packages = with pkgs.nur.repos.rycee.firefox-addons; [
+                decentraleyes
+                onepassword-password-manager
+                multi-account-containers
+                ublock-origin
+                i-dont-care-about-cookies
+                cookie-autodelete
+                terms-of-service-didnt-read
+                sponsorblock
+                okta-browser-plugin
+              ];
+            };
 
             search = {
               force = true;
@@ -110,7 +113,10 @@ in
       })
 
       (lib.mkIf config.stylix.enable {
-        stylix.targets.firefox.profileNames = [ "default" ];
+        stylix.targets.firefox = {
+          colorTheme.enable = true;
+          profileNames = [ "default" ];
+        };
       })
     ]
   );
