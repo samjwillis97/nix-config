@@ -89,15 +89,27 @@ let
       sharedHostHomeModule = {
         config.my = {
           desktop.enable = lib.mkForce config.my.desktop.enable;
+          desktop.monitors = lib.mkForce config.my.desktop.monitors;
           work.enable = lib.mkForce config.my.work.enable;
           gaming.enable = lib.mkForce config.my.gaming.enable;
         };
       };
+      noctaliaHomeModule =
+        if pkgs.stdenv.hostPlatform.isDarwin then
+          {
+            options.programs.noctalia = lib.mkOption {
+              type = lib.types.attrs;
+              default = { };
+            };
+          }
+        else
+          inputs.noctalia.homeModules.default;
     in
     {
       config = lib.mkIf config.my.home-manager.enable {
         home-manager = {
           sharedModules = allHomeModules ++ [
+            noctaliaHomeModule
             sharedHostHomeModule
             inputs.sops-nix.homeManagerModules.sops
             inputs.direnv-instant.homeModules.direnv-instant
@@ -154,6 +166,7 @@ in
 
         modules = allNixosModules ++ [
           unstablePackageModule
+          inputs.noctalia-greeter.nixosModules.default
           inputs.home-manager.nixosModules.home-manager
           inputs.sops-nix.nixosModules.sops
           inputs.nixflix.nixosModules.default

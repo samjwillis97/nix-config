@@ -19,6 +19,7 @@ in
       httpcraft = self.packages.${system}.httpcraft;
       unreal-agent = self.packages.${system}.unreal-agent;
       nix-auth = inputs.nix-auth.packages.${system}.default;
+      sidra = inputs.sidra.packages.${system}.default;
     })
   ];
 }

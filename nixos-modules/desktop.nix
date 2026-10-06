@@ -4,13 +4,22 @@
   pkgs,
   ...
 }:
+let
+  desktopMonitors = lib.mapAttrsToList (
+    name: monitor: monitor // { inherit name; }
+  ) config.my.desktop.monitors;
+in
 {
   config = lib.mkIf config.my.desktop.enable {
     hardware.graphics.enable = true;
+    hardware.bluetooth = {
+      enable = true;
+      powerOnBoot = true;
+    };
 
     environment.systemPackages = with pkgs; [
       wl-clipboard
-      mako # notifications
+      xwayland-satellite
     ];
 
     services = {
@@ -23,44 +32,41 @@
     # allows the greeter to unlock keyring
     security.pam.services = {
       greetd.enableGnomeKeyring = true;
-      swaylock.enableGnomeKeyring = true;
     };
 
     # allows home manager
     security.polkit.enable = true;
 
-    # Window manager
-    programs.sway = {
+    programs.niri = {
       enable = true;
-      package = pkgs.swayfx;
-      wrapperFeatures.gtk = true;
+      useNautilus = true;
     };
 
-    # screen sharing
-    xdg.portal = {
-      enable = true;
-      wlr.enable = true;
-    };
     services.pipewire = {
       enable = true;
       alsa.enable = true;
       pulse.enable = true;
     };
 
-    # systemd services
-    # kanshi is an output configuration daemon
-    systemd.user.services.kanshi = {
-      enable = true;
-      description = "kanshi daemon";
-      wantedBy = [ ];
-      after = [ ];
-      serviceConfig = {
-        Type = "simple";
-        ExecStart = "${lib.getExe pkgs.kanshi} -c kanshi_config_file";
-      };
-    };
-
     # greeter
-    programs.regreet.enable = true;
+    services.displayManager.noctalia-greeter = {
+      enable = true;
+      settings.output = lib.mkIf (desktopMonitors != [ ]) (
+        let
+          primaryMonitor = builtins.head desktopMonitors;
+        in
+        {
+          inherit (primaryMonitor) width height;
+
+          layout = lib.concatMapStringsSep "; " (
+            monitor: "${monitor.name}:${toString monitor.x},${toString monitor.y}"
+          ) desktopMonitors;
+          refresh_rate = primaryMonitor.refreshRate;
+          scales = lib.concatMapStringsSep "; " (
+            monitor: "${monitor.name}:${toString monitor.scale}"
+          ) desktopMonitors;
+        }
+      );
+    };
   };
 }

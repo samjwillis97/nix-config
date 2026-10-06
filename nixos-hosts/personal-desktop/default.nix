@@ -10,6 +10,8 @@
   ];
 
   config = {
+    networking.networkmanager.enable = true;
+
     my = {
       users = [ "sam" ];
       dix.enable = true;
@@ -19,7 +21,29 @@
 
       gaming.enable = true;
 
-      desktop.enable = true;
+      desktop = {
+        enable = true;
+        monitors = {
+          DP-3 = {
+            mode = "2560x1440@180.002";
+            width = 2560;
+            height = 1440;
+            refreshRate = 180;
+            scale = 1;
+            x = 0;
+            y = 0;
+          };
+          DP-2 = {
+            mode = "2560x1440@180.002";
+            width = 2560;
+            height = 1440;
+            refreshRate = 180;
+            scale = 1;
+            x = 2560;
+            y = 0;
+          };
+        };
+      };
 
       tailscale = {
         enable = true;
