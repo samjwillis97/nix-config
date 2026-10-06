@@ -120,7 +120,7 @@
               center-focused-column "never"
               always-center-single-column
               default-column-display "normal"
-              default-column-width { proportion 0.5; }
+              default-column-width { proportion 0.66667; }
               preset-column-widths {
                 proportion 0.33333
                 proportion 0.5
@@ -164,7 +164,7 @@
               Mod+N repeat=false { spawn "${firefoxExecutable}"; }
               Mod+D repeat=false { spawn "${noctaliaExecutable}" "msg" "panel-toggle" "launcher"; }
               Mod+Escape repeat=false { spawn "${noctaliaExecutable}" "msg" "panel-toggle" "session"; }
-              Mod+Comma repeat=false { spawn "${noctaliaExecutable}" "msg" "settings-toggle"; }
+              Mod+Ctrl+Comma repeat=false { spawn "${noctaliaExecutable}" "msg" "settings-toggle"; }
               Mod+Shift+C repeat=false { spawn "${noctaliaExecutable}" "msg" "panel-toggle" "control-center"; }
               Mod+Ctrl+Escape repeat=false { spawn "${noctaliaExecutable}" "msg" "session" "lock"; }
 
@@ -206,6 +206,10 @@
               Mod+Ctrl+Right { focus-monitor-right; }
               Mod+Ctrl+Shift+Left { move-window-to-monitor-left; }
               Mod+Ctrl+Shift+Right { move-window-to-monitor-right; }
+              Mod+Comma { focus-monitor-left; }
+              Mod+Period { focus-monitor-right; }
+              Mod+Shift+Comma { move-window-to-monitor-left; }
+              Mod+Shift+Period { move-window-to-monitor-right; }
               Mod+O repeat=false { toggle-overview; }
               Mod+F repeat=false { maximize-column; }
               Mod+Shift+F repeat=false { fullscreen-window; }
