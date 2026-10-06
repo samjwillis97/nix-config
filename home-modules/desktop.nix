@@ -26,7 +26,31 @@
           noctaliaExecutable = lib.getExe config.programs.noctalia.package;
           ghosttyExecutable = lib.getExe config.programs.ghostty.package;
           firefoxExecutable = lib.getExe config.programs.firefox.package;
-          monitorPowerOn = "${pkgs.niri}/bin/niri msg action power-on-monitors";
+          desktopMonitors = lib.mapAttrsToList (
+            name: monitor: monitor // { inherit name; }
+          ) config.my.desktop.monitors;
+          monitorNames = map (monitor: monitor.name) desktopMonitors;
+          niriOutputs = lib.concatMapStringsSep "\n" (monitor: ''
+            output "${monitor.name}" {
+              mode "${monitor.mode}"
+              scale ${toString monitor.scale}
+              position x=${toString monitor.x} y=${toString monitor.y}
+            }
+          '') desktopMonitors;
+          lockscreenWidgets = lib.listToAttrs (
+            map (monitor: {
+              name = "lockscreen-login-box@${monitor.name}";
+              value = {
+                type = "login_box";
+                output = monitor.name;
+                cx = monitor.width / monitor.scale / 2.0;
+                cy = monitor.height / monitor.scale / 2.0;
+                box_width = 810.0;
+                box_height = 196.0;
+                rotation = 0.0;
+              };
+            }) desktopMonitors
+          );
 
           gameModeStateFile = "${config.home.homeDirectory}/.local/state/niri/game-mode.kdl";
           gameModeExit = pkgs.writeShellScript "niri-game-mode-exit" ''
@@ -35,6 +59,7 @@
             ${pkgs.niri}/bin/niri msg action load-config-file
             ${noctaliaExecutable} msg plugin sam/game-mode:bar all set off >/dev/null 2>&1 || true
           '';
+
           gameModeConfig = pkgs.writeText "niri-game-mode.kdl" ''
             // Switch niri's compositor modifier to Super so Alt-based game input
             // is not consumed by the normal Mod bindings or mouse gestures.
@@ -45,19 +70,6 @@
 
             binds {
               Alt+Shift+G allow-inhibiting=false hotkey-overlay-title="Exit game mode" repeat=false { spawn "${gameModeExit}"; }
-              Alt+Tab allow-inhibiting=false repeat=false { focus-workspace-previous; }
-              Alt+Page_Down allow-inhibiting=false { focus-workspace-down; }
-              Alt+Page_Up allow-inhibiting=false { focus-workspace-up; }
-              Alt+Ctrl+Page_Down allow-inhibiting=false { move-column-to-workspace-down; }
-              Alt+Ctrl+Page_Up allow-inhibiting=false { move-column-to-workspace-up; }
-              Alt+U allow-inhibiting=false { focus-workspace-down; }
-              Alt+I allow-inhibiting=false { focus-workspace-up; }
-              Alt+Ctrl+U allow-inhibiting=false { move-column-to-workspace-down; }
-              Alt+Ctrl+I allow-inhibiting=false { move-column-to-workspace-up; }
-              Alt+WheelScrollDown allow-inhibiting=false cooldown-ms=150 { focus-workspace-down; }
-              Alt+WheelScrollUp allow-inhibiting=false cooldown-ms=150 { focus-workspace-up; }
-              Alt+Ctrl+WheelScrollDown allow-inhibiting=false cooldown-ms=150 { move-column-to-workspace-down; }
-              Alt+Ctrl+WheelScrollUp allow-inhibiting=false cooldown-ms=150 { move-column-to-workspace-up; }
             }
           '';
           gameModeEnter = pkgs.writeShellScript "niri-game-mode-enter" ''
@@ -100,17 +112,7 @@
               mod-key-nested "Alt"
             }
 
-            output "DP-3" {
-              mode "2560x1440@180.002"
-              scale 1
-              position x=0 y=0
-            }
-
-            output "DP-2" {
-              mode "2560x1440@180.002"
-              scale 1
-              position x=2560 y=0
-            }
+            ${niriOutputs}
 
 
             // Workspaces are intentionally dynamic and local to each output.
@@ -194,6 +196,7 @@
               Mod+Shift+W repeat=false { toggle-column-tabbed-display; }
               Mod+S { consume-window-into-column; }
               Mod+V { expel-window-from-column; }
+              Mod+Shift+V repeat=false { spawn "${noctaliaExecutable}" "msg" "panel-toggle" "clipboard"; }
               Mod+Tab repeat=false { focus-workspace-previous; }
               Mod+Page_Down { focus-workspace-down; }
               Mod+Page_Up { focus-workspace-up; }
@@ -216,7 +219,6 @@
               Mod+Period { focus-monitor-right; }
               Mod+Shift+Comma { move-window-to-monitor-left; }
               Mod+Shift+Period { move-window-to-monitor-right; }
-              Mod+O repeat=false { toggle-overview; }
               Mod+F repeat=false { maximize-column; }
               Mod+Shift+F repeat=false { fullscreen-window; }
               // Game mode dynamically disables compositor bindings while preserving workspaces.
@@ -226,7 +228,7 @@
 
               Print repeat=false { screenshot; }
               Ctrl+Print repeat=false { screenshot-screen; }
-              Alt+Print repeat=false { screenshot-window; }
+              Mod+Print repeat=false { screenshot-window; }
 
               XF86AudioRaiseVolume allow-when-locked=true repeat=false { spawn "${noctaliaExecutable}" "msg" "volume-up" "5"; }
               XF86AudioLowerVolume allow-when-locked=true repeat=false { spawn "${noctaliaExecutable}" "msg" "volume-down" "5"; }
@@ -348,7 +350,7 @@
               font_family = config.stylix.fonts.sansSerif.name;
               polkit_agent = true;
               setup_wizard_enabled = false;
-              clipboard_enabled = false;
+              clipboard_enabled = true;
               session = {
                 actions = [
                   {
@@ -394,6 +396,8 @@
                 "media"
                 "tray"
                 "notifications"
+                "clipboard"
+                "network"
                 "bluetooth"
                 "volume"
                 "control-center"
@@ -417,39 +421,44 @@
             lockscreen = {
               enabled = true;
               lock_before_suspend = true;
-              monitors = [
-                "DP-3"
-                "DP-2"
-              ];
+            }
+            // lib.optionalAttrs (desktopMonitors != [ ]) {
+              monitors = monitorNames;
             };
             lockscreen_widgets = {
-              enabled = true;
+              enabled = desktopMonitors != [ ];
               schema_version = 2;
-              widget_order = [
-                "lockscreen-login-box@DP-3"
-                "lockscreen-login-box@DP-2"
+              widget_order = map (monitor: "lockscreen-login-box@${monitor.name}") desktopMonitors;
+            }
+            // lockscreenWidgets;
+            idle = {
+              behavior_order = [
+                "notify"
+                "lock"
+                "screen-off"
+                "suspend"
               ];
-              widget."lockscreen-login-box@DP-3" = {
-                type = "login_box";
-                output = "DP-3";
-                cx = 1280.0;
-                cy = 720.0;
-                box_width = 810.0;
-                box_height = 196.0;
-                rotation = 0.0;
-              };
-              widget."lockscreen-login-box@DP-2" = {
-                type = "login_box";
-                output = "DP-2";
-                cx = 1280.0;
-                cy = 720.0;
-                box_width = 810.0;
-                box_height = 196.0;
-                rotation = 0.0;
+              pre_action_fade_seconds = 2.0;
+              behavior = {
+                notify = {
+                  timeout = 300;
+                  action = "command";
+                  command = "${pkgs.libnotify}/bin/notify-send -t 5000 'Locking in 5 seconds'";
+                };
+                lock = {
+                  timeout = 305;
+                  action = "lock";
+                };
+                "screen-off" = {
+                  timeout = 360;
+                  action = "screen_off";
+                };
+                suspend = {
+                  timeout = 900;
+                  action = "lock_and_suspend";
+                };
               };
             };
-            idle.behavior.lock.enabled = false;
-            idle.behavior."screen-off".enabled = false;
           };
 
           paletteColors = {
@@ -500,7 +509,86 @@
           };
         in
         {
-          home.sessionVariables.TERMINAL = ghosttyExecutable;
+          home = {
+            packages = [ pkgs.nautilus ];
+            sessionVariables.TERMINAL = ghosttyExecutable;
+            activation.resetNiriGameMode = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+              rm -f ${lib.escapeShellArg gameModeStateFile}
+            '';
+          };
+
+          xdg = {
+            mimeApps = {
+              enable = true;
+              defaultApplications = {
+                "inode/directory" = [ "org.gnome.Nautilus.desktop" ];
+                "application/pdf" = [ "firefox.desktop" ];
+                "text/html" = [ "firefox.desktop" ];
+                "x-scheme-handler/http" = [ "firefox.desktop" ];
+                "x-scheme-handler/https" = [ "firefox.desktop" ];
+              };
+            };
+
+            dataFile = {
+              "noctalia/plugins/game-mode/plugin.toml".text = ''
+                id = "sam/game-mode"
+                name = "Game Mode"
+                version = "1.0.0"
+                plugin_api = 24
+                author = "sam"
+                license = "MIT"
+                description = "Shows the active Niri game mode in the Noctalia bar."
+
+                [[widget]]
+                id = "bar"
+                entry = "widget.luau"
+
+                  [widget.actions]
+                  middle = "none"
+              '';
+              "noctalia/plugins/game-mode/widget.luau".text = ''
+                local stateFile = "/home/sam/.local/state/niri/game-mode.kdl"
+                local enabled = false
+
+                local function render()
+                  barWidget.setGlyph("device-gamepad")
+                  if enabled then
+                    barWidget.setText("Game")
+                    barWidget.setGlyphColor("primary")
+                    barWidget.setTooltip("Game mode enabled")
+                    barWidget.setVisible(true)
+                  else
+                    barWidget.setVisible(false)
+                  end
+                end
+
+                local function refresh()
+                  noctalia.runAsync({ "test", "-e", stateFile }, function(result)
+                    local nextEnabled = result.exitCode == 0
+                    if nextEnabled ~= enabled then
+                      enabled = nextEnabled
+                      render()
+                    end
+                  end)
+                end
+
+                render()
+                refresh()
+
+                function onIpc(event, payload)
+                  if event == "set" then
+                    enabled = payload == "on"
+                    render()
+                  end
+                end
+              '';
+            };
+
+            configFile = {
+              "niri/config.kdl".source = niriConfigChecked;
+            };
+          };
+
           programs.noctalia = {
             enable = true;
             systemd.enable = true;
@@ -511,99 +599,10 @@
               };
             };
           };
-          home.activation.resetNiriGameMode = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-            rm -f ${lib.escapeShellArg gameModeStateFile}
-          '';
 
           wayland.systemd.target = "graphical-session.target";
 
           services.udiskie.enable = true;
-
-          services.swayidle = {
-            enable = true;
-            systemdTargets = [ "graphical-session.target" ];
-            timeouts = [
-              {
-                timeout = 300;
-                command = "${pkgs.libnotify}/bin/notify-send -t 5000 'Locking in 5 seconds'";
-              }
-              {
-                timeout = 305;
-                command = "${noctaliaExecutable} msg session lock";
-              }
-              {
-                timeout = 360;
-                command = "${pkgs.niri}/bin/niri msg action power-off-monitors";
-                resumeCommand = monitorPowerOn;
-              }
-              {
-                timeout = 900;
-                command = "${noctaliaExecutable} msg session lock-and-suspend";
-              }
-            ];
-            events = {
-              after-resume = monitorPowerOn;
-              unlock = monitorPowerOn;
-            };
-          };
-
-          xdg.dataFile = {
-            "noctalia/plugins/game-mode/plugin.toml".text = ''
-              id = "sam/game-mode"
-              name = "Game Mode"
-              version = "1.0.0"
-              plugin_api = 24
-              author = "sam"
-              license = "MIT"
-              description = "Shows the active Niri game mode in the Noctalia bar."
-
-              [[widget]]
-              id = "bar"
-              entry = "widget.luau"
-
-                [widget.actions]
-                middle = "none"
-            '';
-            "noctalia/plugins/game-mode/widget.luau".text = ''
-              local stateFile = "/home/sam/.local/state/niri/game-mode.kdl"
-              local enabled = false
-
-              local function render()
-                barWidget.setGlyph("device-gamepad")
-                if enabled then
-                  barWidget.setText("Game")
-                  barWidget.setGlyphColor("primary")
-                  barWidget.setTooltip("Game mode enabled")
-                  barWidget.setVisible(true)
-                else
-                  barWidget.setVisible(false)
-                end
-              end
-
-              local function refresh()
-                noctalia.runAsync({ "test", "-e", stateFile }, function(result)
-                  local nextEnabled = result.exitCode == 0
-                  if nextEnabled ~= enabled then
-                    enabled = nextEnabled
-                    render()
-                  end
-                end)
-              end
-
-              render()
-              refresh()
-
-              function onIpc(event, payload)
-                if event == "set" then
-                  enabled = payload == "on"
-                  render()
-                end
-              end
-            '';
-          };
-          xdg.configFile = {
-            "niri/config.kdl".source = niriConfigChecked;
-          };
         }
       ))
     ]

@@ -96,10 +96,17 @@ module. The module enables `greetd` and configures it to launch
 integration required by the greeter. Keep a TTY or another root-capable shell
 available while applying a display-manager change.
 
-The personal desktop host pins the greeter layout to match its Niri outputs:
+The personal desktop's monitor source of truth is
+`my.desktop.monitors` in
+[`nixos-hosts/personal-desktop/default.nix`](../nixos-hosts/personal-desktop/default.nix).
+The shared NixOS desktop module derives the Greeter layout from this value, and
+the shared desktop Home Manager module derives the Niri outputs and Noctalia
+lockscreen widgets from it as well.
+
+The personal desktop pins the greeter layout to match its Niri outputs:
 `DP-3` at `(0,0)` and `DP-2` at `(2560,0)`, both at `2560x1440`, `180 Hz`,
-and scale `1`. Keep those values aligned with the host's compositor output
-configuration if the monitors or their arrangement change.
+and scale `1`. Keep those values aligned with the host's monitor definitions if
+the monitors or their arrangement change.
 
 Inspect the effective greeter before rebuilding:
 
@@ -139,6 +146,37 @@ systemctl status bluetooth
 bluetoothctl list
 noctalia msg panel-toggle control-center bluetooth
 ```
+
+## Network
+
+The personal desktop uses NetworkManager and exposes the network state through
+the Noctalia bar and Control Center. Open the network view directly with:
+
+```sh
+noctalia msg panel-toggle control-center network
+```
+
+Inspect the effective NetworkManager setting before rebuilding:
+
+```sh
+nix eval --json ".#nixosConfigurations.${host}.config.networking.networkmanager.enable"
+```
+
+## Clipboard
+
+Clipboard history is enabled in Noctalia and is available from the bar or with
+`Mod+Shift+V`. Open it directly with:
+
+```sh
+noctalia msg panel-toggle clipboard
+```
+
+## Idle and suspend
+
+Noctalia owns the desktop idle policy. It notifies before locking, locks at
+five minutes, powers off monitors after six minutes, and locks before suspending
+after fifteen minutes. Use Noctalia's `lock-and-suspend` action for manual
+suspend requests so the session is locked before sleep.
 
 ## Inspect packages and closure size
 

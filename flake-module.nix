@@ -89,6 +89,7 @@ let
       sharedHostHomeModule = {
         config.my = {
           desktop.enable = lib.mkForce config.my.desktop.enable;
+          desktop.monitors = lib.mkForce config.my.desktop.monitors;
           work.enable = lib.mkForce config.my.work.enable;
           gaming.enable = lib.mkForce config.my.gaming.enable;
         };

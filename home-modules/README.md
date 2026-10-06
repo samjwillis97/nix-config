@@ -42,11 +42,11 @@ Use `pkgs.stdenv.hostPlatform.isDarwin` or `.isLinux` when a user feature genuin
 ### Desktop game mode
 
 The desktop module's Niri game mode is toggled with `Alt+Shift+G`. While it is
-active, Niri uses `Super` for its compositor bindings so the normal `Alt` game
-input passes through; the explicitly retained `Alt` workspace navigation
-bindings remain available. A local Noctalia plugin reads the same game-mode
-state marker and displays a `Game` indicator in the bar on each output while
-the mode is enabled.
+active, Niri uses `Super` for its compositor bindings so `Alt` input passes
+through to the game. The only `Alt` binding retained in game mode is
+`Alt+Shift+G`, which exits the mode.
+A local Noctalia plugin reads the same game-mode state marker and displays a
+`Game` indicator in the bar on each output while the mode is enabled.
 
 ## User configuration and state versions
 
