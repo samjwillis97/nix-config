@@ -88,6 +88,37 @@ not an assumed rebuild command on a machine where it does not yet exist.
 Embedded Home Manager configurations activate with their host; do not assume a
 standalone `home-manager switch --flake` output is provided.
 
+## Desktop greeter
+
+Hosts with `my.desktop.enable` use Noctalia Greeter through the project flake
+module. The module enables `greetd` and configures it to launch
+`noctalia-greeter-session`; it also enables the AccountsService and Polkit
+integration required by the greeter. Keep a TTY or another root-capable shell
+available while applying a display-manager change.
+
+The personal desktop host pins the greeter layout to match its Niri outputs:
+`DP-3` at `(0,0)` and `DP-2` at `(2560,0)`, both at `2560x1440`, `180 Hz`,
+and scale `1`. Keep those values aligned with the host's compositor output
+configuration if the monitors or their arrangement change.
+
+Inspect the effective greeter before rebuilding:
+
+```sh
+nix eval --json ".#nixosConfigurations.${host}.config.services.displayManager.noctalia-greeter.enable"
+nix eval --json ".#nixosConfigurations.${host}.config.services.greetd.settings.default_session.command"
+```
+
+Build and test the candidate before switching:
+
+```sh
+nix build --no-link ".#${target}"
+sudo nixos-rebuild test --flake ".#${host}"
+```
+
+After confirming the login screen works, use `nixos-rebuild switch` if the
+configuration should become the next boot default. Do not enable another
+display manager alongside greetd.
+
 ## Inspect packages and closure size
 
 A directly configured package list is **not** the full closure. Services,

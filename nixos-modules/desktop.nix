@@ -40,6 +40,6 @@
     };
 
     # greeter
-    programs.regreet.enable = true;
+    services.displayManager.noctalia-greeter.enable = true;
   };
 }

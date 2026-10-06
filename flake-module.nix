@@ -165,6 +165,7 @@ in
 
         modules = allNixosModules ++ [
           unstablePackageModule
+          inputs.noctalia-greeter.nixosModules.default
           inputs.home-manager.nixosModules.home-manager
           inputs.sops-nix.nixosModules.sops
           inputs.nixflix.nixosModules.default

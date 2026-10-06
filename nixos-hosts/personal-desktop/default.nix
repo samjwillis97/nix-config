@@ -10,6 +10,14 @@
   ];
 
   config = {
+    services.displayManager.noctalia-greeter.settings.output = {
+      layout = "DP-3:0,0; DP-2:2560,0";
+      width = 2560;
+      height = 1440;
+      refresh_rate = 180;
+      scales = "DP-3:1; DP-2:1";
+    };
+
     my = {
       users = [ "sam" ];
       dix.enable = true;
