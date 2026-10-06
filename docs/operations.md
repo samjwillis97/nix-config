@@ -119,6 +119,27 @@ After confirming the login screen works, use `nixos-rebuild switch` if the
 configuration should become the next boot default. Do not enable another
 display manager alongside greetd.
 
+## Bluetooth
+
+Hosts with `my.desktop.enable` enable BlueZ with the controller powered on at
+boot. The Noctalia bar also includes its Bluetooth widget; left-click opens the
+Bluetooth tab in the Control Center and right-click toggles the adapter.
+
+Inspect the effective configuration before rebuilding:
+
+```sh
+nix eval --json ".#nixosConfigurations.${host}.config.hardware.bluetooth.enable"
+nix eval --json ".#nixosConfigurations.${host}.config.hardware.bluetooth.powerOnBoot"
+```
+
+After activation, verify the controller and open the Noctalia pairing view:
+
+```sh
+systemctl status bluetooth
+bluetoothctl list
+noctalia msg panel-toggle control-center bluetooth
+```
+
 ## Inspect packages and closure size
 
 A directly configured package list is **not** the full closure. Services,

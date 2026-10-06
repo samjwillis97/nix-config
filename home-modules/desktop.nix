@@ -394,6 +394,7 @@
                 "media"
                 "tray"
                 "notifications"
+                "bluetooth"
                 "volume"
                 "control-center"
                 "session"

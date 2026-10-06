@@ -7,6 +7,10 @@
 {
   config = lib.mkIf config.my.desktop.enable {
     hardware.graphics.enable = true;
+    hardware.bluetooth = {
+      enable = true;
+      powerOnBoot = true;
+    };
 
     environment.systemPackages = with pkgs; [
       wl-clipboard
