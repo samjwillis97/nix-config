@@ -109,13 +109,25 @@
 
             // Workspaces are intentionally dynamic and local to each output.
             layout {
-              gaps 0
+              gaps 16
+              struts {
+                left 64
+                right 64
+                top 64
+                bottom 64
+              }
+
+              center-focused-column "never"
+              always-center-single-column
+              default-column-display "normal"
               default-column-width { proportion 0.5; }
               preset-column-widths {
                 proportion 0.33333
                 proportion 0.5
                 proportion 0.66667
+                proportion 1.0
               }
+
               focus-ring {
                 width 2
                 active-color "#${config.lib.stylix.colors.base0D}"
@@ -124,6 +136,9 @@
               }
               border {
                 off
+              }
+              shadow {
+                on
               }
               background-color "#${config.lib.stylix.colors.base00}"
             }
@@ -165,6 +180,8 @@
               Mod+Ctrl+L { set-column-width "+10%"; }
               Mod+Ctrl+K { set-window-height "-10%"; }
               Mod+Ctrl+J { set-window-height "+10%"; }
+              Mod+R { switch-preset-column-width; }
+              Mod+Shift+R { switch-preset-column-width-back; }
 
               Mod+Space repeat=false { toggle-window-floating; }
               Mod+Shift+Space repeat=false { switch-focus-between-floating-and-tiling; }
@@ -192,7 +209,6 @@
               Mod+O repeat=false { toggle-overview; }
               Mod+F repeat=false { maximize-column; }
               Mod+Shift+F repeat=false { fullscreen-window; }
-              Mod+R repeat=false { switch-preset-column-width; }
               // Game mode dynamically disables compositor bindings while preserving workspaces.
               Mod+Shift+G hotkey-overlay-title="Enter game mode" allow-inhibiting=false repeat=false { spawn "${gameModeEnter}"; }
               Mod+Shift+E repeat=false { quit; }
@@ -208,6 +224,11 @@
 
             }
             include optional=true "${gameModeStateFile}"
+
+            window-rule {
+              geometry-corner-radius 12
+              clip-to-geometry true
+            }
 
             window-rule {
               match app-id=r#"(?i)^steam$"# title="^Friends$"
@@ -340,7 +361,7 @@
               };
             };
             bar.default = {
-              position = "bottom";
+              position = "top";
               background_opacity = config.stylix.opacity.desktop;
               start = [
                 "launcher"
