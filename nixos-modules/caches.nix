@@ -5,6 +5,7 @@
     "cachix.cachix.org-1:eWNHQldwUO7G2VkjpnjDbWwy4KQ/HNxht7H4SSoMckM="
     "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
     "microvm.cachix.org-1:oXnBc6hRE3eX5rSYdRyMYXnfzcCxC7yKPTbZXALsqys="
+    "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
   ];
   nix.settings.substituters = [
     "https://cache.nixos.org"
@@ -12,5 +13,6 @@
     "https://cachix.cachix.org"
     "https://cache.numtide.com"
     "https://microvm.cachix.org"
+    "https://noctalia.cachix.org"
   ];
 }
