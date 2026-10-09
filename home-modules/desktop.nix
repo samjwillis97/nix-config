@@ -389,22 +389,38 @@
                 "launcher"
                 "workspaces"
               ];
-              center = [ "clock" ];
+              widget_spacing = 20;
+              center = [
+                "clock"
+                "weather"
+              ];
               end = [
                 "game-mode"
-                "weather"
                 "media"
+                "cpu-graph"
+                "gpu-graph"
                 "tray"
-                "notifications"
                 "clipboard"
-                "network"
-                "bluetooth"
                 "volume"
-                "control-center"
+                "notifications"
                 "session"
               ];
             };
-            widget."game-mode".type = "sam/game-mode:bar";
+            widget = {
+              "cpu-graph" = {
+                type = "sysmon";
+                stat = "cpu_usage";
+                visualization = "graph";
+                show_value = false;
+              };
+              "gpu-graph" = {
+                type = "sysmon";
+                stat = "gpu_usage";
+                visualization = "graph";
+                show_value = false;
+              };
+              "game-mode".type = "sam/game-mode:bar";
+            };
             dock.enabled = false;
             notification = {
               enable_daemon = true;
