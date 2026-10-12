@@ -33,7 +33,9 @@
       };
     };
 
-    unreal-agent.enable = true;
+    pi = {
+      enable = true;
+    };
 
     git = {
       enable = true;

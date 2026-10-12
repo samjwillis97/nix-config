@@ -201,6 +201,19 @@
           nvimPkgs = import inputs.unstable {
             system = pkgs.stdenv.hostPlatform.system;
             config.allowUnfree = true;
+            overlays = [
+              (_final: prev: {
+                pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+                  (_pyFinal: pyPrev: {
+                    # Upstream's ~8 min integration suite (lldb/gdb attach, local
+                    # networking) is environment-sensitive and fails in the Darwin
+                    # build sandbox (test_lldb_command). It is only a nvim-dap-python
+                    # dependency here; pythonImportsCheck still runs.
+                    debugpy = pyPrev.debugpy.overridePythonAttrs { doCheck = false; };
+                  })
+                ];
+              })
+            ];
           };
         in
         {
