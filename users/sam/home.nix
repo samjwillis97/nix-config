@@ -40,6 +40,10 @@
           provider = "openai-codex";
         };
       };
+
+      pi = {
+        enable = true;
+      };
     };
   };
 }
