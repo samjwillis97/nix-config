@@ -42,18 +42,18 @@ let
       };
       models = {
         default = {
-          model = "gpt-5.6-luna";
+          model = "gpt-6-luna";
           thinkingLevel = "xhigh";
         };
         fast = {
-          model = "gemini-3.5-flash";
+          model = "gemini-3.8-flash";
         };
         deep = {
-          model = "gpt-5.6-terra";
+          model = "gpt-6.1-sol";
           thinkingLevel = "high";
         };
         plan = {
-          model = "gpt-5.6-sol";
+          model = "gpt-6-astra";
           thinkingLevel = "high";
         };
       };
