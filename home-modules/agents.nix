@@ -1,16 +1,35 @@
 {
-  config,
   pkgs,
   lib,
+  osConfig ? null,
   ...
 }:
 let
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
-  hostname = config.networking.hostName;
+  isNonEmptyString = value: builtins.isString value && value != "";
+
+  networkingValue =
+    name:
+    if osConfig != null && osConfig ? networking && builtins.hasAttr name osConfig.networking then
+      builtins.getAttr name osConfig.networking
+    else
+      null;
+
+  configuredHostName =
+    if isNonEmptyString (networkingValue "hostName") then
+      networkingValue "hostName"
+    else if isNonEmptyString (networkingValue "localHostName") then
+      networkingValue "localHostName"
+    else if isNonEmptyString (networkingValue "computerName") then
+      networkingValue "computerName"
+    else
+      "unknown";
+
+  hostname = configuredHostName;
 
   currentSystemContext = "
     ${lib.optionalString isDarwin ''
-        # Host: nix-darwin
+        # Host: ${hostname} (nix-darwin)
 
         This machine runs nix-darwin, with a flake-based configuration.
         Adjust your defaults accordingly — it is not a typical MacOS box.
