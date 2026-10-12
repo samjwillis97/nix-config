@@ -25,6 +25,7 @@
       context = config.my.agents.context;
 
       settings = {
+        defaultTools = [ "+codemode" ];
         enableSkillCommands = true;
         skills = config.my.agents.skills;
       };
