@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   dix-matrix:
-    name: Generate Dix matrix
+    name: Generate derivation diff matrix
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -36,7 +36,7 @@ jobs:
           echo "matrix=$(nix eval --json '.#githubActions.dix.matrix')" >> "$GITHUB_OUTPUT"
 
   diff:
-    name: Diff ${{ matrix.name }}
+    name: Derivation diff ${{ matrix.name }}
     needs: dix-matrix
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
@@ -64,7 +64,7 @@ jobs:
           CONFIG_NAME: ${{ matrix.name }}
         run: |
           set -euo pipefail
-          output_file="$RUNNER_TEMP/dix-output"
+          output_file="$RUNNER_TEMP/derivation-diff-output"
 
           case "$CONFIG_NAME" in
             nixosConfiguration-*)
@@ -83,93 +83,79 @@ jobs:
               config_attr="darwinConfigurations.${config_name}.system"
               ;;
             *)
-              echo "Unknown Dix configuration: $CONFIG_NAME" >&2
+              echo "Unknown configuration: $CONFIG_NAME" >&2
               exit 1
               ;;
           esac
 
           base_outputs="$(nix flake show --json --all-systems ./base)"
           if ! jq -e --arg output "$config_output" 'has($output)' <<<"$base_outputs" > /dev/null; then
-            printf '%s\n' "$CONFIG_NAME was added; there is no previous closure to diff." | tee "$output_file"
+            printf '%s\n' "$CONFIG_NAME was added; there is no previous derivation to diff." | tee "$output_file"
             exit 0
           fi
 
           base_names="$(nix eval --json "./base#$config_output" --apply builtins.attrNames)"
           if ! jq -e --arg name "$config_name" 'index($name) != null' <<<"$base_names" > /dev/null; then
-            printf '%s\n' "$CONFIG_NAME was added; there is no previous closure to diff." | tee "$output_file"
+            printf '%s\n' "$CONFIG_NAME was added; there is no previous derivation to diff." | tee "$output_file"
             exit 0
           fi
 
-          profiles="$(mktemp -d)"
-          trap 'rm -rf "$profiles"' EXIT
-          old_profile="$profiles/old"
-          new_profile="$profiles/new"
-
-          echo "Building $CONFIG_NAME from the base revision"
-          nix build -L --profile "$old_profile" "./base#$config_attr"
-          echo "Building $CONFIG_NAME from the pull request revision"
-          nix build -L --profile "$new_profile" "./head#$config_attr"
-
-          echo "Diff for $CONFIG_NAME"
+          echo "Derivation diff for $CONFIG_NAME"
           set +e
-          nix run "github:manic-systems/dix/857739fe62bd8ae8e4a8078b983ca9b5a7bd075b#dix" -- \
-            --force-correctness \
+          nix run "github:Mic92/nix-diff-rs/a8c9a1b679bf412f5a9d3707cdb41dba20938c23" -- \
+            --depth 1 \
             --color never \
-            "$old_profile" "$new_profile" \
-            | sed '/^<<< /d; /^>>> /d' | tee "$output_file"
+            "./base#$config_attr" "./head#$config_attr" \
+            | tee "$output_file"
           statuses=("${PIPESTATUS[@]}")
-          dix_status="${statuses[0]}"
-          filter_status="${statuses[1]}"
-          tee_status="${statuses[2]}"
+          nix_diff_status="${statuses[0]}"
+          tee_status="${statuses[1]}"
           set -e
-          if (( dix_status != 0 )); then
-            exit "$dix_status"
-          fi
-          if (( filter_status != 0 )); then
-            exit "$filter_status"
+          if (( nix_diff_status != 0 )); then
+            exit "$nix_diff_status"
           fi
           exit "$tee_status"
-      - name: Save Dix output
+      - name: Save derivation diff output
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: dix-output-${{ matrix.name }}
-          path: ${{ runner.temp }}/dix-output
+          name: derivation-diff-output-${{ matrix.name }}
+          path: ${{ runner.temp }}/derivation-diff-output
           if-no-files-found: ignore
 
   comment:
-    name: Comment Dix output
+    name: Comment derivation diff output
     if: always()
     needs: diff
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write # required to update the Dix comment
+      pull-requests: write # required to update the derivation diff comment
     steps:
-      - name: Download Dix output
+      - name: Download derivation diff output
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          pattern: dix-output-*
-          path: dix-output
+          pattern: derivation-diff-output-*
+          path: derivation-diff-output
           if-no-artifact-found: ignore
-      - name: Prepare Dix comment
+      - name: Prepare derivation diff comment
         id: prepare-comment
         run: |
           set -euo pipefail
 
           shopt -s nullglob
-          outputs=(dix-output/*/dix-output)
+          outputs=(derivation-diff-output/*/derivation-diff-output)
           has_output=false
           if (( ${#outputs[@]} == 0 )); then
-            echo "No Dix output to comment."
+            echo "No derivation diff output to comment."
           else
-            comment_file="$RUNNER_TEMP/dix-comment"
+            comment_file="$RUNNER_TEMP/derivation-diff-comment"
             {
-              printf '%s\n\n' '# Dix configuration differences'
+              printf '%s\n\n' '# Nix derivation differences'
               for output in "${outputs[@]}"; do
-                artifact_name="${output#dix-output/}"
-                artifact_name="${artifact_name%/dix-output}"
-                config_name="${artifact_name#dix-output-}"
+                artifact_name="${output#derivation-diff-output/}"
+                artifact_name="${artifact_name%/derivation-diff-output}"
+                config_name="${artifact_name#derivation-diff-output-}"
                 printf '<details>\n<summary>%s</summary>\n\n```text\n' "$config_name"
                 cat "$output"
                 printf '\n```\n</details>\n\n'
@@ -178,10 +164,10 @@ jobs:
             has_output=true
           fi
           printf 'has_output=%s\n' "$has_output" >> "$GITHUB_OUTPUT"
-      - name: Update Dix comment
+      - name: Update derivation diff comment
         if: steps.prepare-comment.outputs.has_output == 'true'
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           header: dix
-          path: ${{ runner.temp }}/dix-comment
+          path: ${{ runner.temp }}/derivation-diff-comment
           skip_unchanged: true
