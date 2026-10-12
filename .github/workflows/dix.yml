@@ -100,18 +100,22 @@ jobs:
             exit 0
           fi
 
+          old_drv="$(nix eval --raw "./base#${config_attr}.drvPath")"
+          new_drv="$(nix eval --raw "./head#${config_attr}.drvPath")"
+
           echo "Derivation diff for $CONFIG_NAME"
           set +e
           nix run "github:Mic92/nix-diff-rs/a8c9a1b679bf412f5a9d3707cdb41dba20938c23" -- \
             --depth 1 \
             --color never \
-            "./base#$config_attr" "./head#$config_attr" \
+            "$old_drv" "$new_drv" \
             | tee "$output_file"
           statuses=("${PIPESTATUS[@]}")
           nix_diff_status="${statuses[0]}"
           tee_status="${statuses[1]}"
           set -e
-          if (( nix_diff_status != 0 )); then
+          nix_diff_error_status=2
+          if (( nix_diff_status >= nix_diff_error_status )); then
             exit "$nix_diff_status"
           fi
           exit "$tee_status"
