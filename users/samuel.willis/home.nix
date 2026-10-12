@@ -25,12 +25,10 @@
 
     _1password.enable = true;
 
+    agents.provider = "github-copilot";
+
     omp = {
       enable = true;
-      sandbox = true;
-      settings = {
-        provider = "github-copilot";
-      };
     };
 
     pi = {

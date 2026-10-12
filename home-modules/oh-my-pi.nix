@@ -12,7 +12,58 @@ let
   yamlFormat = pkgs.formats.yaml { };
   jsonFormat = pkgs.formats.json { };
 
-  agentSandbox = import inputs.agent-sandbox { inherit pkgs; };
+  selectedModelProfiles =
+    if config.my.agents.provider == null then
+      null
+    else
+      config.my.agents.modelProfiles.${config.my.agents.provider};
+
+  # OMP roles are harness-specific; map them onto the shared model profiles.
+  ompRoles = {
+    default = {
+      profile = "default";
+    };
+    advisor = {
+      profile = "default";
+      thinkingLevel = "max";
+    };
+    task = {
+      profile = "default";
+      thinkingLevel = "high";
+    };
+    smol = {
+      profile = "default";
+      thinkingLevel = "low";
+    };
+    slow = {
+      profile = "deep";
+    };
+    plan = {
+      profile = "plan";
+    };
+    tiny = {
+      profile = "fast";
+    };
+    commit = {
+      profile = "fast";
+    };
+  };
+
+  modelRoles =
+    if selectedModelProfiles == null then
+      { }
+    else
+      lib.mapAttrs (
+        _: role:
+        let
+          modelProfile = selectedModelProfiles.models.${role.profile};
+          thinkingLevel = role.thinkingLevel or (modelProfile.thinkingLevel or null);
+        in
+        "${selectedModelProfiles.provider.omp}/${modelProfile.model}"
+        + lib.optionalString (thinkingLevel != null) ":${thinkingLevel}"
+      ) ompRoles;
+
+  contextFile = pkgs.writeText "omp-agents.md" config.my.agents.context;
 
   dapAdapters = {
     node = {
@@ -85,7 +136,7 @@ let
       cache.enabled = true;
     };
     browser = {
-      enabled = !config.my.omp.sandbox;
+      enabled = true;
     };
     dev = {
       autoqa = false;
@@ -97,31 +148,7 @@ let
       maxRecursionDepth = 3;
     };
     skills.enabled = true;
-    modelRoles =
-      if config.my.omp.settings.provider == "github-copilot" then
-        {
-          default = "github-copilot/gpt-5.6-luna:xhigh";
-          advisor = "github-copilot/gpt-5.6-luna:max";
-          task = "github-copilot/gpt-5.6-luna:high";
-          smol = "github-copilot/gpt-5.6-luna:low";
-          slow = "github-copilot/gpt-5.6-terra:high";
-          plan = "github-copilot/gpt-5.6-sol:high";
-          tiny = "github-copilot/gemini-3.5-flash";
-          commit = "github-copilot/claude-haiku-4.5";
-        }
-      else if config.my.omp.settings.provider == "openai-codex" then
-        {
-          default = "openai-codex/gpt-5.6-luna:xhigh";
-          advisor = "openai-codex/gpt-5.6-luna:max";
-          task = "openai-codex/gpt-5.6-luna:high";
-          smol = "openai-codex/gpt-5.6-luna:low";
-          slow = "openai-codex/gpt-5.6-terra:high";
-          plan = "openai-codex/gpt-6-astra:high";
-          tiny = "openai-codex/gpt-5.4-nano";
-          commit = "openai-codex/gpt-5.4-nano";
-        }
-      else
-        { };
+    inherit modelRoles;
   };
 
   configFile = yamlFormat.generate "omp-config.yml" settings;
@@ -129,148 +156,36 @@ let
     adapters = dapAdapters;
   };
 
-  allowedGetDomains = [
-    "githubusercontent.com"
-    "npmjs.org"
-    "nodejs.org"
-    "developer.mozilla.org"
-    "omp.sh"
-    "html.duckduckgo.com"
-    "typescriptlang.org"
-    "tanstack.com"
-    "shadcn.com"
-    "supabase.com"
-    "nextjs.org"
-    "react.dev"
-    "docs.aws.amazon.com"
-    "channels.nixos.org"
-    "cache.nixos.org"
-    "raw.githubusercontent.com"
-  ];
-
-  sandboxGetDomainsMapped = builtins.listToAttrs (
-    map (domain: {
-      name = domain;
-      value = [
-        "GET"
-        "HEAD"
-      ];
-    }) allowedGetDomains
-  );
-
-  omp-sandboxed = agentSandbox.mkSandbox {
-    pkg = ompPackage;
-    binName = "omp";
-    outName = "omp";
-    allowedPackages = with pkgs; [
-      curl
-      wget
-      file
-      coreutils
-      which
-      git
-      ripgrep
-      fd
-      gnused
-      gnugrep
-      findutils
-      jq
-      nodejs
-      vscode-js-debug
-      python3
-      openssh
-      difftastic
-      gnused
-      nix
-      man
-      ompPackage
-      bun
-      gh
-    ];
-    rwDirs = [
-      "$HOME/.omp"
-      "$HOME/.npm"
-      "$HOME/.cache"
-      "$HOME/.local/state/agent-sandbox"
-      "$HOME/.config/gh"
-      "$HOME/.config/git"
-      "$HOME/.config/httpcraft"
-    ];
-    roFiles = [
-    ];
-    roDirs = [
-      "$HOME/code"
-    ];
-    allowNix = false;
-    allowUnixSockets = true;
-    allowedLocalPorts = null;
-    allowedDomains = {
-      # Copilot required domains (MITM-filtered)
-      "githubcopilot.com" = "*";
-
-      "github.com" = "*";
-      "api.github.com" = "*";
-    }
-    // sandboxGetDomainsMapped;
-    env = {
-      # Keep the OAuth callback on the host loopback interface, rather than
-      # routing it through the sandbox's outbound filtering proxy.
-      NO_PROXY = "localhost,127.0.0.1,::1";
-      no_proxy = "localhost,127.0.0.1,::1";
-    };
-  };
 in
 {
+  imports = [ ./agents.nix ];
 
   options.my.omp = {
     enable = lib.mkEnableOption "Oh-My-Pi coding agent";
 
-    sandbox = lib.mkEnableOption "sandbox the Oh-My-Pi agent";
-
     settings = {
-      provider = lib.mkOption {
-        type = lib.types.enum [
-          "openai-codex"
-          "github-copilot"
-        ];
-        default = null;
-        description = "The provider to use for the Oh-My-Pi agent.";
-      };
-
       advisor = {
         enable = lib.mkEnableOption "advisor";
       };
     };
   };
 
-  config = lib.mkIf config.my.omp.enable (
-    lib.mkMerge [
-      {
-        # OMP locks and atomically rewrites its configuration. Home Manager's
-        # normal store symlinks are read-only and are not visible through the
-        # sandbox's enclosing ~/.omp bind, so install regular writable files.
-        home.activation.ompConfig = {
-          before = [ ];
-          after = [ "writeBoundary" ];
-          data = ''
-            run mkdir -p "$HOME/.omp/agent"
-            run install -m 600 ${configFile} "$HOME/.omp/agent/config.yml"
-            run install -m 600 ${dapFile} "$HOME/.omp/agent/dap.json"
-          '';
-        };
-      }
+  config = lib.mkIf config.my.omp.enable {
+    # OMP locks and atomically rewrites its configuration. Home Manager's
+    # normal store symlinks are read-only, so install regular writable files.
+    home.activation.ompConfig = {
+      before = [ ];
+      after = [ "writeBoundary" ];
+      data = ''
+        run mkdir -p "$HOME/.omp/agent"
+        run install -m 600 ${configFile} "$HOME/.omp/agent/config.yml"
+        run install -m 600 ${dapFile} "$HOME/.omp/agent/dap.json"
+        run install -m 600 ${contextFile} "$HOME/.omp/agent/AGENTS.md"
+      '';
+    };
 
-      (lib.mkIf (!config.my.omp.sandbox) {
-        home.packages = [
-          ompPackage
-        ];
-      })
-
-      (lib.mkIf config.my.omp.sandbox {
-        home.packages = [
-          omp-sandboxed
-        ];
-      })
-    ]
-  );
+    home.packages = [
+      ompPackage
+    ];
+  };
 }

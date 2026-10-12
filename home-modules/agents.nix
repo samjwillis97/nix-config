@@ -8,6 +8,58 @@ let
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   isNonEmptyString = value: builtins.isString value && value != "";
 
+  # Keep provider IDs and reusable model profiles agent-agnostic. Harnesses
+  # decide how their own roles map onto these profiles.
+  modelProfiles = {
+    "openai-codex" = {
+      # Pi exposes the Codex OAuth backend through its `openai` provider ID.
+      provider = {
+        omp = "openai-codex";
+        pi = "openai";
+      };
+      models = {
+        default = {
+          model = "gpt-6-luna";
+          thinkingLevel = "xhigh";
+        };
+        fast = {
+          model = "gpt-5-nano";
+        };
+        deep = {
+          model = "gpt-6-sol";
+          thinkingLevel = "high";
+        };
+        plan = {
+          model = "gpt-6-astra";
+          thinkingLevel = "high";
+        };
+      };
+    };
+    "github-copilot" = {
+      provider = {
+        omp = "github-copilot";
+        pi = "github-copilot";
+      };
+      models = {
+        default = {
+          model = "gpt-5.6-luna";
+          thinkingLevel = "xhigh";
+        };
+        fast = {
+          model = "gemini-3.5-flash";
+        };
+        deep = {
+          model = "gpt-5.6-terra";
+          thinkingLevel = "high";
+        };
+        plan = {
+          model = "gpt-5.6-sol";
+          thinkingLevel = "high";
+        };
+      };
+    };
+  };
+
   networkingValue =
     name:
     if osConfig != null && osConfig ? networking && builtins.hasAttr name osConfig.networking then
@@ -55,7 +107,7 @@ let
 
           ## This machine's configuration
           - The NixOS + home-manager config lives at
-            **`~/code/github.com/samjwillis97/nix-config`** (a flake).
+            **`~/code/github.com/samjwillis97/nix-config/main`** (a flake).
           - Apply changes:
             `sudo nixos-rebuild switch --flake ~/code/github.com/samjwillis97/nix-config/{BRANCH}#${hostname}`
           - Validate *without* switching (prefer this while iterating):
@@ -117,6 +169,18 @@ let
 in
 {
   options.my.agents = {
+    provider = lib.mkOption {
+      type = lib.types.nullOr (lib.types.enum (builtins.attrNames modelProfiles));
+      default = null;
+      description = "The provider to use for all configured coding agents.";
+    };
+
+    modelProfiles = lib.mkOption {
+      type = lib.types.attrs;
+      readOnly = true;
+      description = "Provider and model profiles shared by all configured coding agents.";
+    };
+
     context = lib.mkOption {
       type = lib.types.lines;
       readOnly = true;
@@ -131,6 +195,8 @@ in
   };
 
   config.my.agents = {
+    inherit modelProfiles;
+
     context = ''
 
       ${currentSystemContext}

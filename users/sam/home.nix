@@ -34,11 +34,10 @@
 
       development.enable = true;
 
+      agents.provider = "openai-codex";
+
       omp = {
         enable = true;
-        settings = {
-          provider = "openai-codex";
-        };
       };
 
       pi = {
