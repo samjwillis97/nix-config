@@ -57,6 +57,9 @@ in
         defaultTools = [ "+codemode" ];
         enableSkillCommands = true;
         skills = config.my.agents.skills;
+        packages = [
+          "npm:pi-goal-x"
+        ];
       };
 
       extraPackages = [
