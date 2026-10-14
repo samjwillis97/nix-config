@@ -25,15 +25,15 @@
 
     _1password.enable = true;
 
+    agents.provider = "github-copilot";
+
     omp = {
       enable = true;
-      sandbox = true;
-      settings = {
-        provider = "github-copilot";
-      };
     };
 
-    unreal-agent.enable = true;
+    pi = {
+      enable = true;
+    };
 
     git = {
       enable = true;

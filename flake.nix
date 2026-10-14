@@ -12,6 +12,11 @@
 
     home-manager.url = "github:nix-community/home-manager/release-26.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
+    home-manager-source = {
+      url = "github:nix-community/home-manager/master";
+      flake = false;
+    };
+
     noctalia = {
       url = "github:noctalia-dev/noctalia";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -130,11 +135,6 @@
       };
     };
 
-    agent-sandbox = {
-      url = "github:archie-judd/agent-sandbox.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     nixvim = {
       url = "github:nix-community/nixvim";
       inputs = {
@@ -196,6 +196,19 @@
           nvimPkgs = import inputs.unstable {
             system = pkgs.stdenv.hostPlatform.system;
             config.allowUnfree = true;
+            overlays = [
+              (_final: prev: {
+                pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+                  (_pyFinal: pyPrev: {
+                    # Upstream's ~8 min integration suite (lldb/gdb attach, local
+                    # networking) is environment-sensitive and fails in the Darwin
+                    # build sandbox (test_lldb_command). It is only a nvim-dap-python
+                    # dependency here; pythonImportsCheck still runs.
+                    debugpy = pyPrev.debugpy.overridePythonAttrs { doCheck = false; };
+                  })
+                ];
+              })
+            ];
           };
         in
         {

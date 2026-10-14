@@ -86,6 +86,7 @@ in
             ".opencode/"
             "plans/"
             ".lavish/"
+            ".pi/"
           ];
 
           settings = {
