@@ -54,6 +54,18 @@ let
         defaultThinkingLevel = defaultModelProfile.thinkingLevel;
       };
 
+  # Keep Pi-specific delegation guidance out of the context shared with other agents.
+  piSubagentContext = ''
+    ## Delegation with pi-subagents
+
+    This context grants standing permission to delegate when a bounded child materially improves independent evidence, specialization, review, or useful parallelism. This is permission, not a requirement; handle simple or serial work directly.
+
+    - Use `scout` for local reconnaissance, `researcher` for external research, `evidence-auditor` to verify decision-critical research claims, `worker` for one bounded implementation seam, `reviewer` for fresh-context read-only review, and `oracle` only for rare high-risk decision or root-cause critique. Use `delegate` for a bounded task that does not fit a specialist role.
+    - The parent owns scope, decisions, arbitration, and final synthesis. Give each child its goal, target repository and cwd/ref, authority boundary, relevant evidence, success criteria, validation, expected output, and stop/escalation conditions.
+    - Avoid overlapping writers. Use async/background runs by default, and do not let children spawn further children unless the assignment explicitly requires it.
+    - `researcher` and `evidence-auditor` require `pi-web-access`; run them in the background unless the child explicitly loads that extension.
+  '';
+
   piSubagentSettings =
     if selectedModelProfiles == null then
       { }
@@ -95,14 +107,13 @@ in
 
       configDir = "${config.xdg.configHome}/pi/agent";
 
-      context = config.my.agents.context;
+      context = config.my.agents.context + "\n" + piSubagentContext;
 
       settings = piDefaults // {
         defaultTools = [ "+codemode" ];
         enableSkillCommands = true;
         skills = config.my.agents.skills;
         packages = [
-          "npm:pi-goal-x"
           "npm:pi-subagents"
           "npm:pi-web-access"
         ];
