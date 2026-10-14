@@ -33,6 +33,8 @@
         ingress.enable = true;
       };
 
+      amp.enable = true;
+
       supernote = {
         enable = true;
         ingress.enable = true;
