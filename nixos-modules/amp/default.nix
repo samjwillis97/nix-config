@@ -66,6 +66,7 @@ let
     nix
     unzip
     zip
+    tmux
   ];
   protectedPaths = [
     "/run/secrets"
@@ -179,10 +180,7 @@ in
     }
 
     (lib.mkIf cfg.enable {
-      environment.systemPackages = [
-        runner.package
-        pkgs.tmux
-      ];
+      environment.systemPackages = [ runner.package ];
     })
 
     (lib.mkIf runner.enable {
