@@ -11,6 +11,7 @@
     secretModules.cloudflared
     secretModules.media
     secretModules.supernote
+    secretModules.amp
   ];
 
   config = {
