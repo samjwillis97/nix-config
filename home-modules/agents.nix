@@ -237,6 +237,7 @@ in
       pkgs.python3
       pkgs.anubis-fetch
       inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.agent-browser
+      inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.plannotator
     ];
 
     context = ''
