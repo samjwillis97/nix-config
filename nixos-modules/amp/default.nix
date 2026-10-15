@@ -66,6 +66,7 @@ let
     nix
     unzip
     zip
+    tmux
   ];
   protectedPaths = [
     "/run/secrets"
