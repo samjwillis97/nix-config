@@ -6,6 +6,10 @@ boundary, the stateful Actual and media modules, Tailscale, and the container
 entry points used by hosts. It is deliberately selective rather than a list of
 every enabled service or listener.
 
+For the browser-controlled coding-agent runner on `teeny`, see the
+[Amp runbook](amp.md). The runner is separately gated from the package-only Amp
+option and shares a Nix daemon, credentials, and network with its threads.
+
 The source of truth is always the effective host configuration. Reusable modules
 live in [`nixos-modules/`](../nixos-modules/), and host-specific choices live in
 [`nixos-hosts/`](../nixos-hosts/). A host's `default.nix` can override module
