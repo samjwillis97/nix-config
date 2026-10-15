@@ -115,6 +115,7 @@ in
         packages = [
           "npm:pi-subagents"
           "npm:pi-web-access"
+          "npm:@plannotator/pi-extension"
         ];
 
         subagents = piSubagentSettings;
