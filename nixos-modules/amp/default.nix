@@ -179,7 +179,10 @@ in
     }
 
     (lib.mkIf cfg.enable {
-      environment.systemPackages = [ runner.package ];
+      environment.systemPackages = [
+        runner.package
+        pkgs.tmux
+      ];
     })
 
     (lib.mkIf runner.enable {
