@@ -452,7 +452,6 @@
                 "notify"
                 "lock"
                 "screen-off"
-                "suspend"
               ];
               pre_action_fade_seconds = 2.0;
               behavior = {
@@ -468,10 +467,6 @@
                 "screen-off" = {
                   timeout = 360;
                   action = "screen_off";
-                };
-                suspend = {
-                  timeout = 900;
-                  action = "lock_and_suspend";
                 };
               };
             };
