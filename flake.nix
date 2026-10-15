@@ -233,7 +233,12 @@
             };
           };
 
-          checks.httpcraft = config.packages.httpcraft.tests.smoke;
+          checks = {
+            httpcraft = config.packages.httpcraft.tests.smoke;
+          }
+          // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
+            amp-runner = import ./nixos-modules/amp/tests.nix { inherit pkgs; };
+          };
 
           apps.deploy = inputs.deploy-rs.apps.${pkgs.stdenv.hostPlatform.system}.default;
 

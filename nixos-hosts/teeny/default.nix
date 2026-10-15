@@ -25,6 +25,16 @@
     };
     systemd.enableEmergencyMode = false;
 
+    # Keep Nix builds from monopolizing this shared media server.
+    nix.settings = {
+      max-jobs = 1;
+      cores = 2;
+    };
+    systemd.services.nix-daemon.serviceConfig = {
+      CPUWeight = 50;
+      IOWeight = 50;
+    };
+
     my = {
       users = [ "sam" ];
       dix.enable = true;
@@ -33,7 +43,11 @@
         ingress.enable = true;
       };
 
-      amp.enable = true;
+      amp = {
+        enable = true;
+        # Enable the runner after the operator provisions secrets/amp/teeny.yaml.
+        runner.enable = false;
+      };
 
       supernote = {
         enable = true;
