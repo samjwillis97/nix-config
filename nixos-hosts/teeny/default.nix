@@ -46,7 +46,11 @@
       amp = {
         enable = true;
         # Enable the runner after the operator provisions secrets/amp/teeny.yaml.
-        runner.enable = true;
+        runner = {
+          enable = true;
+          apiKeyFile = config.sops.secrets."amp-api-key".path;
+          githubTokenFile = config.sops.secrets."amp-github-token".path;
+        };
       };
 
       supernote = {
