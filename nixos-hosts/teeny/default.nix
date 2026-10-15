@@ -46,7 +46,7 @@
       amp = {
         enable = true;
         # Enable the runner after the operator provisions secrets/amp/teeny.yaml.
-        runner.enable = false;
+        runner.enable = true;
       };
 
       supernote = {
