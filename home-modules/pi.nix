@@ -32,8 +32,7 @@ let
       thinkingLevel = "high";
     };
     reviewer = {
-      profile = "default";
-      thinkingLevel = "high";
+      profile = "deep";
     };
     oracle = {
       profile = "plan";
@@ -121,12 +120,7 @@ in
         subagents = piSubagentSettings;
       };
 
-      extraPackages = [
-        pkgs.nodejs
-        pkgs.bun
-        pkgs.python3
-        inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.agent-browser
-      ];
+      extraPackages = config.my.agents.standardPackages;
     };
   };
 }

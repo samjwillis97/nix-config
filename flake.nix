@@ -135,6 +135,14 @@
       };
     };
 
+    anubis-fetch = {
+      url = "github:fzakaria/anubis-fetch";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        treefmt-nix.follows = "treefmt-nix";
+      };
+    };
+
     nixvim = {
       url = "github:nix-community/nixvim";
       inputs = {

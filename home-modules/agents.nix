@@ -1,4 +1,5 @@
 {
+  inputs,
   pkgs,
   lib,
   osConfig ? null,
@@ -7,6 +8,8 @@
 let
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   isNonEmptyString = value: builtins.isString value && value != "";
+
+  filterPackages = lib.filter (lib.meta.availableOn pkgs.stdenv.hostPlatform);
 
   # Keep provider IDs and reusable model profiles agent-agnostic. Harnesses
   # decide how their own roles map onto these profiles.
@@ -23,10 +26,11 @@ let
           thinkingLevel = "xhigh";
         };
         fast = {
-          model = "gpt-5-nano";
+          model = "gpt-6-luna";
+          thinkingLevel = "low";
         };
         deep = {
-          model = "gpt-6-sol";
+          model = "gpt-6.1-sol";
           thinkingLevel = "high";
         };
         plan = {
@@ -46,7 +50,8 @@ let
           thinkingLevel = "xhigh";
         };
         fast = {
-          model = "gemini-3.8-flash";
+          model = "gpt-6-luna";
+          thinkingLevel = "low";
         };
         deep = {
           model = "gpt-6.1-sol";
@@ -122,6 +127,28 @@ let
             build; if a foreign binary is unavoidable, use `nix run nixpkgs#steam-run
             -- ./binary` or patch it with `patchelf`.
             We leverage nix-ld so some downloaded binaries may work but it's not ideal.
+
+          ## Fetching pages behind Anubis / Cloudflare (lore.kernel.org, GNOME, ...)
+          Many sites sit behind **Anubis**, a JS proof-of-work bot-wall (some behind
+          Cloudflare). Plain `curl`/WebFetch just get a 403 "Access Denied" page.
+          Use **`anubis-fetch <url>`** (on PATH; my own tool at
+          github.com/fzakaria/anubis-fetch, wired in as a flake input):
+          - Cheapest step first: a saved auth cookie → solving Anubis' SHA-256 PoW
+            in-process over a Chrome-impersonating HTTP client (which also clears
+            Cloudflare *passive* TLS/JA3 fingerprinting) → a headless-Chromium
+            fallback for the preact/metarefresh methods, too-high difficulty, or a
+            Cloudflare *active* JS challenge. Fast on the common case, general on the
+            tail.
+          - Cookies persist per host under `$XDG_CACHE_HOME/anubis-fetch/`, so a
+            revisit skips the challenge entirely (like a browser).
+          - Flags: `--text` (readable plain text), `--timeout <ms>` (default 30000),
+            `--ua <str>`, `--browser` (force browser), `--no-browser` (never browser;
+            exit 3 if it can't solve), `--no-cache`.
+          - For **lore.kernel.org specifically** there's an even lighter path needing
+            no PoW at all: public-inbox exposes machine-readable endpoints a plain
+            (non-browser) UA passes straight through — append `/t.mbox.gz` to a
+            thread URL (`curl -A curl ... | gunzip`) or `/raw` to a message URL.
+            Prefer this for bulk/patch work.
         ''
       }
         - **Do not install tools imperatively.** `pip install`, `npm -g`,
@@ -166,6 +193,7 @@ let
     - Talk to me like an engineer. Be direct and to the point, not verbose.
     - No superlatives and no praise. Give me the cold hard truth.
   '';
+
 in
 {
   options.my.agents = {
@@ -192,36 +220,28 @@ in
       default = [ ];
       description = "Agent-agnostic skill directories (each containing a SKILL.md), shared by all coding agents.";
     };
+
+    standardPackages = lib.mkOption {
+      type = lib.types.listOf lib.types.package;
+      default = [ ];
+      description = "Packages to provide to all agents";
+    };
   };
 
   config.my.agents = {
     inherit modelProfiles;
 
+    standardPackages = filterPackages [
+      pkgs.nodejs
+      pkgs.bun
+      pkgs.python3
+      pkgs.anubis-fetch
+      inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.agent-browser
+    ];
+
     context = ''
 
       ${currentSystemContext}
-
-      ## Fetching pages behind Anubis / Cloudflare (lore.kernel.org, GNOME, ...)
-      Many sites sit behind **Anubis**, a JS proof-of-work bot-wall (some behind
-      Cloudflare). Plain `curl`/WebFetch just get a 403 "Access Denied" page.
-      Use **`anubis-fetch <url>`** (on PATH; my own tool at
-      github.com/fzakaria/anubis-fetch, wired in as a flake input):
-      - Cheapest step first: a saved auth cookie → solving Anubis' SHA-256 PoW
-        in-process over a Chrome-impersonating HTTP client (which also clears
-        Cloudflare *passive* TLS/JA3 fingerprinting) → a headless-Chromium
-        fallback for the preact/metarefresh methods, too-high difficulty, or a
-        Cloudflare *active* JS challenge. Fast on the common case, general on the
-        tail.
-      - Cookies persist per host under `$XDG_CACHE_HOME/anubis-fetch/`, so a
-        revisit skips the challenge entirely (like a browser).
-      - Flags: `--text` (readable plain text), `--timeout <ms>` (default 30000),
-        `--ua <str>`, `--browser` (force browser), `--no-browser` (never browser;
-        exit 3 if it can't solve), `--no-cache`.
-      - For **lore.kernel.org specifically** there's an even lighter path needing
-        no PoW at all: public-inbox exposes machine-readable endpoints a plain
-        (non-browser) UA passes straight through — append `/t.mbox.gz` to a
-        thread URL (`curl -A curl ... | gunzip`) or `/raw` to a message URL.
-        Prefer this for bulk/patch work.
 
       ## General preferences
       - Match the surrounding code's style; don't reformat unrelated lines.
