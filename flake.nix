@@ -7,6 +7,9 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    # Keep Nyx's nixpkgs pin for binary-cache compatibility.
+    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
+
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
 
