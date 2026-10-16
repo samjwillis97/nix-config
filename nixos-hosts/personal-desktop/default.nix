@@ -1,15 +1,19 @@
 {
   config,
+  inputs,
   secretModules,
   ...
 }:
 {
   imports = [
     ./hardware-configuration.nix
+    inputs.chaotic.nixosModules.nyx-cache
     secretModules.tailscale
   ];
 
   config = {
+    boot.kernelPackages = inputs.chaotic.legacyPackages.x86_64-linux.linuxPackages_cachyos;
+
     networking.networkmanager.enable = true;
 
     my = {
