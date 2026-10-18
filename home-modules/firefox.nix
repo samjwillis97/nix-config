@@ -35,7 +35,6 @@ in
                 ublock-origin
                 i-dont-care-about-cookies
                 cookie-autodelete
-                terms-of-service-didnt-read
                 sponsorblock
                 okta-browser-plugin
               ];
