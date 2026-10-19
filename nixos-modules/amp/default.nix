@@ -16,7 +16,7 @@ let
   ampRunnerSettings = pkgs.writeText "amp-runner-settings.json" (
     builtins.toJSON {
       "amp.runner.autoUpdate.enabled" = false;
-      "amp.runner.env.enabled" = false;
+      "amp.runner.env.enabled" = true;
       "amp.remoteThreadCreation.enabled" = false;
       "amp.updates.mode" = "disabled";
     }
@@ -48,6 +48,7 @@ let
       --no-tui \
       --runner-id ${lib.escapeShellArg runner.runnerId} \
       --remote-control-terminal \
+      ${lib.optionalString runner.desktop.enable "--desktop"} \
       --discover-dirs \
       --discover-depth ${toString runner.discoverDepth}
   '';
@@ -86,6 +87,8 @@ in
 
     runner = {
       enable = lib.mkEnableOption "the Amp remote runner";
+
+      desktop.enable = lib.mkEnableOption "a private virtual desktop for runner threads (x86_64 Linux)";
 
       package = lib.mkOption {
         type = lib.types.nullOr lib.types.package;
@@ -176,6 +179,11 @@ in
           assertion = !runner.enable || builtins.match "[A-Za-z0-9][A-Za-z0-9-]*" runner.runnerId != null;
           message = "my.amp.runner.runnerId must be a valid hostname-like identifier.";
         }
+        {
+          assertion =
+            !runner.desktop.enable || (runner.enable && pkgs.stdenv.hostPlatform.system == "x86_64-linux");
+          message = "my.amp.runner.desktop.enable requires an enabled x86_64-linux runner.";
+        }
       ];
     }
 
@@ -208,7 +216,16 @@ in
           "sops-install-secrets.service"
         ];
 
-        path = paths ++ [ runner.package ];
+        path =
+          paths
+          ++ [ runner.package ]
+          ++ lib.optionals runner.desktop.enable [
+            pkgs.labwc
+            pkgs.wlr-randr
+            pkgs.ffmpeg
+            pkgs.dbus
+            (pkgs.callPackage ./waymote.nix { })
+          ];
 
         environment = {
           HOME = "/var/lib/amp";
@@ -216,6 +233,7 @@ in
           XDG_CACHE_HOME = "/var/lib/amp/.cache";
           XDG_CONFIG_HOME = "/var/lib/amp/.config";
           XDG_DATA_HOME = "/var/lib/amp/.local/share";
+          XDG_RUNTIME_DIR = lib.mkIf runner.desktop.enable "/run/amp-runner";
           GH_CONFIG_DIR = "/var/lib/amp/.config/gh";
           GIT_CONFIG_GLOBAL = toString ampGitConfig;
           NIX_REMOTE = "daemon";
@@ -257,6 +275,10 @@ in
           RestrictSUIDSGID = true;
           CPUWeight = 20;
           IOWeight = 20;
+        }
+        // lib.optionalAttrs runner.desktop.enable {
+          RuntimeDirectory = "amp-runner";
+          RuntimeDirectoryMode = "0700";
         }
         // lib.optionalAttrs (runner.memoryMax != null) {
           MemoryMax = runner.memoryMax;

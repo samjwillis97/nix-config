@@ -2,24 +2,24 @@
 
 This runbook describes the opt-in Amp remote runner for `teeny`. Amp's browser
 client is the control plane; the host runs the pinned Amp CLI as an unprivileged
-systemd service. There is no local web UI, desktop, public runner port, SSH
-workflow, or per-task VM.
+systemd service. The optional Desktop tab uses a private headless Wayland desktop,
+not the host's physical display. There is no public runner port, SSH workflow,
+Amp Portal support, or per-task VM.
 
 ## Rollout status and prerequisites
 
-The host currently has `my.amp.enable = true` for the CLI package, but
-`my.amp.runner.enable = false`. The runner account and service are not active.
-The encrypted `secrets/amp/teeny.yaml` file has not been provisioned. Do not
-import the Amp secret module, enable the runner, or build a runner-enabled host
-until the operator has created that encrypted file outside chat.
+The host configuration enables the CLI, runner and virtual desktop through
+`my.amp.enable`, `my.amp.runner.enable`, and
+`my.amp.runner.desktop.enable`. The encrypted credential file exists and
+the host imports the Amp secret module. These source settings do not establish
+which generation is deployed: desktop enablement requires a separately approved
+deployment and runner restart.
 
-A further pre-enable gate remains: the isolated VM test verifies credential
+The isolated VM test verifies credential
 staging, filesystem restrictions, GitHub credential-helper scoping, direnv
 execution, and Nix-daemon access to an existing store path. An exploratory VM build probe returned a fresh store path that the service
 process could not read. Therefore, a fresh Nix build and `nix develop` from
-inside the hardened service are **not yet validated**. Resolve whether this is a
-VM mount-namespace issue or a service configuration issue, and make a small
-build/dev-shell fixture pass before enabling the runner. The checked-in VM test
+inside the hardened service are **not validated by that coverage**. The checked-in VM test
 does not claim to prove that project builds work.
 
 Deployment and live browser, GitHub, or reboot tests require separate
@@ -43,9 +43,18 @@ smoke test.
   Amp thread running on this host shares the same account, credentials, Nix
   daemon, filesystem boundary, and network access. Worktrees isolate file
   changes, not processes or credentials. This is not a VM or network sandbox.
-- The service has no display server, Desktop/Portal support, public application
-  preview, or inbound listener. Amp and GitHub, Nix caches, and repository
-  dependencies require outgoing connectivity.
+- The runner has `amp.runner.env.enabled = true`, so the Secrets & Env Vars
+  configured on ampcode.com are injected into thread shells, stdio MCP servers,
+  and plugins. Precedence is personal, project, workspace, then this service's
+  declared environment: an Amp-configured variable overrides a Nix-provided one
+  of the same name for that thread. Variables are fetched per served directory
+  each time a thread starts, so changes on ampcode.com apply without redeploying
+  or restarting the service.
+- When desktop support is enabled, Amp starts its own headless labwc compositor
+  and Waymote streaming processes inside the existing service sandbox. Threads
+  inherit the desktop display variables. It does not capture a physical display
+  or enable Amp Portals. Amp and GitHub, Nix caches, and repository dependencies
+  require outgoing connectivity.
 - `teeny`'s daemon concurrency is set to `max-jobs = 1` and `cores = 2`, with
   lower CPU/I/O weights for the runner and daemon. Those daemon limits also
   apply to administrative builds. `cores` is a scheduling hint, not a hard CPU
@@ -75,8 +84,7 @@ Only after the encrypted file exists and its keys have been verified should the
 reviewed host change import `secretModules.amp`, set
 `my.amp.runner.enable = true`, and point `apiKeyFile` and `githubTokenFile` at
 the corresponding SOPS secret paths. The module requires both paths and the
-runner ID; the host currently leaves the service disabled, so there is no
-missing-file dependency in the current host configuration. Validate the enabled
+runner ID. The host already has this wiring. Validate the enabled
 configuration and build it without switching. Keep any later activation behind
 separate deployment approval.
 
@@ -124,13 +132,47 @@ After the service has been separately deployed and approved:
 3. Confirm the checkout appears in the runner's discovered workspaces. Do not
    clone unrelated repositories merely to broaden discovery. Repository names
    and branches should fit under the configured depth.
-4. Use Amp's Files and Changes views for editing and review. Browser Terminal is
-   available for shell commands; it is not a promise of a graphical desktop or
-   a public preview URL.
+4. Use Amp's Files and Changes views for editing and review, Terminal for shell
+   commands, and Desktop for graphical programs after desktop-enabled deployment.
+   Desktop does not provide a public preview URL.
 
 The service runs in `/var/lib/amp/code`, including when no repository exists, so
 an initial browser thread can bootstrap a checkout. Do not move state into
 `/home/sam` or serve the entire account home.
+
+## Virtual desktop
+
+`my.amp.runner.desktop.enable` defaults to false and currently supports x86_64
+Linux. Enabling it adds `--desktop`, labwc, wlr-randr, FFmpeg with software H.264
+encoding, a D-Bus session launcher, and pinned Waymote binaries patched for NixOS.
+It does not enable a system login desktop, GPU access, audio, or firewall ports.
+Desktop streaming is video-only; project-specific graphical applications still
+belong in their reviewed Nix development environment.
+
+The service gets a private `/run/amp-runner` runtime directory. Amp keeps desktop
+state and logs below `~/.cache/amp/runner-desktop/<runner-id>`. Amp manages the
+1280×720 headless compositor and passes display variables to runner threads;
+do not start another runner or set a physical display's environment variables.
+All threads on a runner share this desktop. Anyone who can write to one of
+those threads can see and control it: do not open secrets or sensitive sessions.
+Desktop and Terminal use Amp's WebRTC/relay transport, not a public preview URL.
+
+After an approved deployment/restart, run `amp runner desktop status`, reload the
+thread and open its Desktop tab. Launch a harmless Wayland application from a
+thread's reviewed Nix shell and verify it appears and accepts input. Test in a
+new thread if a pre-existing thread retains old display variables. A failed
+desktop should be investigated through its logs and dependency status, not by
+removing the runner's filesystem restrictions.
+
+Validate locally without switching:
+
+```sh
+nix develop -c nix build .#checks.x86_64-linux.amp-runner --no-link -L
+```
+
+The VM test exercises a headless compositor, output configuration, executable
+loading and H.264 encoding inside the hardened unit. It does not connect a live
+Amp client or prove WebRTC connectivity; that remains a post-deployment check.
 
 ## Git, GitHub, and worktrees
 
@@ -282,5 +324,7 @@ After the separate deployment and live-test approvals are granted:
 - Observe Nix build resource use, free space, store growth, and existing service
   responsiveness. Test credential rotation and stop/disable recovery without
   printing values.
-- Confirm there is no new ingress route, firewall port, display server, or
-  public application preview.
+- Verify the private Desktop tab and input with a harmless graphical app when
+  desktop support is enabled; confirm no physical display is captured.
+- Confirm there is no new ingress route, firewall port, system login desktop,
+  or public application preview.
