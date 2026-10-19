@@ -43,6 +43,13 @@ smoke test.
   Amp thread running on this host shares the same account, credentials, Nix
   daemon, filesystem boundary, and network access. Worktrees isolate file
   changes, not processes or credentials. This is not a VM or network sandbox.
+- The runner has `amp.runner.env.enabled = true`, so the Secrets & Env Vars
+  configured on ampcode.com are injected into thread shells, stdio MCP servers,
+  and plugins. Precedence is personal, project, workspace, then this service's
+  declared environment: an Amp-configured variable overrides a Nix-provided one
+  of the same name for that thread. Variables are fetched per served directory
+  each time a thread starts, so changes on ampcode.com apply without redeploying
+  or restarting the service.
 - When desktop support is enabled, Amp starts its own headless labwc compositor
   and Waymote streaming processes inside the existing service sandbox. Threads
   inherit the desktop display variables. It does not capture a physical display

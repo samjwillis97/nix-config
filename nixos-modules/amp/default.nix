@@ -16,7 +16,7 @@ let
   ampRunnerSettings = pkgs.writeText "amp-runner-settings.json" (
     builtins.toJSON {
       "amp.runner.autoUpdate.enabled" = false;
-      "amp.runner.env.enabled" = false;
+      "amp.runner.env.enabled" = true;
       "amp.remoteThreadCreation.enabled" = false;
       "amp.updates.mode" = "disabled";
     }
