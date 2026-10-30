@@ -121,6 +121,13 @@ in
         };
       }
 
+      # nixflix allows 5 minutes, but a switch on teeny restarts Jellyfin under
+      # load and it can still be initialising (HTTP 503) at that point. Being
+      # killed mid-start restarts it from scratch, so the activation never ends.
+      {
+        systemd.services.jellyfin.serviceConfig.TimeoutStartSec = lib.mkForce 600;
+      }
+
       (lib.mkIf config.my.media.jellyfin.ingress.enable {
         my.ingress.routes.jellyfin = {
           upstream = "http://127.0.0.1:${toString config.my.media.jellyfin.httpPort}";

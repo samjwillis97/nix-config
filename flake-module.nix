@@ -229,6 +229,13 @@ in
       {
         hostname = name;
 
+        # A switch on teeny restarts Jellyfin, which can spend several minutes
+        # initialising before its API responds, and the jellyfin-* oneshots
+        # block activation until it does. The default 240s timeout aborts
+        # mid-activation and leaves a rollback holding the switch lock, which
+        # then fails the next deploy.
+        activationTimeout = 900;
+
         profiles.system = {
           sshUser = "deploy";
           user = "root";
