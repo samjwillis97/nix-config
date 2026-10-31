@@ -59,7 +59,7 @@
         enable = true;
         tokenFile = config.sops.secrets."buildkite-agent-token".path;
         agents.teeny.tags = {
-          queue = "default";
+          queue = "linux-selfhosted";
           host = "teeny";
         };
       };

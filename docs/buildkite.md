@@ -10,9 +10,14 @@ enablement and tags live in
 ## Current state
 
 `my.buildkite.enable = true` on `teeny` with one agent instance,
-`agents.teeny`. It registers with the `queue=default` and `host=teeny` tags and
-runs as `buildkite-agent-teeny.service` under the locked system user
+`agents.teeny`. It registers with the `queue=linux-selfhosted` and `host=teeny`
+tags and runs as `buildkite-agent-teeny.service` under the locked system user
 `buildkite-agent-teeny`.
+
+The target cluster must contain a **self-hosted** queue with the key
+`linux-selfhosted`. A Buildkite hosted queue cannot accept this agent, and the
+agent does not register until that queue exists. Create the queue in the
+Buildkite cluster before deploying the host.
 
 The encrypted file `secrets/buildkite/teeny.yaml` contains a placeholder token
 in the `buildkite-agent-token` key. **Replace it before deploying.** Until then
@@ -55,9 +60,11 @@ with mode `0600`, and a change to the secret restarts
 ## Tags and queues
 
 The agent advertises the tags configured under `my.buildkite.agents.<name>.tags`.
-Pipelines target it with `queue=default` or `host=teeny`. Add tags in the host
-configuration rather than editing the generated agent config on the machine, and
-inspect the effective values before changing a pipeline:
+Pipelines target it with `queue=linux-selfhosted` or `host=teeny`. The queue tag
+must match a self-hosted queue in the same Buildkite cluster; it is not a
+Buildkite hosted queue. Add tags in the host configuration rather than editing
+the generated agent config on the machine, and inspect the effective values
+before changing a pipeline:
 
 ```sh
 nix eval --json '.#nixosConfigurations.teeny.config.my.buildkite'
