@@ -7,6 +7,8 @@
   imports = [
     ./hardware-configuration.nix
     secretModules.tailscale
+    secretModules.amp
+    secretModules.buildkite
   ];
 
   config = {
@@ -63,6 +65,26 @@
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJZUYj/cMiEqPoxH7Uut5VS9Phl2dtCWMOxKf8YyCuY/ sam@williscloud.org"
         ];
       };
+
+      amp = {
+        enable = true;
+        runner = {
+          enable = true;
+          desktop.enable = true;
+          apiKeyFile = config.sops.secrets."amp-api-key".path;
+          githubTokenFile = config.sops.secrets."amp-github-token".path;
+        };
+      };
+
+      buildkite = {
+        enable = true;
+        tokenFile = config.sops.secrets."buildkite-agent-token".path;
+        agents.personal-desktop.tags = {
+          queue = "linux-selfhosted";
+          host = "personal-desktop";
+        };
+      };
+
     };
   };
 }
