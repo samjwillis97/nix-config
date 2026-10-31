@@ -176,6 +176,10 @@ repository/environment permissions. Those secret names are the workflow API,
 not literal credentials. [Operations](operations.md#remote-deployment) covers
 bootstrap and the root-equivalent trust granted to the deployment account.
 
+`teeny` also runs self-hosted Buildkite agents for pipelines outside these
+workflows; see [Buildkite agents](buildkite.md). They are separate from the
+generated GitHub Actions matrices and do not change the workflows above.
+
 ## Before proposing a change
 
 - Confirm which hosts/users inherit the changed module, including disabled

@@ -12,6 +12,7 @@
     secretModules.media
     secretModules.supernote
     secretModules.amp
+    secretModules.buildkite
   ];
 
   config = {
@@ -51,6 +52,15 @@
           desktop.enable = true;
           apiKeyFile = config.sops.secrets."amp-api-key".path;
           githubTokenFile = config.sops.secrets."amp-github-token".path;
+        };
+      };
+
+      buildkite = {
+        enable = true;
+        tokenFile = config.sops.secrets."buildkite-agent-token".path;
+        agents.teeny.tags = {
+          queue = "default";
+          host = "teeny";
         };
       };
 

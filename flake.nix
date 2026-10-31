@@ -238,6 +238,7 @@
           }
           // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
             amp-runner = import ./nixos-modules/amp/tests.nix { inherit pkgs; };
+            buildkite-agents = import ./nixos-modules/buildkite/tests.nix { inherit pkgs; };
           };
 
           apps.deploy = inputs.deploy-rs.apps.${pkgs.stdenv.hostPlatform.system}.default;

@@ -65,6 +65,7 @@ The shared modules define several `my.*` options used by host modules:
 - `my.deploy-rs.enable` adds the deploy account and deploy output only when a non-empty `my.deploy-rs.authorizedKeys` list is supplied. `my.deploy-rs.githubActions.enable` additionally requires `my.deploy-rs.enable`.
 - `my.cloudflared.enable` is what makes a NixOS host appear in the generated Cloudflare host map; its connector option additionally requires `my.cloudflared.enable` and a token file.
 - `my.amp.enable` installs the pinned Amp CLI only; `my.amp.runner.enable` separately opts a host into the credentialed system runner and requires both runtime credential files. See the [Amp runbook](../docs/amp.md) for the browser workflow and operational gates.
+- `my.buildkite.enable` runs one or more Buildkite agents from a shared runtime token file and requires at least one entry in `my.buildkite.agents`. Agents share the `buildkite-agents` group for token access. See the [Buildkite agent runbook](../docs/buildkite.md).
 
 Enable these from a host rather than baking a deployment identity or secret into a reusable module. The host-level deployment, ingress, and closure-check workflow is documented in the [operations guide](../docs/operations.md); secrets and secret-module imports are covered by [`secrets/README.md`](../secrets/README.md).
 
