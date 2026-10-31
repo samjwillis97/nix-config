@@ -10,6 +10,10 @@ For the browser-controlled coding-agent runner on `teeny`, see the
 [Amp runbook](amp.md). The runner is separately gated from the package-only Amp
 option and shares a Nix daemon, credentials, and network with its threads.
 
+For the self-hosted Buildkite CI agents on `teeny`, see the
+[Buildkite agent runbook](buildkite.md). The agents use a SOPS-backed token and
+run directly on the host with the same shared Nix daemon.
+
 The source of truth is always the effective host configuration. Reusable modules
 live in [`nixos-modules/`](../nixos-modules/), and host-specific choices live in
 [`nixos-hosts/`](../nixos-hosts/). A host's `default.nix` can override module
