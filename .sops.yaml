@@ -17,6 +17,12 @@ creation_rules:
           - *sam-wsl-personal
           - *samuelwillis-work-mac
           - *staging-vm
+  # Add the wsl-work Home Manager recipient to this list, then run
+  # `sops updatekeys --yes secrets/work/secrets.yaml` from an editor machine.
+  - path_regex: ^secrets/work/secrets\.yaml$
+    key_groups:
+      - age:
+          - *sam
   - path_regex: ^secrets/supernote/secrets\.yaml$
     key_groups:
       - age:

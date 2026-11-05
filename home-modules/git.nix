@@ -5,17 +5,30 @@
   ...
 }:
 let
-  allowedSignersFile = pkgs.writeText "git-allowed-signers" ''
-    ${config.my.git.email} namespaces="git" ${config.my.git.signedCommits.github.publicKey}
-  '';
+  signingPublicKey = config.my.git.signedCommits.github.publicKey;
+
+  allowedSignersFile =
+    if signingPublicKey == null then
+      null
+    else
+      pkgs.writeText "git-allowed-signers" ''
+        ${config.my.git.email} namespaces="git" ${signingPublicKey}
+      '';
 in
 {
   options.my.git = {
     enable = lib.mkEnableOption "git configuration";
 
-    email = lib.mkOption {
+    username = lib.mkOption {
       type = lib.types.str;
-      description = "Email address used for git configuration.";
+      default = "samjwillis97";
+      description = "Name used for the git author and committer.";
+    };
+
+    email = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Email address used for git configuration. Set to null when a SOPS template supplies user.email.";
     };
 
     authentication = {
@@ -39,8 +52,9 @@ in
         };
 
         publicKey = lib.mkOption {
-          type = lib.types.str;
-          description = "SSH public key used for signing git commits.";
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = "SSH public key used for local verification of signed git commits.";
         };
       };
     };
@@ -91,8 +105,10 @@ in
 
           settings = {
             user = {
+              name = config.my.git.username;
+            }
+            // lib.optionalAttrs (config.my.git.email != null) {
               email = config.my.git.email;
-              name = "samjwillis97";
             };
 
             alias = {
@@ -145,6 +161,8 @@ in
 
         settings = {
           gpg.format = "ssh";
+        }
+        // lib.optionalAttrs (allowedSignersFile != null) {
           gpg.ssh.allowedSignersFile = toString allowedSignersFile;
         };
       };
