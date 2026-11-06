@@ -6,6 +6,13 @@ let
     "xtream/base-url"
     "xtream/username"
     "xtream/password"
+    "arr/admin-password"
+    "radarr/api-key"
+    "sonarr/api-key"
+    "prowlarr/api-key"
+    "seerr/api-key"
+    "torbox/api-key"
+    "decypharr/api-token"
   ];
 in
 {
