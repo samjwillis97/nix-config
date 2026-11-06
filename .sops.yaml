@@ -7,6 +7,7 @@ keys:
   - &wsl-personal age1ufx37x8dcwlx043w74q242kkr8r8hscrgqrnhce3e27dhysn4vesvlvtfk
   - &sam-wsl-personal age1r0l9rjncdf6jvuujvvg6ps0wufs3aag3d5ysugqcv02laf3g840sel3s63
   - &samuelwillis-work-mac age1z3t4dprs8qc8fd7l24977pnz6uvxllcl4xp7xq0y6y2y9yl3p4jssfewjq
+  - &sam-wsl-work age1x74ux0r4s7n7lsuyl2whz4hu0zqsq4hety58lzf2x0p5t3cvrcksa60upa
 
 creation_rules:
   - path_regex: ^secrets/development/secrets\.yaml$
@@ -17,12 +18,11 @@ creation_rules:
           - *sam-wsl-personal
           - *samuelwillis-work-mac
           - *staging-vm
-  # Add the wsl-work Home Manager recipient to this list, then run
-  # `sops updatekeys --yes secrets/work/secrets.yaml` from an editor machine.
   - path_regex: ^secrets/work/secrets\.yaml$
     key_groups:
       - age:
           - *sam
+          - *sam-wsl-work
   - path_regex: ^secrets/supernote/secrets\.yaml$
     key_groups:
       - age:
