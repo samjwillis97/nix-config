@@ -90,11 +90,24 @@ in
             internalHttpPort = config.my.media.jellyfin.httpPort;
           };
 
-          system.pluginRepositories = {
-            "Jellyfin.XTream" = {
-              enabled = true;
-              url = "https://kevinjil.github.io/Jellyfin.Xtream/repository.json";
-              hash = "sha256-xneshIL76OaYLnFR0Cs3ysbAgS5jvN/4yzoFE5PE3wY=";
+          # nixflix disables Jellyfin real-time monitoring when the arr
+          # Jellyfin notifications are enabled, leaving new imports to the
+          # scheduled scan. Watch the library paths as well so a successful
+          # Radarr/Sonarr import appears promptly.
+          libraries = {
+            Movies.enableRealtimeMonitor = lib.mkDefault true;
+            Shows.enableRealtimeMonitor = lib.mkDefault true;
+          };
+
+          system = {
+            libraryMonitorDelay = lib.mkDefault 10;
+
+            pluginRepositories = {
+              "Jellyfin.XTream" = {
+                enabled = true;
+                url = "https://kevinjil.github.io/Jellyfin.Xtream/repository.json";
+                hash = "sha256-xneshIL76OaYLnFR0Cs3ysbAgS5jvN/4yzoFE5PE3wY=";
+              };
             };
           };
 
@@ -119,6 +132,13 @@ in
             };
           };
         };
+      }
+
+      {
+        # nixflix enables the Emby/Jellyfin connection and its triggers but
+        # leaves Update Library to the arr schema/default. Pin it so an arr
+        # import always asks Jellyfin to scan the affected path.
+        nixflix.notif.jellyfin.updateLibrary = lib.mkDefault true;
       }
 
       # nixflix allows 5 minutes, but a switch on teeny restarts Jellyfin under
