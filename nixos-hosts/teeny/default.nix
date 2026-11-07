@@ -220,12 +220,15 @@
       prowlarr.config.hostConfig.bindAddress = lib.mkForce "0.0.0.0";
 
       # The Prowlarr reconciler deletes indexers that are not listed here on
-      # every deploy. The API key is read from SOPS at runtime.
+      # every deploy. Keep the indexer identity out of this public repo: use
+      # the generic Newznab schema and read the base URL and API key from
+      # SOPS at runtime.
       prowlarr.config.indexers = [
         {
-          name = "NZBGeek";
-          schemaName = "NZBGeek";
-          apiKey._secret = config.sops.secrets."nzbgeek/api-key".path;
+          name = "Usenet Indexer";
+          schemaName = "Generic Newznab";
+          baseUrl._secret = config.sops.secrets."usenet-indexer/base-url".path;
+          apiKey._secret = config.sops.secrets."usenet-indexer/api-key".path;
         }
       ];
     };
