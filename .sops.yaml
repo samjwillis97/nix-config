@@ -43,6 +43,11 @@ creation_rules:
       - age:
           - *sam
           - *sam-personal-mac
+  - path_regex: ^secrets/(.*/)?personal-desktop[.]yaml$
+    key_groups:
+      - age:
+          - *sam
+          - *personal-desktop
   - path_regex: ^secrets/(.*/)?staging-vm[.]yaml$
     key_groups:
       - age:
