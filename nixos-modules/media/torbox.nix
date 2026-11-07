@@ -285,10 +285,12 @@ in
           wantedBy = [ "multi-user.target" ];
 
           # fusermount3 comes from fuse3; jq and coreutils render the config.
-          # /run/wrappers/bin must come before the fuse3 store bin: the store
-          # copy is not setuid, so fusermount3 would fail to mount.
+          # The setuid wrapper must come before the fuse3 store bin: the store
+          # copy is not setuid, so fusermount3 would fail to mount. NixOS's
+          # `path` option appends /bin to each entry, so pass /run/wrappers
+          # rather than config.security.wrapperDir (/run/wrappers/bin).
           path = [
-            config.security.wrapperDir
+            "/run/wrappers"
             pkgs.bash
             pkgs.coreutils
             pkgs.fuse3
