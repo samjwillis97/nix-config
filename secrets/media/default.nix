@@ -12,6 +12,8 @@ let
     "prowlarr/api-key"
     "seerr/api-key"
     "torbox/api-key"
+    "torbox/news-username"
+    "torbox/news-password"
     "decypharr/api-token"
   ];
 in

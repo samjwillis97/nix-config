@@ -23,6 +23,39 @@ let
   stateDir = "/var/lib/decypharr";
   mediaGid = config.nixflix.globals.gids.media;
 
+  usenetArgs = lib.optionalString cfg.usenet.enable ''
+    --arg usenetHost ${lib.escapeShellArg cfg.usenet.host} \
+    --arg usenetPort ${lib.escapeShellArg (toString cfg.usenet.port)} \
+    --arg usenetUsername "$(${pkgs.coreutils}/bin/cat ${lib.escapeShellArg cfg.usenet.usernameFile})" \
+    --arg usenetPassword "$(${pkgs.coreutils}/bin/cat ${lib.escapeShellArg cfg.usenet.passwordFile})" \
+    --arg usenetBackbone ${lib.escapeShellArg cfg.usenet.backbone} \
+    --argjson usenetSSL ${if cfg.usenet.ssl then "true" else "false"} \
+    --argjson usenetMaxConnections ${toString cfg.usenet.maxConnections} \
+  '';
+
+  usenetJson =
+    if cfg.usenet.enable then
+      ''
+        {
+          providers: [
+            {
+              host: $usenetHost,
+              port: ($usenetPort | tonumber),
+              username: $usenetUsername,
+              password: $usenetPassword,
+              backbone: $usenetBackbone,
+              ssl: $usenetSSL,
+              max_connections: $usenetMaxConnections,
+              priority: 1
+            }
+          ],
+          max_connections: $usenetMaxConnections,
+          processing_max_connections: $usenetMaxConnections
+        }
+      ''
+    else
+      "null";
+
   renderConfig = pkgs.writeShellScript "decypharr-render-config" ''
     set -eu
 
@@ -35,7 +68,7 @@ let
     ${pkgs.jq}/bin/jq -n \
       --arg port ${lib.escapeShellArg (toString cfg.port)} \
       --arg bindAddress ${lib.escapeShellArg cfg.bindAddress} \
-      --arg downloadFolder ${lib.escapeShellArg cfg.downloadFolder} \
+      ${usenetArgs}      --arg downloadFolder ${lib.escapeShellArg cfg.downloadFolder} \
       --arg mountPath ${lib.escapeShellArg cfg.mountPath} \
       --arg cacheDir ${lib.escapeShellArg "${stateDir}/cache"} \
       --arg diskCacheSize ${lib.escapeShellArg cfg.diskCacheSize} \
@@ -91,6 +124,7 @@ let
           }
         ],
         default_download_action: "symlink",
+        usenet: ${usenetJson},
         # Do not join the Decypharr peer-to-peer availability network; this host
         # only needs the local qBittorrent API and mount.
         hearsay: {
@@ -178,6 +212,43 @@ in
       type = lib.types.str;
       default = "10GB";
       description = "Maximum size of Decypharr's on-disk read cache";
+    };
+
+    usenet = {
+      enable = lib.mkEnableOption "Usenet streaming through Decypharr";
+
+      host = lib.mkOption {
+        type = lib.types.str;
+        default = "nntp.torbox.app";
+        description = "NNTP server hostname";
+      };
+
+      port = lib.mkOption {
+        type = lib.types.port;
+        default = 563;
+        description = "NNTP server port (563 for TLS)";
+      };
+
+      ssl = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Use TLS for the NNTP connection";
+      };
+
+      backbone = lib.mkOption {
+        type = lib.types.str;
+        default = "torbox";
+        description = "Shared article backbone identifier for provider failover";
+      };
+
+      maxConnections = lib.mkOption {
+        type = lib.types.int;
+        default = 10;
+        description = "Maximum NNTP connections; TorBox News Server allows 10 per account";
+      };
+
+      usernameFile = secretFileOption "Usenet provider username";
+      passwordFile = secretFileOption "Usenet provider password";
     };
 
     repair = {
@@ -349,6 +420,23 @@ in
               password = {
                 _secret = cfg.apiTokenFile;
               };
+              dependencies = [ "decypharr.service" ];
+              categories = {
+                radarr = "radarr";
+                sonarr = "sonarr";
+                sonarr-anime = "sonarr-anime";
+                lidarr = "lidarr";
+                prowlarr = "prowlarr";
+              };
+            }
+            {
+              enable = true;
+              name = "Decypharr Usenet";
+              implementationName = "SABnzbd";
+              host = "127.0.0.1";
+              inherit (cfg) port;
+              urlBase = "sabnzbd";
+              apiKey._secret = cfg.apiTokenFile;
               dependencies = [ "decypharr.service" ];
               categories = {
                 radarr = "radarr";

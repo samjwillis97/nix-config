@@ -177,6 +177,14 @@
           ingress.enable = false;
           openFirewall = true;
           bindAddress = "0.0.0.0";
+
+          # TorBox Pro includes the News Server NNTP account. Credentials
+          # come from https://torbox.app/tools/.
+          usenet = {
+            enable = true;
+            usernameFile = config.sops.secrets."torbox/news-username".path;
+            passwordFile = config.sops.secrets."torbox/news-password".path;
+          };
         };
       };
 
@@ -210,6 +218,17 @@
       radarr.config.hostConfig.bindAddress = lib.mkForce "0.0.0.0";
       sonarr.config.hostConfig.bindAddress = lib.mkForce "0.0.0.0";
       prowlarr.config.hostConfig.bindAddress = lib.mkForce "0.0.0.0";
+
+      # The Prowlarr reconciler deletes indexers that are not listed here on
+      # every deploy. Add the Usenet indexer once the account exists, e.g.:
+      #
+      # prowlarr.config.indexers = [
+      #   {
+      #     name = "NZBGeek";
+      #     schemaName = "NZBGeek";
+      #     apiKey._secret = config.sops.secrets."nzbgeek/api-key".path;
+      #   }
+      # ];
     };
 
   };
