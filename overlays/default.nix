@@ -19,6 +19,9 @@ in
         neovim-full = self.packages.${system}.neovim-full;
         f = self.packages.${system}.f;
         httpcraft = self.packages.${system}.httpcraft;
+        mcp-victorialogs = self.packages.${system}.mcp-victorialogs;
+        teeny-probe = self.packages.${system}.teeny-probe;
+        triage-state = self.packages.${system}.triage-state;
         unreal-agent = self.packages.${system}.unreal-agent;
         nix-auth = inputs.nix-auth.packages.${system}.default;
         sidra = inputs.sidra.packages.${system}.default;

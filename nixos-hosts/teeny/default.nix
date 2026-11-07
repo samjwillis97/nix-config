@@ -55,6 +55,15 @@
         };
       };
 
+      observability = {
+        logs = {
+          enable = true;
+          retention = "14d";
+          mcp.enable = true;
+        };
+        probe.enable = true;
+      };
+
       buildkite = {
         enable = true;
         tokenFile = config.sops.secrets."buildkite-agent-token".path;

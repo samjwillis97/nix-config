@@ -223,6 +223,9 @@
           packages = {
             f = pkgs.callPackage ./packages/f { };
             httpcraft = pkgs.callPackage ./packages/httpcraft { };
+            mcp-victorialogs = pkgs.callPackage ./packages/mcp-victorialogs { };
+            teeny-probe = pkgs.callPackage ./packages/teeny-probe { };
+            triage-state = pkgs.callPackage ./packages/triage-state { };
             unreal-agent = pkgs.callPackage ./packages/unreal-agent { };
             neovim = self.lib.mkNeovim {
               pkgs = nvimPkgs;
@@ -238,10 +241,12 @@
 
           checks = {
             httpcraft = config.packages.httpcraft.tests.smoke;
+            triage-state = config.packages.triage-state.tests;
           }
           // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
             amp-runner = import ./nixos-modules/amp/tests.nix { inherit pkgs; };
             buildkite-agents = import ./nixos-modules/buildkite/tests.nix { inherit pkgs; };
+            observability = import ./nixos-modules/observability/tests.nix { inherit pkgs; };
           };
 
           apps.deploy = inputs.deploy-rs.apps.${pkgs.stdenv.hostPlatform.system}.default;
