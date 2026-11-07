@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   unstable,
   ...
 }:
@@ -99,7 +100,42 @@ in
         };
 
         # Seerr only sets HOST when nixflix's own reverse proxy is enabled.
-        systemd.services.seerr.environment.HOST = lib.mkDefault "127.0.0.1";
+        systemd.services = {
+          seerr.environment.HOST = lib.mkDefault "127.0.0.1";
+
+          # Seerr's first start runs database migrations and can take longer
+          # than the 60 seconds nixflix's setup script waits. Wait for the API
+          # first so seerr-setup does not fail on a slow host.
+          seerr-wait-for-api = {
+            description = "Wait for the Seerr API";
+            after = [ "seerr.service" ];
+            requires = [ "seerr.service" ];
+            wantedBy = [ "multi-user.target" ];
+
+            serviceConfig = {
+              Type = "oneshot";
+              RemainAfterExit = true;
+              TimeoutStartSec = 360;
+            };
+
+            script = ''
+              for _ in $(${pkgs.coreutils}/bin/seq 1 300); do
+                if ${pkgs.curl}/bin/curl -sf "http://${config.nixflix.seerr.connectionAddress}:${toString config.nixflix.seerr.port}/api/v1/status" >/dev/null 2>&1; then
+                  exit 0
+                fi
+                ${pkgs.coreutils}/bin/sleep 1
+              done
+
+              echo "Seerr API did not become ready" >&2
+              exit 1
+            '';
+          };
+
+          seerr-setup = {
+            after = [ "seerr-wait-for-api.service" ];
+            requires = [ "seerr-wait-for-api.service" ];
+          };
+        };
       }
 
       (lib.mkIf cfg.ingress.enable {
