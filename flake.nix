@@ -251,7 +251,13 @@
             observability = import ./nixos-modules/observability/tests.nix { inherit pkgs; };
           };
 
-          apps.deploy = inputs.deploy-rs.apps.${pkgs.stdenv.hostPlatform.system}.default;
+          # deploy-rs' own package is built from source against our nixpkgs pin
+          # and is not on any binary cache. Nixpkgs packages the same release
+          # and cache.nixos.org substitutes it, so run that binary instead.
+          apps.deploy = {
+            type = "app";
+            program = "${pkgs.deploy-rs}/bin/deploy";
+          };
 
           terranix.terranixConfigurations.cloudflare = {
             modules = [
