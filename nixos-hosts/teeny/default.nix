@@ -25,16 +25,20 @@
       ];
       networkmanager.enable = true;
     };
-    systemd.enableEmergencyMode = false;
-
     # Keep Nix builds from monopolizing this shared media server.
     nix.settings = {
       max-jobs = 1;
       cores = 2;
     };
-    systemd.services.nix-daemon.serviceConfig = {
-      CPUWeight = 50;
-      IOWeight = 50;
+
+    systemd = {
+      enableEmergencyMode = false;
+      services.nix-daemon.serviceConfig = {
+        CPUWeight = 50;
+        IOWeight = 50;
+      };
+      # Seerr is loopback-only by default; expose it on the LAN as well.
+      services.seerr.environment.HOST = lib.mkForce "0.0.0.0";
     };
 
     my = {
@@ -157,16 +161,22 @@
           prowlarr.apiKeyFile = config.sops.secrets."prowlarr/api-key".path;
           seerr.apiKeyFile = config.sops.secrets."seerr/api-key".path;
           adminPasswordFile = config.sops.secrets."arr/admin-password".path;
-          # Seerr is the user-facing request UI; the admin UIs stay local.
+          # Seerr is the user-facing request UI. The admin UIs are exposed
+          # directly on the LAN for configuration, but not through the
+          # Cloudflare ingress.
           ingress.enable = true;
+          openFirewall = true;
         };
 
         torbox = {
           enable = true;
           apiKeyFile = config.sops.secrets."torbox/api-key".path;
           apiTokenFile = config.sops.secrets."decypharr/api-token".path;
-          # The web interface can add and delete torrents; keep it local.
+          # The web interface can add and delete torrents. Expose it on the
+          # LAN for configuration, but not through the Cloudflare ingress.
           ingress.enable = false;
+          openFirewall = true;
+          bindAddress = "0.0.0.0";
         };
       };
 
@@ -195,6 +205,13 @@
         ];
       };
     };
+
+    nixflix = {
+      radarr.config.hostConfig.bindAddress = lib.mkForce "0.0.0.0";
+      sonarr.config.hostConfig.bindAddress = lib.mkForce "0.0.0.0";
+      prowlarr.config.hostConfig.bindAddress = lib.mkForce "0.0.0.0";
+    };
+
   };
 
 }
