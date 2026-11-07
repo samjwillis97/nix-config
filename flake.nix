@@ -231,6 +231,9 @@
               pkgs = nvimPkgs;
               modules = [ ./packages/neovim/profiles/full.nix ];
             };
+          }
+          // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+            decypharr = pkgs.callPackage ./packages/decypharr { };
           };
 
           checks = {

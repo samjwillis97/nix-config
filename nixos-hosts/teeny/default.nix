@@ -149,6 +149,25 @@
             };
           };
         };
+
+        arr = {
+          enable = true;
+          radarr.apiKeyFile = config.sops.secrets."radarr/api-key".path;
+          sonarr.apiKeyFile = config.sops.secrets."sonarr/api-key".path;
+          prowlarr.apiKeyFile = config.sops.secrets."prowlarr/api-key".path;
+          seerr.apiKeyFile = config.sops.secrets."seerr/api-key".path;
+          adminPasswordFile = config.sops.secrets."arr/admin-password".path;
+          # Seerr is the user-facing request UI; the admin UIs stay local.
+          ingress.enable = true;
+        };
+
+        torbox = {
+          enable = true;
+          apiKeyFile = config.sops.secrets."torbox/api-key".path;
+          apiTokenFile = config.sops.secrets."decypharr/api-token".path;
+          # The web interface can add and delete torrents; keep it local.
+          ingress.enable = false;
+        };
       };
 
       cloudflared = {
