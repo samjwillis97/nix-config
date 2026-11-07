@@ -34,6 +34,7 @@ let
 
     ${pkgs.jq}/bin/jq -n \
       --arg port ${lib.escapeShellArg (toString cfg.port)} \
+      --arg bindAddress ${lib.escapeShellArg cfg.bindAddress} \
       --arg downloadFolder ${lib.escapeShellArg cfg.downloadFolder} \
       --arg mountPath ${lib.escapeShellArg cfg.mountPath} \
       --arg cacheDir ${lib.escapeShellArg "${stateDir}/cache"} \
@@ -52,7 +53,7 @@ let
       --arg repairStopSchedule ${lib.escapeShellArg cfg.repair.stopSchedule} \
       '{
         port: $port,
-        bind_address: "127.0.0.1",
+        bind_address: $bindAddress,
         use_auth: true,
         download_folder: $downloadFolder,
         debrids: [
@@ -146,6 +147,12 @@ in
       type = lib.types.port;
       default = 8282;
       description = "Port for Decypharr's qBittorrent API and web interface";
+    };
+
+    bindAddress = lib.mkOption {
+      type = lib.types.str;
+      default = "127.0.0.1";
+      description = "Address for Decypharr's qBittorrent API and web interface";
     };
 
     mountPath = lib.mkOption {
