@@ -33,12 +33,22 @@
 
     systemd = {
       enableEmergencyMode = false;
-      services.nix-daemon.serviceConfig = {
-        CPUWeight = 50;
-        IOWeight = 50;
+      services = {
+        nix-daemon.serviceConfig = {
+          CPUWeight = 50;
+          IOWeight = 50;
+        };
+        # Seerr is loopback-only by default; expose it on the LAN as well.
+        seerr.environment.HOST = lib.mkForce "0.0.0.0";
+
+        # nixflix's downloadarr also tries to add the Decypharr Usenet
+        # SABnzbd client to Prowlarr. Prowlarr rejects that client with HTTP
+        # 400 and does not need a download client; Radarr/Sonarr still get it.
+        prowlarr-downloadclients = {
+          enable = false;
+          wantedBy = lib.mkForce [ ];
+        };
       };
-      # Seerr is loopback-only by default; expose it on the LAN as well.
-      services.seerr.environment.HOST = lib.mkForce "0.0.0.0";
     };
 
     my = {
