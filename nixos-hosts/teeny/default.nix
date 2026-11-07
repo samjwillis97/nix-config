@@ -229,6 +229,29 @@
       sonarr.config.hostConfig.bindAddress = lib.mkForce "0.0.0.0";
       prowlarr.config.hostConfig.bindAddress = lib.mkForce "0.0.0.0";
 
+      # The TRaSH 4K profiles include 1080p/720p fallbacks, so a single
+      # Radarr/Sonarr instance can prefer 4K and still grab HD when needed.
+      recyclarr = {
+        enable = true;
+        radarrQuality = "4K";
+        sonarrQuality = "4K";
+      };
+
+      # Keep Seerr on the combined 4K profiles. These remain the default
+      # (non-4K) instances; the profiles handle the 4K-to-1080p fallback.
+      seerr = {
+        radarr.Radarr = {
+          apiKey = config.nixflix.radarr.config.apiKey;
+          activeProfileName = "[SQP] SQP-1 (2160p)";
+          isDefault = true;
+        };
+        sonarr.Sonarr = {
+          apiKey = config.nixflix.sonarr.config.apiKey;
+          activeProfileName = "WEB-2160p (Alternative)";
+          isDefault = true;
+        };
+      };
+
       # The Prowlarr reconciler deletes indexers that are not listed here on
       # every deploy. Keep the indexer identity out of this public repo: use
       # the generic Newznab schema and read the base URL and API key from
