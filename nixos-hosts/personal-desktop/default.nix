@@ -79,7 +79,7 @@
       buildkite = {
         enable = true;
         tokenFile = config.sops.secrets."buildkite-agent-token".path;
-        agents.personal-desktop.tags = {
+        agents.desktop.tags = {
           queue = "linux-selfhosted";
           host = "personal-desktop";
         };
