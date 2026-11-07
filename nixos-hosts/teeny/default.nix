@@ -250,6 +250,23 @@
         sonarrQuality = "4K";
       };
 
+      # Sonarr has no season-vs-episode weight. The TRaSH "Season Pack"
+      # custom format scores full-season releases at +10, which also makes a
+      # pack count as an upgrade for episodes already on disk. Sonarr still
+      # requires every episode in the season to have aired, and quality still
+      # ranks above custom-format score.
+      recyclarr.config.sonarr.sonarr.custom_formats = [
+        {
+          trash_ids = [ "3bc5f395426614e155e585a2f056cdf1" ]; # Season Pack
+          assign_scores_to = [
+            {
+              trash_id = "dfa5eaae7894077ad6449169b6eb03e0"; # WEB-2160p (Alternative)
+              score = 10;
+            }
+          ];
+        }
+      ];
+
       # Keep Seerr on the combined 4K profiles. These remain the default
       # (non-4K) instances; the profiles handle the 4K-to-1080p fallback.
       seerr = {
