@@ -10,6 +10,7 @@ let
     "radarr/api-key"
     "sonarr/api-key"
     "prowlarr/api-key"
+    "nzbgeek/api-key"
     "seerr/api-key"
     "torbox/api-key"
     "torbox/news-username"

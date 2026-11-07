@@ -220,15 +220,14 @@
       prowlarr.config.hostConfig.bindAddress = lib.mkForce "0.0.0.0";
 
       # The Prowlarr reconciler deletes indexers that are not listed here on
-      # every deploy. Add the Usenet indexer once the account exists, e.g.:
-      #
-      # prowlarr.config.indexers = [
-      #   {
-      #     name = "NZBGeek";
-      #     schemaName = "NZBGeek";
-      #     apiKey._secret = config.sops.secrets."nzbgeek/api-key".path;
-      #   }
-      # ];
+      # every deploy. The API key is read from SOPS at runtime.
+      prowlarr.config.indexers = [
+        {
+          name = "NZBGeek";
+          schemaName = "NZBGeek";
+          apiKey._secret = config.sops.secrets."nzbgeek/api-key".path;
+        }
+      ];
     };
 
   };
