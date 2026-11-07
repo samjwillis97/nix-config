@@ -19,7 +19,7 @@ let
       description = "Path to the file containing the ${name}";
     };
 
-  cfg = config.my.media.torbox;
+  cfg = config.my.media.decypharr;
   stateDir = "/var/lib/decypharr";
   mediaGid = config.nixflix.globals.gids.media;
 
@@ -72,12 +72,10 @@ let
       --arg mountPath ${lib.escapeShellArg cfg.mountPath} \
       --arg cacheDir ${lib.escapeShellArg "${stateDir}/cache"} \
       --arg diskCacheSize ${lib.escapeShellArg cfg.diskCacheSize} \
-      --arg apiKey "$(${pkgs.coreutils}/bin/cat ${lib.escapeShellArg cfg.apiKeyFile})" \
       --arg radarrHost "http://${config.nixflix.radarr.connectionAddress}:${toString config.nixflix.radarr.config.hostConfig.port}${config.nixflix.radarr.config.hostConfig.urlBase}" \
       --arg radarrToken "$(${pkgs.coreutils}/bin/cat ${lib.escapeShellArg config.my.media.arr.radarr.apiKeyFile})" \
       --arg sonarrHost "http://${config.nixflix.sonarr.connectionAddress}:${toString config.nixflix.sonarr.config.hostConfig.port}${config.nixflix.sonarr.config.hostConfig.urlBase}" \
       --arg sonarrToken "$(${pkgs.coreutils}/bin/cat ${lib.escapeShellArg config.my.media.arr.sonarr.apiKeyFile})" \
-      --argjson downloadUncached ${if cfg.cachedOnly then "false" else "true"} \
       --argjson mediaGid ${toString mediaGid} \
       --argjson repairEnabled ${if cfg.repair.enable then "true" else "false"} \
       --arg repairSchedule ${lib.escapeShellArg cfg.repair.schedule} \
@@ -89,14 +87,6 @@ let
         bind_address: $bindAddress,
         use_auth: true,
         download_folder: $downloadFolder,
-        debrids: [
-          {
-            provider: "torbox",
-            name: "TorBox",
-            api_key: $apiKey,
-            download_uncached: $downloadUncached
-          }
-        ],
         mount: {
           type: "dfs",
           mount_path: $mountPath,
@@ -125,8 +115,8 @@ let
         ],
         default_download_action: "symlink",
         usenet: ${usenetJson},
-        # Do not join the Decypharr peer-to-peer availability network; this host
-        # only needs the local qBittorrent API and mount.
+        # Do not join the Decypharr peer-to-peer availability network; this
+        # host only needs the local SABnzbd API and mount.
         hearsay: {
           disabled: true
         },
@@ -171,41 +161,34 @@ let
   '';
 in
 {
-  options.my.media.torbox = {
-    enable = lib.mkEnableOption "TorBox media cache via Decypharr";
+  options.my.media.decypharr = {
+    enable = lib.mkEnableOption "usenet streaming via Decypharr";
 
-    apiKeyFile = secretFileOption "TorBox API key";
     apiTokenFile = secretFileOption "Decypharr API token";
 
     port = lib.mkOption {
       type = lib.types.port;
       default = 8282;
-      description = "Port for Decypharr's qBittorrent API and web interface";
+      description = "Port for Decypharr's SABnzbd API and web interface";
     };
 
     bindAddress = lib.mkOption {
       type = lib.types.str;
       default = "127.0.0.1";
-      description = "Address for Decypharr's qBittorrent API and web interface";
+      description = "Address for Decypharr's SABnzbd API and web interface";
     };
 
     mountPath = lib.mkOption {
       type = lib.types.str;
       default = "/mnt/decypharr";
-      description = "FUSE mount point for Decypharr's TorBox files";
+      description = "FUSE mount point for Decypharr's usenet files";
     };
 
     downloadFolder = lib.mkOption {
       type = lib.types.str;
-      default = "${config.nixflix.downloadsDir}/torrent";
-      defaultText = lib.literalExpression ''"''${config.nixflix.downloadsDir}/torrent"'';
+      default = "${config.nixflix.downloadsDir}/usenet";
+      defaultText = lib.literalExpression ''"''${config.nixflix.downloadsDir}/usenet"'';
       description = "Directory where Decypharr creates per-release symlink directories";
-    };
-
-    cachedOnly = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Only submit releases that TorBox already has cached";
     };
 
     diskCacheSize = lib.mkOption {
@@ -219,7 +202,7 @@ in
 
       host = lib.mkOption {
         type = lib.types.str;
-        default = "nntp.torbox.app";
+        default = "";
         description = "NNTP server hostname";
       };
 
@@ -237,14 +220,14 @@ in
 
       backbone = lib.mkOption {
         type = lib.types.str;
-        default = "torbox";
+        default = "";
         description = "Shared article backbone identifier for provider failover";
       };
 
       maxConnections = lib.mkOption {
         type = lib.types.int;
-        default = 10;
-        description = "Maximum NNTP connections; TorBox News Server allows 10 per account";
+        default = 20;
+        description = "Maximum NNTP connections; use the limit allowed by the provider plan";
       };
 
       usernameFile = secretFileOption "Usenet provider username";
@@ -256,12 +239,8 @@ in
         type = lib.types.bool;
         default = true;
         description = ''
-          Probe the Radarr/Sonarr libraries for files whose TorBox link no
-          longer resolves and re-search them.
-
-          TorBox expires cached items after 30 days without a download, so a
-          library built from it will develop broken files. This is the
-          automatic re-fetch path.
+          Probe the Radarr/Sonarr libraries for usenet files whose articles are
+          missing or whose content no longer verifies, and re-search them.
         '';
       };
 
@@ -276,10 +255,6 @@ in
         default = true;
         description = ''
           Delete broken files through the Arr and trigger a new search.
-
-          With `cachedOnly = true`, the new search can only re-add a release
-          that TorBox has cached again; otherwise the Arr falls back to another
-          release.
         '';
       };
 
@@ -287,9 +262,8 @@ in
         type = lib.types.int;
         default = 1;
         description = ''
-          Concurrent repair probes. Keep this low for TorBox: each probe spends
-          from the account-wide `requestdl` budget, which is much tighter than
-          the documented API rate limit.
+          Concurrent repair probes. Each probe consumes an NNTP connection from
+          the same pool as streaming, so keep this low.
         '';
       };
 
@@ -311,11 +285,25 @@ in
         assertions = [
           {
             assertion = config.my.media.arr.enable;
-            message = "my.media.torbox requires my.media.arr.enable: Decypharr is the download client for Radarr and Sonarr.";
+            message = "my.media.decypharr requires my.media.arr.enable: Decypharr is the download client for Radarr and Sonarr.";
           }
           {
             assertion = config.my.media.jellyfin.enable;
-            message = "my.media.torbox requires my.media.jellyfin.enable: the symlinks are consumed by Jellyfin.";
+            message = "my.media.decypharr requires my.media.jellyfin.enable: the symlinks are consumed by Jellyfin.";
+          }
+          {
+            assertion = cfg.usenet.enable;
+            message = "my.media.decypharr requires my.media.decypharr.usenet.enable.";
+          }
+          {
+            assertion =
+              !cfg.usenet.enable
+              || (
+                cfg.usenet.host != ""
+                && toString cfg.usenet.usernameFile != ""
+                && toString cfg.usenet.passwordFile != ""
+              );
+            message = "my.media.decypharr.usenet requires host, usernameFile and passwordFile when enabled.";
           }
         ];
 
@@ -330,7 +318,7 @@ in
           group = "media";
           home = stateDir;
           createHome = false;
-          description = "Decypharr media gateway";
+          description = "Decypharr usenet gateway";
         };
 
         systemd.tmpfiles.settings."10-decypharr" = {
@@ -352,7 +340,7 @@ in
         };
 
         systemd.services.decypharr = {
-          description = "Decypharr TorBox media gateway";
+          description = "Decypharr usenet gateway";
           after = [
             "network-online.target"
             "nixflix-setup-dirs.service"
@@ -385,7 +373,7 @@ in
             WorkingDirectory = stateDir;
 
             # `+` runs the renderer as root so it can read the SOPS files and
-            # write root-owned secrets with decypharr ownership.
+            # write config with decypharr ownership.
             ExecStartPre = "+${renderConfig}";
             ExecStart = "${pkgs.decypharr}/bin/decypharr -config ${stateDir}";
             ExecStartPost = "${checkMount}";
@@ -405,30 +393,10 @@ in
         };
 
         nixflix = {
-          # Decypharr replaces qBittorrent as the download client.
           torrentClients.qbittorrent.enable = lib.mkDefault false;
           downloadarr.qbittorrent.enable = lib.mkDefault false;
 
           downloadarr.extraClients = [
-            {
-              enable = true;
-              name = "Decypharr";
-              implementationName = "qBittorrent";
-              host = "127.0.0.1";
-              inherit (cfg) port;
-              username = "decypharr";
-              password = {
-                _secret = cfg.apiTokenFile;
-              };
-              dependencies = [ "decypharr.service" ];
-              categories = {
-                radarr = "radarr";
-                sonarr = "sonarr";
-                sonarr-anime = "sonarr-anime";
-                lidarr = "lidarr";
-                prowlarr = "prowlarr";
-              };
-            }
             {
               enable = true;
               name = "Decypharr Usenet";

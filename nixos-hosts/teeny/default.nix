@@ -191,22 +191,22 @@
           openFirewall = true;
         };
 
-        torbox = {
+        decypharr = {
           enable = true;
-          apiKeyFile = config.sops.secrets."torbox/api-key".path;
           apiTokenFile = config.sops.secrets."decypharr/api-token".path;
-          # The web interface can add and delete torrents. Expose it on the
-          # LAN for configuration, but not through the Cloudflare ingress.
+          # The web interface can delete downloads. Expose it on the LAN for
+          # configuration, but not through the Cloudflare ingress.
           ingress.enable = false;
           openFirewall = true;
           bindAddress = "0.0.0.0";
 
-          # TorBox Pro includes the News Server NNTP account. Credentials
-          # come from https://torbox.app/tools/.
           usenet = {
             enable = true;
-            usernameFile = config.sops.secrets."torbox/news-username".path;
-            passwordFile = config.sops.secrets."torbox/news-password".path;
+            host = "news.newshosting.com";
+            backbone = "omicron";
+            maxConnections = 20;
+            usernameFile = config.sops.secrets."newshosting/username".path;
+            passwordFile = config.sops.secrets."newshosting/password".path;
           };
         };
       };

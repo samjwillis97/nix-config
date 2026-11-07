@@ -269,15 +269,15 @@ The Radarr, Sonarr, Prowlarr, and Seerr API keys are secret files. Radarr,
 Sonarr, and Prowlarr also share `arr/admin-password` for their web interfaces;
 `nixflix` requires a password whenever a UI username is set.
 
-### TorBox and Decypharr
+### Decypharr and Newshosting
 
-[`media/torbox.nix`](../nixos-modules/media/torbox.nix) enables
-`my.media.torbox`, which runs the packaged
+[`media/decypharr.nix`](../nixos-modules/media/decypharr.nix) enables
+`my.media.decypharr`, which runs the packaged
 [`decypharr`](../packages/decypharr/default.nix) and registers it with
-`nixflix.downloadarr` as a qBittorrent-compatible download client. Decypharr
-submits releases to TorBox and exposes them through a FUSE mount at
+`nixflix.downloadarr` as a SABnzbd-compatible download client. Decypharr streams
+NZBs from the configured NNTP provider and exposes them through a FUSE mount at
 `/mnt/decypharr`. Radarr and Sonarr import the per-release **symlinks** that
-Decypharr creates under `${nixflix.downloadsDir}/torrent/<category>` into
+Decypharr creates under `${nixflix.downloadsDir}/usenet/<category>` into
 `${nixflix.mediaDir}/{movies,tv}`; Jellyfin scans those paths normally. No media
 is copied to the host.
 
@@ -286,41 +286,44 @@ The module sets `programs.fuse.userAllowOther = true`; without it,
 without storage. The mount presents files as `root:media` with group read
 access, which matches the `jellyfin`, `radarr`, and `sonarr` service groups.
 
-`my.media.torbox.cachedOnly` defaults to `true`, so a release is only submitted
-when TorBox already has it cached. Set it to `false` only if you accept
-uncached downloads, the account's active-slot limit, and the 60/hour uncached
-add limit.
+`my.media.decypharr.usenet` configures the Newshosting NNTP account
+(`news.newshosting.com`, TLS, `backbone = "omicron"`). Newshosting's connection
+limit depends on the plan; `maxConnections` defaults to 20 and should be raised
+only up to what the plan allows. Credentials are read from
+`newshosting/username` and `newshosting/password` in SOPS.
 
-TorBox removes a cached item after 30 days without a download. The timer is per
-cached item and shared across the platform: any user downloading the same item
-resets it for everyone, while WebDAV reads do not count. Items in TorBox's
-AirLock are exempt. A Jellyfin library built from TorBox is therefore a rotating
-cache, not permanent storage.
+Decypharr streams articles directly and does not download PAR2 recovery
+blocks, so a missing article fails the whole release with
+`NNTP ARTICLE_NOT_FOUND (code 430)`. There is no repair step, so a missing
+article still fails the release. If failures become common, add a block account
+on a different backbone; the module currently supports one provider.
 
-`my.media.torbox.repair` runs Decypharr's health sweep against the arr
+`my.media.decypharr.repair` runs Decypharr's health sweep against the arr
 libraries. The default is weekly, one worker, `per_entry`, with a 06:00 stop
-time, and `autoRepair = true`: a file whose TorBox link no longer resolves is
-deleted through the arr and searched again. With `cachedOnly = true`, the new
-search can only re-add a release that TorBox has cached again; otherwise the arr
-falls back to another release. Automatic re-adds across a library are the kind
-of retention behaviour TorBox's abuse policy watches for, so keep the sweep
-bounded and monitor Decypharr's logs for 429 responses. Set
-`my.media.torbox.repair.autoRepair = false` to make the sweep detect-only.
+time, and `autoRepair = true`: a file whose usenet articles are missing or whose
+content no longer verifies is deleted through the arr and searched again. Set
+`my.media.decypharr.repair.autoRepair = false` to make the sweep detect-only.
+Repair probes use NNTP connections from the same pool as streaming, so keep
+`workers` low.
 
-The TorBox API key and the Decypharr API token are rendered into
-`/var/lib/decypharr/config.json` and `auth.json` at service start from SOPS
-files; they are not placed in the Nix store. Decypharr's web interface stays on
-loopback unless `my.media.torbox.ingress.enable` is set.
+The Decypharr API token and the Newshosting credentials are read from SOPS at
+service start and written to `/var/lib/decypharr/config.json` and `auth.json`;
+they are not placed in the Nix store. Decypharr's web interface stays on
+loopback unless `my.media.decypharr.ingress.enable` is set.
+
+`my.media.decypharr` replaces the former TorBox integration. The `torbox/*`
+secrets are no longer declared, and Decypharr no longer registers a
+qBittorrent-compatible download client; only the SABnzbd client remains.
 
 Back up the effective media state, the Postgres data, and any media paths that
 are not reproducible from another source. With Decypharr, the library paths
 contain symlinks rather than media bytes; back up the arr and Jellyfin state and
-the TorBox account configuration, and do not assume the symlink targets are
-recoverable from the host. The wrapper leaves the exact `nixflix` media/state
-locations to that dependency and host configuration, so inspect those values
-rather than assuming a path. Test a restore with the service stopped or in an
-isolated host; this repository does not implement media, Postgres, or Jellyfin
-backup/restore automation.
+the Newshosting account configuration, and do not assume the symlink targets
+are recoverable from the host. The wrapper leaves the exact `nixflix`
+media/state locations to that dependency and host configuration, so inspect
+those values rather than assuming a path. Test a restore with the service
+stopped or in an isolated host; this repository does not implement media,
+Postgres, or Jellyfin backup/restore automation.
 
 ## Tailscale trust and exit-node limits
 
