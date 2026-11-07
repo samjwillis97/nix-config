@@ -10,11 +10,13 @@ Action: {{action}}
 
 ## Investigation
 
-1. Load the `logs` skill.
+1. Load the `logs` skill. If it is not present in this checkout, say so and use
+   the read-only VictoriaLogs HTTP query and `teeny-probe` commands in
+   `docs/observability.md` instead. Do not invent log output.
 2. Query VictoriaLogs through its MCP tools for `{{unit}}` and the alert's time
-   window. Start with `level:err`; widen to `warning` or `info` only when the
-   error window is empty. Use `stats_query` to group repeated messages instead
-   of fetching every line.
+   window. Start with `PRIORITY:<=3`; widen to `PRIORITY:<=4` (warning) or
+   `PRIORITY:<=6` (info) only when the error window is empty. Use `stats_query`
+   to group repeated messages instead of fetching every line.
 3. Use `teeny-probe` for live state when the logs are ambiguous:
    `unit-status`, `journal --unit {{unit}} --since=<window>`, `failed-units`,
    `disk`, and `memory`.

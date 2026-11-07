@@ -24,7 +24,7 @@ cli
   inherit tests;
 
   meta = {
-    description = "Stable incident fingerprints and spawn budgets for triage threads";
+    description = "Stable incident fingerprints, spawn budgets, and follow-up throttles for triage threads";
     mainProgram = "triage-state";
     platforms = lib.platforms.unix;
   };

@@ -225,6 +225,7 @@
             httpcraft = pkgs.callPackage ./packages/httpcraft { };
             mcp-victorialogs = pkgs.callPackage ./packages/mcp-victorialogs { };
             teeny-probe = pkgs.callPackage ./packages/teeny-probe { };
+            triage-dispatcher = pkgs.callPackage ./packages/triage-dispatcher { };
             triage-state = pkgs.callPackage ./packages/triage-state { };
             unreal-agent = pkgs.callPackage ./packages/unreal-agent { };
             neovim = self.lib.mkNeovim {
@@ -241,6 +242,7 @@
 
           checks = {
             httpcraft = config.packages.httpcraft.tests.smoke;
+            triage-dispatcher = config.packages.triage-dispatcher.tests;
             triage-state = config.packages.triage-state.tests;
           }
           // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {

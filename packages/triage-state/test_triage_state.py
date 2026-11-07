@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -136,6 +137,70 @@ class TriageStateTest(unittest.TestCase):
         self.assertEqual(result["decision"], "continue")
         self.assertEqual(result["reason"], "existing_incident")
         self.assertEqual(result["thread_url"], "url")
+
+    def test_continue_is_throttled(self):
+        now = 1_000_000
+        triage_state.check(self.connection, make_alert(), now)
+        triage_state.record(self.connection, make_alert(), "url", now)
+
+        first = triage_state.check(
+            self.connection,
+            make_alert(),
+            now + triage_state.DEFAULT_COOLDOWN + 1,
+        )
+        self.assertEqual(first["decision"], "continue")
+
+        triage_state.record_continue(
+            self.connection,
+            make_alert(),
+            now + triage_state.DEFAULT_COOLDOWN + 1,
+        )
+        blocked = triage_state.check(
+            self.connection,
+            make_alert(),
+            now + triage_state.DEFAULT_COOLDOWN + 2,
+        )
+        self.assertEqual(blocked["decision"], "suppress")
+        self.assertEqual(blocked["reason"], "continue_cooldown")
+
+        later = triage_state.check(
+            self.connection,
+            make_alert(),
+            now
+            + triage_state.DEFAULT_COOLDOWN
+            + triage_state.DEFAULT_CONTINUE_COOLDOWN
+            + 2,
+        )
+        self.assertEqual(later["decision"], "continue")
+
+    def test_open_state_migrates_old_schema(self):
+        path = os.path.join(self.directory.name, "old.db")
+        connection = sqlite3.connect(path)
+        connection.execute(
+            """
+            CREATE TABLE incidents (
+                fingerprint TEXT PRIMARY KEY,
+                alertname TEXT NOT NULL,
+                host TEXT NOT NULL,
+                unit TEXT NOT NULL,
+                first_seen INTEGER NOT NULL,
+                last_seen INTEGER NOT NULL,
+                last_spawned INTEGER,
+                thread_url TEXT,
+                status TEXT NOT NULL DEFAULT 'open'
+            )
+            """
+        )
+        connection.commit()
+        connection.close()
+
+        migrated = triage_state.open_state(path)
+        columns = {
+            row["name"]
+            for row in migrated.execute("PRAGMA table_info(incidents)")
+        }
+        self.assertIn("last_continued", columns)
+        migrated.close()
 
     def test_resolved_then_refire_spawns_after_cooldown(self):
         now = 1_000_000

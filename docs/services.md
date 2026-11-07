@@ -16,7 +16,8 @@ run directly on the host with the same shared Nix daemon.
 
 For the `teeny`-only log store and read-only probe PoC, see the
 [observability runbook](observability.md). It covers VictoriaLogs, the
-read-only MCP server, the `probe` broker, and the thread dedupe policy.
+read-only MCP server, the `probe` broker, the automatic triage dispatcher, and
+the thread dedupe policy.
 
 The source of truth is always the effective host configuration. Reusable modules
 live in [`nixos-modules/`](../nixos-modules/), and host-specific choices live in

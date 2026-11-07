@@ -16,6 +16,7 @@ import time
 
 DEFAULT_STATE = "/var/lib/triage/state.db"
 DEFAULT_COOLDOWN = 6 * 60 * 60
+DEFAULT_CONTINUE_COOLDOWN = 6 * 60 * 60
 DEFAULT_MAX_PER_HOUR = 3
 DEFAULT_MAX_PER_DAY = 10
 
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS incidents (
     first_seen INTEGER NOT NULL,
     last_seen INTEGER NOT NULL,
     last_spawned INTEGER,
+    last_continued INTEGER,
     thread_url TEXT,
     status TEXT NOT NULL DEFAULT 'open'
 );
@@ -48,6 +50,16 @@ def open_state(path):
     connection = sqlite3.connect(path)
     connection.row_factory = sqlite3.Row
     connection.executescript(SCHEMA)
+
+    # Older state databases predate the follow-up throttle.
+    columns = {
+        row["name"]
+        for row in connection.execute("PRAGMA table_info(incidents)")
+    }
+    if "last_continued" not in columns:
+        connection.execute(
+            "ALTER TABLE incidents ADD COLUMN last_continued INTEGER"
+        )
     return connection
 
 
@@ -87,6 +99,7 @@ def check(
     alert,
     now,
     cooldown=DEFAULT_COOLDOWN,
+    continue_cooldown=DEFAULT_CONTINUE_COOLDOWN,
     max_per_hour=DEFAULT_MAX_PER_HOUR,
     max_per_day=DEFAULT_MAX_PER_DAY,
 ):
@@ -139,8 +152,20 @@ def check(
             }
 
     # The incident already has a thread and has not resolved: continue that
-    # thread instead of creating another one.
+    # thread instead of creating another one. Throttle follow-ups too, so a
+    # long-running incident does not produce a new turn on every evaluation.
     if incident.get("thread_url") and previous_status != "resolved":
+        last_continued = incident.get("last_continued")
+        if (
+            last_continued is not None
+            and now - int(last_continued) < continue_cooldown
+        ):
+            return {
+                "decision": "suppress",
+                "reason": "continue_cooldown",
+                "fingerprint": fingerprint_value,
+                "incident": incident,
+            }
         return {
             "decision": "continue",
             "reason": "existing_incident",
@@ -194,6 +219,20 @@ def record(connection, alert, thread_url, now):
     return _incident(connection, fingerprint_value)
 
 
+def record_continue(connection, alert, now):
+    fingerprint_value = fingerprint(alert)
+    with connection:
+        connection.execute(
+            """
+            UPDATE incidents
+               SET last_continued = ?
+             WHERE fingerprint = ?
+            """,
+            (now, fingerprint_value),
+        )
+    return _incident(connection, fingerprint_value)
+
+
 def prune(connection, older_than):
     with connection:
         connection.execute(
@@ -219,6 +258,11 @@ def main(argv=None):
     parser.add_argument("--state", default=DEFAULT_STATE)
     parser.add_argument("--cooldown", type=int, default=DEFAULT_COOLDOWN)
     parser.add_argument(
+        "--continue-cooldown",
+        type=int,
+        default=DEFAULT_CONTINUE_COOLDOWN,
+    )
+    parser.add_argument(
         "--max-per-hour", type=int, default=DEFAULT_MAX_PER_HOUR
     )
     parser.add_argument("--max-per-day", type=int, default=DEFAULT_MAX_PER_DAY)
@@ -230,6 +274,9 @@ def main(argv=None):
     record_parser = subparsers.add_parser("record")
     record_parser.add_argument("--alert", required=True)
     record_parser.add_argument("--thread-url", required=True)
+
+    continue_record_parser = subparsers.add_parser("record-continue")
+    continue_record_parser.add_argument("--alert", required=True)
 
     subparsers.add_parser("list")
 
@@ -246,6 +293,7 @@ def main(argv=None):
             read_alert(args.alert),
             now,
             cooldown=args.cooldown,
+            continue_cooldown=args.continue_cooldown,
             max_per_hour=args.max_per_hour,
             max_per_day=args.max_per_day,
         )
@@ -254,6 +302,12 @@ def main(argv=None):
             connection,
             read_alert(args.alert),
             args.thread_url,
+            now,
+        )
+    elif args.command == "record-continue":
+        result = record_continue(
+            connection,
+            read_alert(args.alert),
             now,
         )
     elif args.command == "list":

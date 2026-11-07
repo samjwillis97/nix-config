@@ -33,9 +33,9 @@ Journald ingestion sets these fields:
 Start with a narrow time window and a small limit. Examples:
 
 ```text
-level:err AND _time:15m
-_SYSTEMD_UNIT:jellyfin.service AND level:err
-level:err | stats by (_SYSTEMD_UNIT) count() as errors | filter errors:>0
+PRIORITY:<=3 AND _time:15m
+_SYSTEMD_UNIT:jellyfin.service AND PRIORITY:<=3
+PRIORITY:<=3 | stats by (_SYSTEMD_UNIT) count() as errors | filter errors:>0
 _SYSTEMD_UNIT:jellyfin.service | stats count() as errors, row_any(_msg) as sample
 ```
 

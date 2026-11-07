@@ -62,6 +62,10 @@
           mcp.enable = true;
         };
         probe.enable = true;
+        triage = {
+          enable = true;
+          runnerDir = "/var/lib/amp/code/code/github.com/samjwillis97/nix-config";
+        };
       };
 
       buildkite = {
