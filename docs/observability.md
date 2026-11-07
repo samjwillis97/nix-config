@@ -41,6 +41,7 @@ my.observability = {
   triage = {
     enable = true;
     runnerDir = "/var/lib/amp/code/code/github.com/samjwillis97/nix-config";
+    labels = [ "triage" ];
   };
 };
 ```
@@ -186,6 +187,11 @@ output and stored in the state database. A `continue` decision uses
 `amp threads continue <url> -x <follow-up>`, so the existing thread keeps its
 `teeny` executor. The dispatcher performs at most one action per run by
 default, so a long investigation does not overlap the next evaluation.
+
+Every dispatcher-created thread is labeled `triage` by default, plus
+`triage-<host>` and `unit-<unit>` labels. The base label list is configurable;
+labels are lowercased and normalized to Amp's alphanumeric/hyphen format. Use
+`label:triage` in Amp's thread search to find all automated triage threads.
 
 This PoC polls logs directly instead of running vmalert and Alertmanager. That
 keeps the moving parts and the network surface small: the dispatcher binds no

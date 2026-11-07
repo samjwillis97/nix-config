@@ -24,6 +24,9 @@ ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 PLACEHOLDER_RE = re.compile(r"\{\{([a-z_]+)\}\}")
 DEFAULT_LIMIT = 25
 DEFAULT_AMP_TIMEOUT = 900
+DEFAULT_LABELS = ["triage"]
+LABEL_MAX_LENGTH = 32
+LABEL_MAX_PER_THREAD = 20
 
 
 def utc_now():
@@ -120,6 +123,46 @@ def continue_prompt(alert):
         f"{json.dumps(alert, indent=2, sort_keys=True)}\n"
         "```\n"
     )
+
+
+def sanitize_label(value):
+    """Normalize a label to Amp's lowercase alphanumeric/hyphen format."""
+    normalized = re.sub(r"[^a-z0-9-]+", "-", str(value).lower())
+    normalized = re.sub(r"-+", "-", normalized).strip("-")
+    return normalized[:LABEL_MAX_LENGTH].rstrip("-")
+
+
+def thread_labels(args, alert):
+    labels = list(getattr(args, "label", None) or DEFAULT_LABELS)
+    labels = [sanitize_label(label) for label in labels]
+    alert_labels = alert.get("labels") or {}
+    host = sanitize_label(alert_labels.get("host", ""))
+    unit = sanitize_label(
+        alert_labels.get("_SYSTEMD_UNIT") or alert_labels.get("unit", "")
+    )
+    if host:
+        labels.append(f"triage-{host}")
+    if unit:
+        labels.append(f"unit-{unit}")
+
+    result = []
+    seen = set()
+    for label in labels:
+        clean = sanitize_label(label)
+        if not clean or clean in seen:
+            continue
+        result.append(clean)
+        seen.add(clean)
+        if len(result) >= LABEL_MAX_PER_THREAD:
+            break
+    return result
+
+
+def label_args(labels):
+    result = []
+    for label in labels or []:
+        result.extend(["--label", label])
+    return result
 
 
 def last_thread_url(output):
@@ -244,10 +287,9 @@ def amp_environment(args, api_key):
     return environment
 
 
-def spawn_thread(args, prompt, api_key):
+def spawn_thread(args, prompt, api_key, labels=None):
     command = [
         args.amp,
-        "-x",
         "--executor",
         f"runner:{args.runner_id}",
         "--runner-dir",
@@ -256,6 +298,8 @@ def spawn_thread(args, prompt, api_key):
         "-m",
         args.mode,
     ]
+    command.extend(label_args(labels))
+    command.append("-x")
     result = subprocess.run(
         command,
         input=prompt,
@@ -277,15 +321,15 @@ def spawn_thread(args, prompt, api_key):
     return thread_url
 
 
-def continue_thread(args, thread_url, prompt, api_key):
+def continue_thread(args, thread_url, prompt, api_key, labels=None):
     command = [
         args.amp,
         "threads",
         "continue",
         thread_url,
-        "-x",
-        prompt,
     ]
+    command.extend(label_args(labels))
+    command.extend(["-x", prompt])
     result = subprocess.run(
         command,
         capture_output=True,
@@ -362,6 +406,7 @@ def dispatch(args):
         current_fingerprints.add(decision["fingerprint"])
         action = decision["decision"]
         unit = alert["labels"]["_SYSTEMD_UNIT"]
+        labels = thread_labels(args, alert)
         if action == "suppress":
             logging.info(
                 "suppress %s (%s)", unit, decision.get("reason", "unknown")
@@ -383,7 +428,7 @@ def dispatch(args):
                 "The dispatcher owns deduplication.",
             )
             try:
-                thread_url = spawn_thread(args, prompt, api_key)
+                thread_url = spawn_thread(args, prompt, api_key, labels)
                 state_record(args, alert, thread_url)
             except (RuntimeError, OSError, ValueError) as error:
                 logging.error("spawn failed for %s: %s", unit, error)
@@ -399,6 +444,7 @@ def dispatch(args):
                     thread_url,
                     continue_prompt(alert),
                     api_key,
+                    labels,
                 )
                 state_record_continue(args, alert)
             except (RuntimeError, OSError, ValueError) as error:
@@ -442,6 +488,7 @@ def parse_args(argv=None):
     parser.add_argument("--threshold", type=int, default=5)
     parser.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
     parser.add_argument("--alert-name", default="journal-errors")
+    parser.add_argument("--label", action="append", default=[])
     parser.add_argument("--exclude-unit", action="append", default=[])
     parser.add_argument("--query-timeout", type=int, default=30)
 

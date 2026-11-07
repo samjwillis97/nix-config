@@ -134,6 +134,12 @@ in
         description = "Alert name used for incident fingerprints.";
       };
 
+      labels = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ "triage" ];
+        description = "Base labels applied to dispatcher-created threads; host and unit labels are added automatically.";
+      };
+
       window = lib.mkOption {
         type = lib.types.str;
         default = "5m";
@@ -469,6 +475,10 @@ in
           "--query"
           cfg.triage.query
         ]
+        ++ lib.concatMap (label: [
+          "--label"
+          label
+        ]) cfg.triage.labels
         ++ lib.concatMap (unit: [
           "--exclude-unit"
           unit
