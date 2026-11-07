@@ -225,6 +225,30 @@ in
       name: host:
       let
         system = host.config.nixpkgs.hostPlatform.system;
+
+        # deploy-rs' activation scripts embed the deploy-rs binary from its own
+        # overlay. That build is specific to our nixpkgs pin, so it is never on
+        # a binary cache and every deploy compiles it from source. Nixpkgs
+        # packages the same release and cache.nixos.org substitutes it, so swap
+        # that cached binary into the overlay used to build the activation.
+        deployRsPkgs =
+          let
+            pkgs = inputs.nixpkgs.legacyPackages.${system};
+            cachedDeployRs = pkgs.deploy-rs;
+            deployRsOverlay = inputs.deploy-rs.overlays.default;
+          in
+          pkgs.extend (
+            final: prev:
+            let
+              deployRs = deployRsOverlay final prev;
+            in
+            deployRs
+            // {
+              deploy-rs = deployRs.deploy-rs // {
+                deploy-rs = cachedDeployRs;
+              };
+            }
+          );
       in
       {
         hostname = name;
@@ -240,7 +264,7 @@ in
           sshUser = "deploy";
           user = "root";
 
-          path = inputs.deploy-rs.lib.${system}.activate.nixos host;
+          path = deployRsPkgs.deploy-rs.lib.activate.nixos host;
         };
       }
     ) (baseLib.filterAttrs (_name: host: host.config.my.deploy-rs.enable) nixosConfigurations);
