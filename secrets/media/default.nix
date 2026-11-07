@@ -13,9 +13,8 @@ let
     "usenet-indexer/base-url"
     "usenet-indexer/api-key"
     "seerr/api-key"
-    "torbox/api-key"
-    "torbox/news-username"
-    "torbox/news-password"
+    "newshosting/username"
+    "newshosting/password"
     "decypharr/api-token"
   ];
 in
