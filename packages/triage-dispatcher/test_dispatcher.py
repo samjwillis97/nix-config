@@ -21,6 +21,7 @@ def make_args(directory):
         threshold=2,
         limit=25,
         alert_name="journal-errors",
+        label=["triage"],
         exclude_unit=["triage-dispatcher.service"],
         query_timeout=5,
         state=os.path.join(directory, "state.db"),
@@ -142,14 +143,38 @@ class DispatcherTest(unittest.TestCase):
             "https://ampcode.com/threads/T-01234567-89ab-cdef-0123-456789abcdef",
         )
 
+    def test_thread_labels_are_normalized_and_scoped(self):
+        labels = dispatcher.thread_labels(
+            self.args,
+            {
+                "labels": {
+                    "host": "Teeny Host",
+                    "_SYSTEMD_UNIT": "jellyfin.service",
+                }
+            },
+        )
+        self.assertEqual(
+            labels,
+            [
+                "triage",
+                "triage-teeny-host",
+                "unit-jellyfin-service",
+            ],
+        )
+        self.assertEqual(
+            dispatcher.sanitize_label("My Unit @ 1"), "my-unit-1"
+        )
+        self.assertEqual(len(dispatcher.sanitize_label("x" * 40)), 32)
+
     def test_spawn_sends_prompt_on_stdin_and_targets_runner(self):
         fake = Path(self.directory.name) / "amp"
         write_fake_amp(fake)
         self.args.amp = str(fake)
         Path(self.args.api_key_file).write_text("test-key\n")
 
+        labels = ["triage", "triage-teeny"]
         url = dispatcher.spawn_thread(
-            self.args, "rendered prompt", "test-key"
+            self.args, "rendered prompt", "test-key", labels
         )
 
         self.assertEqual(
@@ -163,6 +188,9 @@ class DispatcherTest(unittest.TestCase):
         self.assertIn("runner:teeny", record["argv"])
         self.assertIn("--runner-dir", record["argv"])
         self.assertIn("/repo", record["argv"])
+        self.assertEqual(record["argv"].count("--label"), 2)
+        self.assertIn("triage", record["argv"])
+        self.assertIn("triage-teeny", record["argv"])
 
     def test_resolve_stale_marks_missing_incidents_resolved(self):
         fake = Path(self.directory.name) / "triage-state"
@@ -218,12 +246,21 @@ with open({str(state_log)!r}, "a") as handle:
             "https://ampcode.com/threads/T-existing",
             "still firing",
             "test-key",
+            ["triage", "unit-jellyfin-service"],
         )
 
         record = json.loads(self.log.read_text().strip())
-        self.assertEqual(record["argv"][:3], ["threads", "continue",
-                                              "https://ampcode.com/threads/T-existing"])
+        self.assertEqual(
+            record["argv"][:3],
+            [
+                "threads",
+                "continue",
+                "https://ampcode.com/threads/T-existing",
+            ],
+        )
         self.assertIn("still firing", record["argv"])
+        self.assertIn("triage", record["argv"])
+        self.assertIn("unit-jellyfin-service", record["argv"])
 
 
 if __name__ == "__main__":
