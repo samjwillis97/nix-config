@@ -69,6 +69,19 @@
         };
       };
 
+      observability = {
+        logs = {
+          enable = true;
+          retention = "14d";
+          mcp.enable = true;
+        };
+        probe.enable = true;
+        triage = {
+          enable = true;
+          runnerDir = "/var/lib/amp/code/code/github.com/samjwillis97/nix-config";
+        };
+      };
+
       buildkite = {
         enable = true;
         tokenFile = config.sops.secrets."buildkite-agent-token".path;

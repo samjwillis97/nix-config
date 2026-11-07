@@ -1,0 +1,14 @@
+{
+  "victorialogs": {
+    "url": "http://127.0.0.1:8081/mcp",
+    "includeTools": [
+      "query",
+      "stats_query",
+      "stats_query_range",
+      "hits",
+      "field_names",
+      "field_values",
+      "streams"
+    ]
+  }
+}
