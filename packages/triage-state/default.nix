@@ -21,7 +21,7 @@ let
 in
 cli
 // {
-  tests = tests;
+  inherit tests;
 
   meta = {
     description = "Stable incident fingerprints and spawn budgets for triage threads";

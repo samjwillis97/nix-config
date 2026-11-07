@@ -170,62 +170,64 @@ in
         amp.extraGroups = [ "probe" ];
       };
 
-      systemd.tmpfiles.rules = [
-        "d /run/teeny-probe 0750 probe probe -"
-      ];
+      systemd = {
+        tmpfiles.rules = [
+          "d /run/teeny-probe 0750 probe probe -"
+        ];
 
-      systemd.sockets.teeny-probe = {
-        description = "Read-only host probe socket";
-        wantedBy = [ "sockets.target" ];
-        socketConfig = {
-          ListenStream = probeSocket;
-          SocketMode = "0660";
-          SocketUser = "probe";
-          SocketGroup = "probe";
-          Accept = true;
-        };
-      };
-
-      systemd.services = {
-        "teeny-probe@" = {
-          description = "Read-only host probe for %I";
-          path = [
-            pkgs.systemd
-            pkgs.coreutils
-            pkgs.procps
-          ];
-          serviceConfig = {
-            ExecStart = "${lib.getExe cfg.probe.package} --broker";
-            User = "probe";
-            Group = "probe";
-            StandardInput = "socket";
-            StandardOutput = "socket";
-            StandardError = "journal";
-            Restart = "no";
-            TimeoutStopSec = "5s";
-            UMask = "0077";
-            NoNewPrivileges = true;
-            PrivateTmp = true;
-            ProtectHome = true;
-            ProtectSystem = "strict";
-            CapabilityBoundingSet = "";
-            AmbientCapabilities = "";
-            LockPersonality = true;
-            ProtectClock = true;
-            ProtectControlGroups = true;
-            ProtectHostname = true;
-            ProtectKernelLogs = true;
-            ProtectKernelModules = true;
-            ProtectKernelTunables = true;
-            RestrictSUIDSGID = true;
-            RestrictAddressFamilies = [ "AF_UNIX" ];
+        sockets.teeny-probe = {
+          description = "Read-only host probe socket";
+          wantedBy = [ "sockets.target" ];
+          socketConfig = {
+            ListenStream = probeSocket;
+            SocketMode = "0660";
+            SocketUser = "probe";
+            SocketGroup = "probe";
+            Accept = true;
           };
         };
-      }
-      // lib.optionalAttrs ((config.my ? amp) && config.my.amp.runner.enable) {
-        # Make the client available to the runner's shell without putting it
-        # in the runner's filesystem sandbox or giving it the journal group.
-        amp-runner.path = lib.mkAfter [ cfg.probe.package ];
+
+        services = {
+          "teeny-probe@" = {
+            description = "Read-only host probe for %I";
+            path = [
+              pkgs.systemd
+              pkgs.coreutils
+              pkgs.procps
+            ];
+            serviceConfig = {
+              ExecStart = "${lib.getExe cfg.probe.package} --broker";
+              User = "probe";
+              Group = "probe";
+              StandardInput = "socket";
+              StandardOutput = "socket";
+              StandardError = "journal";
+              Restart = "no";
+              TimeoutStopSec = "5s";
+              UMask = "0077";
+              NoNewPrivileges = true;
+              PrivateTmp = true;
+              ProtectHome = true;
+              ProtectSystem = "strict";
+              CapabilityBoundingSet = "";
+              AmbientCapabilities = "";
+              LockPersonality = true;
+              ProtectClock = true;
+              ProtectControlGroups = true;
+              ProtectHostname = true;
+              ProtectKernelLogs = true;
+              ProtectKernelModules = true;
+              ProtectKernelTunables = true;
+              RestrictSUIDSGID = true;
+              RestrictAddressFamilies = [ "AF_UNIX" ];
+            };
+          };
+        }
+        // lib.optionalAttrs ((config.my ? amp) && config.my.amp.runner.enable) {
+          # Make the client available to the runner's shell without putting it
+          # in the runner's filesystem sandbox or giving it the journal group.
+          amp-runner.path = lib.mkAfter [ cfg.probe.package ];
+        };
       };
 
       environment.systemPackages = [ cfg.probe.package ];
