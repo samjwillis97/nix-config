@@ -28,7 +28,9 @@ let
 
     install -d -m 0750 -o decypharr -g media ${lib.escapeShellArg stateDir}
     install -d -m 0750 -o decypharr -g media ${lib.escapeShellArg "${stateDir}/cache"}
-    install -d -m 0755 -o root -g root ${lib.escapeShellArg cfg.mountPath}
+    # fusermount3 refuses to mount on a directory the service user cannot
+    # write to, so the mountpoint must belong to decypharr:media.
+    install -d -m 0770 -o decypharr -g media ${lib.escapeShellArg cfg.mountPath}
 
     ${pkgs.jq}/bin/jq -n \
       --arg port ${lib.escapeShellArg (toString cfg.port)} \
@@ -265,9 +267,9 @@ in
             mode = "0750";
           };
           "${cfg.mountPath}".d = {
-            user = "root";
-            group = "root";
-            mode = "0755";
+            user = "decypharr";
+            group = "media";
+            mode = "0770";
           };
         };
 
@@ -283,7 +285,10 @@ in
           wantedBy = [ "multi-user.target" ];
 
           # fusermount3 comes from fuse3; jq and coreutils render the config.
+          # /run/wrappers/bin must come before the fuse3 store bin: the store
+          # copy is not setuid, so fusermount3 would fail to mount.
           path = [
+            config.security.wrapperDir
             pkgs.bash
             pkgs.coreutils
             pkgs.fuse3
@@ -305,7 +310,7 @@ in
             ExecStart = "${pkgs.decypharr}/bin/decypharr -config ${stateDir}";
             ExecStartPost = "${checkMount}";
             # `-` ignores the failure when the mount is already gone.
-            ExecStopPost = "-${pkgs.fuse3}/bin/fusermount3 -uz ${cfg.mountPath}";
+            ExecStopPost = "-${config.security.wrapperDir}/fusermount3 -uz ${cfg.mountPath}";
 
             Restart = "on-failure";
             RestartSec = 10;
