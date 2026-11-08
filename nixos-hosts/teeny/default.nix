@@ -213,8 +213,7 @@
 
         backup = {
           enable = true;
-          # Replace CHANGE_ME_BUCKET with the B2 bucket name before deploying.
-          repository = "b2:CHANGE_ME_BUCKET:teeny";
+          repository = "b2:swillis-media-backups:teeny";
           b2AccountIdFile = config.sops.secrets."b2/account-id".path;
           b2AccountKeyFile = config.sops.secrets."b2/application-key".path;
           passwordFile = config.sops.secrets."restic/password".path;
