@@ -29,6 +29,11 @@ creation_rules:
           - *sam
           - *staging-vm
           - *teeny
+  - path_regex: ^secrets/media-backup/secrets\.yaml$
+    key_groups:
+      - age:
+          - *sam
+          - *teeny
   - path_regex: ^secrets/tailscale/secrets\.yaml$
     key_groups:
       - age:
