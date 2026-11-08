@@ -67,6 +67,7 @@ The shared modules define several `my.*` options used by host modules:
 - `my.amp.enable` installs the pinned Amp CLI only; `my.amp.runner.enable` separately opts a host into the credentialed system runner and requires both runtime credential files. See the [Amp runbook](../docs/amp.md) for the browser workflow and operational gates.
 - `my.observability.logs` runs the local VictoriaLogs store and read-only MCP server; `my.observability.probe` runs the read-only journald/systemd broker for the Amp runner; `my.observability.triage` runs the timer that turns error spikes into deduplicated Amp threads on the local runner. See the [observability runbook](../docs/observability.md).
 - `my.buildkite.enable` runs one or more Buildkite agents from a shared runtime token file and requires at least one entry in `my.buildkite.agents`. Agents share the `buildkite-agents` group for token access. See the [Buildkite agent runbook](../docs/buildkite.md).
+- `my.media.backup.enable` writes the media stack's Postgres, Jellyfin, Seerr, Decypharr, and symlink state to a restic repository. See the [media state backup section](../docs/services.md#media-state-backups).
 
 Enable these from a host rather than baking a deployment identity or secret into a reusable module. The host-level deployment, ingress, and closure-check workflow is documented in the [operations guide](../docs/operations.md); secrets and secret-module imports are covered by [`secrets/README.md`](../secrets/README.md).
 

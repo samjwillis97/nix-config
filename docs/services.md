@@ -248,7 +248,8 @@ module before taking a backup or changing the package.
 The media wrapper is [`nixos-modules/media/default.nix`](../nixos-modules/media/default.nix),
 with Jellyfin settings in [`media/jellyfin.nix`](../nixos-modules/media/jellyfin.nix).
 Enabling the media module enables the external `nixflix` stack and its Postgres
-component; it does not add a repository backup job. Jellyfin API/admin
+component; it does not add a repository backup job by itself. The opt-in
+`my.media.backup` module described below adds one. Jellyfin API/admin
 credentials, optional user password files, and Xtream provider credentials are
 passed as secret files. A user entry follows the host's configured
 `jellyfin/users/<user>/password` naming convention; the literal user name is a
@@ -315,15 +316,78 @@ loopback unless `my.media.decypharr.ingress.enable` is set.
 secrets are no longer declared, and Decypharr no longer registers a
 qBittorrent-compatible download client; only the SABnzbd client remains.
 
-Back up the effective media state, the Postgres data, and any media paths that
-are not reproducible from another source. With Decypharr, the library paths
-contain symlinks rather than media bytes; back up the arr and Jellyfin state and
-the Newshosting account configuration, and do not assume the symlink targets
-are recoverable from the host. The wrapper leaves the exact `nixflix`
-media/state locations to that dependency and host configuration, so inspect
-those values rather than assuming a path. Test a restore with the service
-stopped or in an isolated host; this repository does not implement media,
-Postgres, or Jellyfin backup/restore automation.
+### Media state backups
+
+[`media-backup/default.nix`](../nixos-modules/media-backup/default.nix) adds the
+opt-in `my.media.backup` module. It writes a restic snapshot to a repository
+such as Backblaze B2 and keeps the small, irreplaceable part of the media stack:
+
+- PostgreSQL dumps of `radarr`, `sonarr`, `prowlarr`, and `seerr`.
+- Consistent SQLite `.backup` copies of Jellyfin's `data/*.db` databases,
+  plus its config, metadata, and plugins.
+- Decypharr's `db/` and `usenet/` state, copied while Decypharr is stopped for
+  the duration of the small copy.
+- Seerr's `settings.json`, the Radarr/Sonarr/Prowlarr config directories, the
+  `/data/media` and `/data/downloads` symlink trees, and the host SOPS key.
+
+Jellyfin logs, *arr logs, `MediaCover`, local *arr `Backups`, and Decypharr's
+read cache are excluded. The restic cache lives at `/var/cache/restic-media`.
+
+The module requires three SOPS secrets, which are not declared by the existing
+`secrets/media` module because the bucket and credentials are operator-owned:
+
+- `b2/account-id`
+- `b2/application-key`
+- `restic/password`
+
+Add them to a SOPS file and declare them in a secret module imported by the
+backup host. Prefer a separate `secrets/media-backup` group over adding them to
+the shared `secrets/media` group: `staging-vm` also imports `secrets/media`, and
+it does not need the B2 credentials. A new group needs a matching creation rule
+in `.sops.yaml`. Then enable the backup in the host configuration:
+
+```nix
+my.media.backup = {
+  enable = true;
+  repository = "b2:<bucket>:<path>";
+  b2AccountIdFile = config.sops.secrets."b2/account-id".path;
+  b2AccountKeyFile = config.sops.secrets."b2/application-key".path;
+  passwordFile = config.sops.secrets."restic/password".path;
+};
+```
+
+The B2 bucket must already exist. Use an application key restricted to that
+bucket. The nightly `media-backup.timer` uses `*-*-* 03:30:00` plus a randomized
+delay and keeps 7 daily, 4 weekly, and 6 monthly snapshots by default; the
+`retention` and `schedule` options override those values. The repository is
+initialized on the first run.
+
+To restore on a replacement host:
+
+1. Deploy the same configuration with the media backup options enabled.
+2. Restore the host age identity from the snapshot, or rekey the SOPS files for
+   the new host. The restore unit restores `/var/lib/sops-nix/key.txt` before it
+   reinstalls the secrets, but a host that cannot decrypt the repository
+   secrets still needs a valid recovery identity.
+3. Run `sudo systemctl start media-backup-restore.service`. It stops the media
+   services, restores the latest snapshot, installs the staged Jellyfin
+   databases and Decypharr state with the service ownership, recreates the four
+   PostgreSQL databases from the dumps, reinstalls the SOPS secrets, and starts
+   the services.
+4. Reboot to let `nixflix` reconcile any setup units that ran before the
+   restore.
+5. Check `systemctl status media-backup.service`, `restic snapshots`, the
+   Jellyfin library, and the request stack.
+
+The restore unit overwrites existing media state. Run it on a fresh host or
+after taking a current backup. The repository contains the host SOPS identity
+and the media databases, so protect the bucket and keep the restic password in
+an offline recovery location; storing it only in SOPS on the same host makes a
+complete wipe unrecoverable. The backup is not a media archive: the symlinks
+still point at upstream articles, so the library can be restored but the bytes
+depend on the provider's retention. The `media-backup` flake check exercises a
+source/backup/shutdown/restore cycle with separate source and restore VM nodes
+against a local restic REST server, so it needs no B2 credentials.
 
 ## Tailscale trust and exit-node limits
 
