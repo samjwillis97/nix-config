@@ -88,6 +88,12 @@ in
 
           network = {
             internalHttpPort = config.my.media.jellyfin.httpPort;
+          }
+          // lib.optionalAttrs config.my.media.jellyfin.openFirewall {
+            # nixflix 4.0 binds Jellyfin to loopback by default. Opening the
+            # firewall for Jellyfin means direct LAN clients, so bind all
+            # interfaces in that case.
+            localNetworkAddresses = [ "0.0.0.0" ];
           };
 
           # nixflix disables Jellyfin real-time monitoring when the arr
