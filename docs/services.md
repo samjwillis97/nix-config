@@ -333,18 +333,21 @@ such as Backblaze B2 and keeps the small, irreplaceable part of the media stack:
 Jellyfin logs, *arr logs, `MediaCover`, local *arr `Backups`, and Decypharr's
 read cache are excluded. The restic cache lives at `/var/cache/restic-media`.
 
-The module requires three SOPS secrets, which are not declared by the existing
-`secrets/media` module because the bucket and credentials are operator-owned:
+The module uses the dedicated `secrets/media-backup` SOPS group, which is
+encrypted to `sam` and `teeny` only; `staging-vm` does not receive the B2
+credentials. The group declares:
 
 - `b2/account-id`
 - `b2/application-key`
 - `restic/password`
 
-Add them to a SOPS file and declare them in a secret module imported by the
-backup host. Prefer a separate `secrets/media-backup` group over adding them to
-the shared `secrets/media` group: `staging-vm` also imports `secrets/media`, and
-it does not need the B2 credentials. A new group needs a matching creation rule
-in `.sops.yaml`. Then enable the backup in the host configuration:
+The checked-in [`secrets/media-backup/secrets.yaml`](../secrets/media-backup/secrets.yaml)
+contains encrypted placeholders. Replace them with
+`sops secrets/media-backup/secrets.yaml` before deploying.
+[`nixos-hosts/teeny/default.nix`](../nixos-hosts/teeny/default.nix) already
+imports `secretModules.media-backup` and enables the backup; replace
+`CHANGE_ME_BUCKET` in its `repository` value with the B2 bucket name. The host
+block has this shape:
 
 ```nix
 my.media.backup = {
