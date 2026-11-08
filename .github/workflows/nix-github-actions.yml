@@ -43,6 +43,10 @@ jobs:
         with:
           persist-credentials: false
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
+        with:
+          name: samjwillis97
+          skipPush: true
       - run: nix build -L ".#$NIX_ATTR"
         env:
           NIX_ATTR: ${{ matrix.attr }}

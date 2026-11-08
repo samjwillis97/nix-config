@@ -176,6 +176,15 @@ repository/environment permissions. Those secret names are the workflow API,
 not literal credentials. [Operations](operations.md#remote-deployment) covers
 bootstrap and the root-equivalent trust granted to the deployment account.
 
+Build jobs share the public [`samjwillis97` Cachix
+cache](https://samjwillis97.cachix.org). Pull-request jobs read from it without a
+credential. The deployment job reads from it and pushes the store paths it builds
+when the `CACHIX_AUTH_TOKEN` repository secret is present; without the token,
+deployments still build and run, but do not populate the cache. The token needs
+write access to that cache and is a credential, not a cache name. Cachix skips
+paths already on `cache.nixos.org`, so the cache holds this repository's packages
+and generated system paths rather than a second copy of nixpkgs.
+
 `teeny` also runs self-hosted Buildkite agents for pipelines outside these
 workflows; see [Buildkite agents](buildkite.md). They are separate from the
 generated GitHub Actions matrices and do not change the workflows above.
