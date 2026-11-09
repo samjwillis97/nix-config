@@ -100,9 +100,23 @@ in
           # Jellyfin notifications are enabled, leaving new imports to the
           # scheduled scan. Watch the library paths as well so a successful
           # Radarr/Sonarr import appears promptly.
+          #
+          # Decypharr serves every file over a FUSE mount at a few MB/s, so
+          # trickplay and chapter-image extraction during a scan turns a
+          # large import batch into hours of ffmpeg jobs that mostly time
+          # out. Keep both features enabled, but generate the images on
+          # demand instead of while scanning.
           libraries = {
-            Movies.enableRealtimeMonitor = lib.mkDefault true;
-            Shows.enableRealtimeMonitor = lib.mkDefault true;
+            Movies = {
+              enableRealtimeMonitor = lib.mkDefault true;
+              extractChapterImagesDuringLibraryScan = lib.mkDefault false;
+              extractTrickplayImagesDuringLibraryScan = lib.mkDefault false;
+            };
+            Shows = {
+              enableRealtimeMonitor = lib.mkDefault true;
+              extractChapterImagesDuringLibraryScan = lib.mkDefault false;
+              extractTrickplayImagesDuringLibraryScan = lib.mkDefault false;
+            };
           };
 
           system = {

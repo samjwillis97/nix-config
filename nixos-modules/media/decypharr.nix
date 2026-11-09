@@ -61,6 +61,24 @@ let
 
     install -d -m 0750 -o decypharr -g media ${lib.escapeShellArg stateDir}
     install -d -m 0750 -o decypharr -g media ${lib.escapeShellArg "${stateDir}/cache"}
+    # Decypharr creates its log directory itself, so a restored or
+    # root-created logs tree makes lumberjack fail to rotate the log with
+    # EACCES and floods the journal. Take ownership before every start,
+    # including of files created by an earlier run.
+    install -d -m 0750 -o decypharr -g media ${lib.escapeShellArg "${stateDir}/logs"}
+    ${pkgs.coreutils}/bin/chown -R decypharr:media ${lib.escapeShellArg "${stateDir}/logs"}
+    ${pkgs.coreutils}/bin/chmod -R u+rwX ${lib.escapeShellArg "${stateDir}/logs"}
+    # The DFS cleanup only removes cache metadata when the recorded size is
+    # non-zero, so metadata orphaned by an older provider layout is warned
+    # about every few minutes forever. Reap metadata without a data file
+    # before startup; the read cache is rebuildable.
+    ${pkgs.findutils}/bin/find ${lib.escapeShellArg "${stateDir}/cache"} -type f -name '*.json' -print0 |
+      while IFS= read -r -d "" meta; do
+        if [ ! -e "''${meta%.json}" ]; then
+          ${pkgs.coreutils}/bin/rm -f "$meta"
+        fi
+      done
+    ${pkgs.findutils}/bin/find ${lib.escapeShellArg "${stateDir}/cache"} -mindepth 1 -type d -empty -delete
     # fusermount3 refuses to mount on a directory the service user cannot
     # write to, so the mountpoint must belong to decypharr:media.
     install -d -m 0770 -o decypharr -g media ${lib.escapeShellArg cfg.mountPath}
