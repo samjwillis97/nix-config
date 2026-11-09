@@ -198,6 +198,11 @@ let
         "$db" ${lib.escapeShellArg jellyfinDataDir}/"$(basename "$db")"
     done
 
+    # restic preserves snapshot ownership, which can leave files written by a
+    # root setup unit owned by root. Jellyfin's ExecStartPre rewrites
+    # config/encoding.xml as the service user, so normalize the whole tree.
+    chown -R ${jellyfinUser}:${jellyfinGroup} ${lib.escapeShellArg (dirOf jellyfinDataDir)}
+
     install -d -m 0750 -o ${cfg.decypharrUser} -g ${cfg.decypharrGroup} ${lib.escapeShellArg cfg.decypharrStateDir}
     for sub in db usenet; do
       if [ -d ${lib.escapeShellArg decypharrStaging}/"$sub" ]; then

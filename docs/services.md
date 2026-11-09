@@ -397,9 +397,21 @@ against a local restic REST server, so it needs no B2 credentials.
 
 To rehearse the real B2 restore on a Linux machine with Nix and KVM:
 
-1. Create a credential directory with `b2-account-id`,
-   `b2-application-key`, and `restic-password`, all mode `0600`. The values are
-   the same ones in `secrets/media-backup/secrets.yaml`.
+1. Create a credential directory. For the default drill, add
+   `b2-account-id`, `b2-application-key`, and `restic-password`, all mode
+   `0600`; the values are the same ones in
+   `secrets/media-backup/secrets.yaml`. For `--websites` or `--keep`, add a
+   `sops-age-key` instead: an age identity that is a recipient of both
+   `secrets/media` and `secrets/media-backup`. The `sam` editor/recovery
+   identity is the usual choice. For example, on the machine that already has
+   that identity:
+
+   ```bash
+   install -d -m 0700 ~/.config/media-restore-drill
+   install -m 0600 "${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}" \
+     ~/.config/media-restore-drill/sops-age-key
+   ```
+
 2. Run `./nixos-modules/media-backup/restore-drill.sh`. It defaults to
    `$HOME/.config/media-restore-drill`; set `RESTORE_DRILL_SECRETS` to use
    another directory.
@@ -413,6 +425,48 @@ about 1.5 GiB from B2, so the bucket's download cap must allow it. The default r
 `b2:swillis-media-backups:teeny`; set `RESTORE_DRILL_REPOSITORY` to use another
 one. Run the test driver through the script rather than `nix build`-ing the
 test directly: the Nix build sandbox cannot see the host credential directory.
+
+Add `--websites` to boot the real Jellyfin, Radarr, Sonarr, Prowlarr, Seerr,
+and Decypharr services in the VM and wait for their HTTP endpoints. Add
+`--keep` (which implies `--websites`) to leave the VM running after the checks,
+forward the web ports, and wait at a guest shell. The script prints the URLs and
+removes the VM when you press `Ctrl-D`; `--keep` requires an interactive
+terminal. The full stack reads the host-provided `sops-age-key`, decrypts
+both `secrets/media` and `secrets/media-backup`, and uses the SOPS backup
+credentials for the restore. That key must be a recipient of both groups; the
+`sam` and `teeny` identities are. Supplying the key at boot is deliberate:
+nixflix starts setup units that read `/run/secrets/...` before the restore
+service runs, so relying only on the snapshot's key leaves those units failing
+with missing Jellyfin API-key files.
+
+The full stack exercises SOPS activation and the media users as well as the
+file checks. The default drill still uses the three direct B2/restic files. The
+media bytes are still symlinks; the library and request UIs can be validated,
+but playback depends on the provider retaining the release.
+
+When the browser is not on the machine running the script, forward the ports
+over SSH. The forwarded host ports are:
+
+- Jellyfin: `18096`
+- Radarr: `17878`
+- Sonarr: `18989`
+- Prowlarr: `19696`
+- Seerr: `15055`
+- Decypharr: `18282`
+
+```bash
+ssh -N \
+  -L 18096:127.0.0.1:18096 \
+  -L 17878:127.0.0.1:17878 \
+  -L 18989:127.0.0.1:18989 \
+  -L 19696:127.0.0.1:19696 \
+  -L 15055:127.0.0.1:15055 \
+  -L 18282:127.0.0.1:18282 \
+  personal-desktop
+```
+
+Open `http://127.0.0.1:<port>` locally. The VM has a two-hour global timeout;
+`Ctrl-D` ends the drill earlier and deletes the VM and its restored state.
 
 ## Tailscale trust and exit-node limits
 
