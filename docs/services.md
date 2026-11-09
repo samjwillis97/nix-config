@@ -414,6 +414,41 @@ about 1.5 GiB from B2, so the bucket's download cap must allow it. The default r
 one. Run the test driver through the script rather than `nix build`-ing the
 test directly: the Nix build sandbox cannot see the host credential directory.
 
+Add `--websites` to boot the real Jellyfin, Radarr, Sonarr, Prowlarr, Seerr,
+and Decypharr services in the VM and wait for their HTTP endpoints. Add
+`--keep` (which implies `--websites`) to leave the VM running after the checks,
+forward the web ports, and wait at a guest shell. The script prints the URLs and
+removes the VM when you press `Ctrl-D`; `--keep` requires an interactive
+terminal. The full stack uses the restored host age key to decrypt
+`secrets/media`, so the SOPS activation and media users are exercised as well
+as the file checks. The media bytes are still symlinks; the library and request
+UIs can be validated, but playback depends on the provider retaining the
+release.
+
+When the browser is not on the machine running the script, forward the ports
+over SSH. The forwarded host ports are:
+
+- Jellyfin: `18096`
+- Radarr: `17878`
+- Sonarr: `18989`
+- Prowlarr: `19696`
+- Seerr: `15055`
+- Decypharr: `18282`
+
+```bash
+ssh -N \
+  -L 18096:127.0.0.1:18096 \
+  -L 17878:127.0.0.1:17878 \
+  -L 18989:127.0.0.1:18989 \
+  -L 19696:127.0.0.1:19696 \
+  -L 15055:127.0.0.1:15055 \
+  -L 18282:127.0.0.1:18282 \
+  personal-desktop
+```
+
+Open `http://127.0.0.1:<port>` locally. The VM has a two-hour global timeout;
+`Ctrl-D` ends the drill earlier and deletes the VM and its restored state.
+
 ## Tailscale trust and exit-node limits
 
 The Tailscale module is [`nixos-modules/tailscale.nix`](../nixos-modules/tailscale.nix).

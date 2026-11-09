@@ -2,9 +2,19 @@
 # run outside the Nix build sandbox so QEMU can read the credential directory.
 {
   pkgs,
+  inputs,
+  self,
   ...
 }:
 let
+  websites = builtins.getEnv "RESTORE_DRILL_WEBSITES" != "";
+  keep = builtins.getEnv "RESTORE_DRILL_KEEP" != "";
+  system = pkgs.stdenv.hostPlatform.system;
+
+  unstable = import inputs.unstable {
+    inherit (pkgs) system config;
+  };
+
   secretsSource =
     let
       configured = builtins.getEnv "RESTORE_DRILL_SECRETS";
@@ -23,9 +33,34 @@ let
   secretsDir = "/run/restore-drill";
 
   restoreNode =
-    { lib, ... }:
+    { config, lib, ... }:
     {
-      imports = [ ./default.nix ];
+      imports = [
+        ./default.nix
+        inputs.nixflix.nixosModules.default
+      ]
+      ++ pkgs.lib.optionals websites [
+        ../../nixos-modules/media
+        ../../nixos-modules/ingress.nix
+        ../../nixos-modules/sops.nix
+        ../../secrets/media/default.nix
+        inputs.sops-nix.nixosModules.sops
+      ];
+
+      _module.args = {
+        inherit inputs unstable;
+      };
+
+      # The repository overlay supplies the Decypharr package; apply only the
+      # part the media stack needs so the test does not pull in unrelated
+      # host packages.
+      nixpkgs.pkgs = lib.mkForce (
+        pkgs.extend (
+          _final: _prev: {
+            decypharr = self.packages.${system}.decypharr;
+          }
+        )
+      );
 
       environment.systemPackages = with pkgs; [
         curl
@@ -35,7 +70,9 @@ let
         sqlite
       ];
 
-      users = {
+      # The non-websites drill is a minimal restore target. The full media
+      # stack mode gets the same users and PostgreSQL databases from nixflix.
+      users = lib.mkIf (!websites) {
         groups.media.gid = 169;
         users.jellyfin = {
           isSystemUser = true;
@@ -53,13 +90,13 @@ let
 
       services.postgresql = {
         enable = true;
-        ensureDatabases = [
+        ensureDatabases = lib.mkIf (!websites) [
           "radarr"
           "sonarr"
           "prowlarr"
           "seerr"
         ];
-        ensureUsers = [
+        ensureUsers = lib.mkIf (!websites) [
           {
             name = "radarr";
             ensureDBOwnership = true;
@@ -79,17 +116,84 @@ let
         ];
       };
 
-      my.media.backup = {
+      my.media = {
+        backup = {
+          enable = true;
+          inherit repository;
+          b2AccountIdFile = "${secretsDir}/b2-account-id";
+          b2AccountKeyFile = "${secretsDir}/b2-application-key";
+          passwordFile = "${secretsDir}/restic-password";
+        };
+      }
+      // lib.optionalAttrs websites {
         enable = true;
-        inherit repository;
-        b2AccountIdFile = "${secretsDir}/b2-account-id";
-        b2AccountKeyFile = "${secretsDir}/b2-application-key";
-        passwordFile = "${secretsDir}/restic-password";
+
+        jellyfin = {
+          enable = true;
+          apiKeyFile = config.sops.secrets."jellyfin/api-key".path;
+          adminPasswordFile = config.sops.secrets."jellyfin/admin-password".path;
+          users =
+            lib.mapAttrs'
+              (name: _value: {
+                name = builtins.elemAt (builtins.match "jellyfin/users/(.*)/password" name) 0;
+                value = {
+                  password = config.sops.secrets.${name}.path;
+                };
+              })
+              (
+                lib.filterAttrs (
+                  _name: _value: builtins.match "jellyfin/users/(.*)/password" _name != null
+                ) config.sops.secrets
+              );
+          xtream = {
+            baseUrlFile = config.sops.secrets."xtream/base-url".path;
+            usernameFile = config.sops.secrets."xtream/username".path;
+            passwordFile = config.sops.secrets."xtream/password".path;
+          };
+          openFirewall = true;
+          ingress.enable = false;
+        };
+
+        arr = {
+          enable = true;
+          radarr.apiKeyFile = config.sops.secrets."radarr/api-key".path;
+          sonarr.apiKeyFile = config.sops.secrets."sonarr/api-key".path;
+          prowlarr.apiKeyFile = config.sops.secrets."prowlarr/api-key".path;
+          seerr.apiKeyFile = config.sops.secrets."seerr/api-key".path;
+          adminPasswordFile = config.sops.secrets."arr/admin-password".path;
+          openFirewall = true;
+          ingress.enable = false;
+        };
+
+        decypharr = {
+          enable = true;
+          apiTokenFile = config.sops.secrets."decypharr/api-token".path;
+          openFirewall = true;
+          bindAddress = "0.0.0.0";
+          usenet = {
+            enable = true;
+            host = "news.newshosting.com";
+            backbone = "omicron";
+            maxConnections = 20;
+            usernameFile = config.sops.secrets."newshosting/username".path;
+            passwordFile = config.sops.secrets."newshosting/password".path;
+          };
+        };
       };
 
-      # The drill starts the restore service explicitly; the timer must not
-      # race it with a backup of the empty VM.
-      systemd.timers.media-backup.wantedBy = lib.mkForce [ ];
+      nixflix = lib.mkIf websites {
+        radarr.config.hostConfig.bindAddress = lib.mkForce "0.0.0.0";
+        sonarr.config.hostConfig.bindAddress = lib.mkForce "0.0.0.0";
+        prowlarr.config.hostConfig.bindAddress = lib.mkForce "0.0.0.0";
+      };
+
+      systemd = {
+        services = lib.mkIf websites {
+          seerr.environment.HOST = lib.mkForce "0.0.0.0";
+        };
+
+        timers.media-backup.wantedBy = lib.mkForce [ ];
+      };
 
       virtualisation = {
         cores = 2;
@@ -104,6 +208,7 @@ let
 in
 pkgs.testers.runNixOSTest {
   name = "media-restore-drill";
+  globalTimeout = 2 * 60 * 60;
 
   nodes.restore = restoreNode;
 
@@ -152,6 +257,40 @@ pkgs.testers.runNixOSTest {
 
     print("Restored sizes:")
     print(restore.succeed("du -sh /var/lib/jellyfin /var/lib/radarr /var/lib/sonarr /var/lib/prowlarr /var/lib/seerr /var/lib/decypharr /var/lib/sops-nix /data/media"))
+  ''
+  + pkgs.lib.optionalString websites ''
+    restore.wait_for_unit("jellyfin.service")
+    restore.wait_for_unit("radarr.service")
+    restore.wait_for_unit("sonarr.service")
+    restore.wait_for_unit("prowlarr.service")
+    restore.wait_for_unit("seerr.service")
+    restore.wait_for_unit("decypharr.service")
+    restore.wait_until_succeeds("curl -fsSL -o /dev/null http://127.0.0.1:8096/", timeout=300)
+    restore.wait_until_succeeds("curl -fsSL -o /dev/null http://127.0.0.1:7878/", timeout=300)
+    restore.wait_until_succeeds("curl -fsSL -o /dev/null http://127.0.0.1:8989/", timeout=300)
+    restore.wait_until_succeeds("curl -fsSL -o /dev/null http://127.0.0.1:9696/", timeout=300)
+    restore.wait_until_succeeds("curl -fsSL -o /dev/null http://127.0.0.1:5055/", timeout=300)
+    restore.wait_until_succeeds("curl -fsSL -o /dev/null http://127.0.0.1:8282/", timeout=300)
+  ''
+  + pkgs.lib.optionalString keep ''
+    restore.forward_port(18096, 8096)
+    restore.forward_port(17878, 7878)
+    restore.forward_port(18989, 8989)
+    restore.forward_port(19696, 9696)
+    restore.forward_port(15055, 5055)
+    restore.forward_port(18282, 8282)
+
+    print("Restore drill VM is still running.")
+    print("  Jellyfin:  http://127.0.0.1:18096")
+    print("  Radarr:    http://127.0.0.1:17878")
+    print("  Sonarr:    http://127.0.0.1:18989")
+    print("  Prowlarr:  http://127.0.0.1:19696")
+    print("  Seerr:     http://127.0.0.1:15055")
+    print("  Decypharr: http://127.0.0.1:18282")
+    print("Press Ctrl-D in this terminal when finished; the VM will be deleted.")
+    restore.shell_interact()
+  ''
+  + ''
     print("RESTORE_DRILL_OK")
   '';
 }
