@@ -6,14 +6,18 @@ usage() {
 Usage: restore-drill.sh [--websites] [--keep]
 
   --websites  Boot the Jellyfin, Radarr, Sonarr, Prowlarr, Seerr and Decypharr
-              services in the VM and wait for them after the restore.
+              services in the VM and wait for them after the restore. This
+              mode reads sops-age-key and uses SOPS for both secrets/media and
+              secrets/media-backup.
   --keep      Implies --websites. Leave the VM running with the web ports
               forwarded so the restored interfaces can be checked. Press
               Ctrl-D in the terminal when finished; the VM is then deleted.
 
-The script reads b2-account-id, b2-application-key and restic-password from
-$HOME/.config/media-restore-drill by default. Set RESTORE_DRILL_SECRETS to
-use another directory.
+The credential directory defaults to $HOME/.config/media-restore-drill; set
+RESTORE_DRILL_SECRETS to use another directory. The default drill needs
+b2-account-id, b2-application-key and restic-password there. The websites mode
+needs a sops-age-key there: the age identity for a recipient of both
+secrets/media and secrets/media-backup, normally the sam editor/recovery key.
 EOF
 }
 
@@ -50,7 +54,13 @@ repo_root=$(git rev-parse --show-toplevel)
 secrets_dir=${RESTORE_DRILL_SECRETS:-"$HOME/.config/media-restore-drill"}
 repository=${RESTORE_DRILL_REPOSITORY:-"b2:swillis-media-backups:teeny"}
 
-for file in b2-account-id b2-application-key restic-password; do
+if [ "$websites" -eq 1 ]; then
+  required_files=(sops-age-key)
+else
+  required_files=(b2-account-id b2-application-key restic-password)
+fi
+
+for file in "${required_files[@]}"; do
   if [ ! -s "$secrets_dir/$file" ]; then
     echo "Missing $secrets_dir/$file" >&2
     exit 1

@@ -44,7 +44,11 @@ let
         ../../nixos-modules/ingress.nix
         ../../nixos-modules/sops.nix
         ../../secrets/media/default.nix
+        ../../secrets/media-backup/default.nix
         inputs.sops-nix.nixosModules.sops
+        {
+          sops.age.keyFile = lib.mkForce "${secretsDir}/sops-age-key";
+        }
       ];
 
       _module.args = {
@@ -120,9 +124,18 @@ let
         backup = {
           enable = true;
           inherit repository;
-          b2AccountIdFile = "${secretsDir}/b2-account-id";
-          b2AccountKeyFile = "${secretsDir}/b2-application-key";
-          passwordFile = "${secretsDir}/restic-password";
+          # The websites mode mounts the age key at sops.age.keyFile. Do not
+          # let restic restore the snapshot's old key over the host-shared key.
+          sopsKeyFile = lib.mkIf websites null;
+          b2AccountIdFile =
+            if websites then config.sops.secrets."b2/account-id".path else "${secretsDir}/b2-account-id";
+          b2AccountKeyFile =
+            if websites then
+              config.sops.secrets."b2/application-key".path
+            else
+              "${secretsDir}/b2-application-key";
+          passwordFile =
+            if websites then config.sops.secrets."restic/password".path else "${secretsDir}/restic-password";
         };
       }
       // lib.optionalAttrs websites {
@@ -218,9 +231,16 @@ pkgs.testers.runNixOSTest {
     restore.wait_for_unit("postgresql.service")
     restore.wait_for_unit("postgresql-setup.service")
 
-    restore.succeed("test -s ${secretsDir}/b2-account-id")
-    restore.succeed("test -s ${secretsDir}/b2-application-key")
-    restore.succeed("test -s ${secretsDir}/restic-password")
+    ${pkgs.lib.optionalString websites ''
+      restore.succeed("test -s /run/secrets/b2/account-id")
+      restore.succeed("test -s /run/secrets/b2/application-key")
+      restore.succeed("test -s /run/secrets/restic/password")
+    ''}
+    ${pkgs.lib.optionalString (!websites) ''
+      restore.succeed("test -s ${secretsDir}/b2-account-id")
+      restore.succeed("test -s ${secretsDir}/b2-application-key")
+      restore.succeed("test -s ${secretsDir}/restic-password")
+    ''}
 
     restore.succeed("systemctl stop media-backup.timer 2>/dev/null || true")
     restore.succeed("systemctl start media-backup-restore.service")
@@ -238,7 +258,9 @@ pkgs.testers.runNixOSTest {
     restore.succeed("test -s /var/lib/sonarr/config.xml")
     restore.succeed("test -s /var/lib/prowlarr/config.xml")
     restore.succeed("test -s /var/lib/seerr/settings.json")
-    restore.succeed("test -s /var/lib/sops-nix/key.txt")
+    restore.succeed("test -s ${
+      if websites then "${secretsDir}/sops-age-key" else "/var/lib/sops-nix/key.txt"
+    }")
 
     # Decypharr's append-only stores.
     restore.succeed("test -s /var/lib/decypharr/db/entries.db")
