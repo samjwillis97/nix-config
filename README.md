@@ -47,8 +47,9 @@ assume every tool mentioned in a guide is included in the development shell.
 | `terranix/`                                | Infrastructure resource definitions                                                                                         | [Terranix and Cloudflare](terranix/README.md)          |
 | [`.github/workflows/`](.github/workflows/) | Evaluation, build, closure-diff, deployment and dependency-update automation                                                | [CI](docs/development.md#continuous-integration)       |
 
-For day-to-day work, see [build, deploy, inspect and compare closures](docs/operations.md)
-and [stateful services and networking](docs/services.md).
+For day-to-day work, see [build, deploy, inspect and compare closures](docs/operations.md),
+[stateful services and networking](docs/services.md), and the
+[media restore playbook](docs/media-restore-playbook.md).
 
 ## How composition works
 

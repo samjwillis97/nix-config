@@ -318,6 +318,10 @@ qBittorrent-compatible download client; only the SABnzbd client remains.
 
 ### Media state backups
 
+The operational restore procedure, including replacement-host key handling and
+manual recovery, is in the
+[media restore playbook](media-restore-playbook.md).
+
 [`media-backup/default.nix`](../nixos-modules/media-backup/default.nix) adds the
 opt-in `my.media.backup` module. It writes a restic snapshot to a repository
 such as Backblaze B2 and keeps the small, irreplaceable part of the media stack:
@@ -345,9 +349,8 @@ The checked-in [`secrets/media-backup/secrets.yaml`](../secrets/media-backup/sec
 contains encrypted placeholders. Replace them with
 `sops secrets/media-backup/secrets.yaml` before deploying.
 [`nixos-hosts/teeny/default.nix`](../nixos-hosts/teeny/default.nix) already
-imports `secretModules.media-backup` and enables the backup; replace
-`CHANGE_ME_BUCKET` in its `repository` value with the B2 bucket name. The host
-block has this shape:
+imports `secretModules.media-backup` and enables the backup; its `repository`
+value names the B2 bucket. The host block has this shape:
 
 ```nix
 my.media.backup = {
@@ -391,6 +394,25 @@ still point at upstream articles, so the library can be restored but the bytes
 depend on the provider's retention. The `media-backup` flake check exercises a
 source/backup/shutdown/restore cycle with separate source and restore VM nodes
 against a local restic REST server, so it needs no B2 credentials.
+
+To rehearse the real B2 restore on a Linux machine with Nix and KVM:
+
+1. Create a credential directory with `b2-account-id`,
+   `b2-application-key`, and `restic-password`, all mode `0600`. The values are
+   the same ones in `secrets/media-backup/secrets.yaml`.
+2. Run `./nixos-modules/media-backup/restore-drill.sh`. It defaults to
+   `$HOME/.config/media-restore-drill`; set `RESTORE_DRILL_SECRETS` to use
+   another directory.
+
+The script builds a temporary 8 GiB RAM / 20 GiB disk NixOS VM, restores the
+latest B2 snapshot, checks Jellyfin's database integrity and ownership, the
+\*arr PostgreSQL tables, Seerr settings, Decypharr state, the SOPS key, and the
+media symlinks, then deletes the VM and its disk. It needs about 20 GiB free in
+`/var/tmp`; set `RESTORE_DRILL_TMPDIR` to use another directory. It downloads
+about 1.5 GiB from B2, so the bucket's download cap must allow it. The default repository is
+`b2:swillis-media-backups:teeny`; set `RESTORE_DRILL_REPOSITORY` to use another
+one. Run the test driver through the script rather than `nix build`-ing the
+test directly: the Nix build sandbox cannot see the host credential directory.
 
 ## Tailscale trust and exit-node limits
 
