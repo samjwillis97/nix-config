@@ -101,19 +101,23 @@ in
           # scheduled scan. Watch the library paths as well so a successful
           # Radarr/Sonarr import appears promptly.
           #
-          # Decypharr serves every file over a FUSE mount at a few MB/s, so
-          # trickplay and chapter-image extraction during a scan turns a
-          # large import batch into hours of ffmpeg jobs that mostly time
-          # out. Keep both features enabled, but generate the images on
-          # demand instead of while scanning.
+          # Decypharr serves files through a FUSE mount with multi-second
+          # read stalls, so Jellyfin's first trickplay image takes longer
+          # than its 20-second watchdog and every job is killed. Both
+          # features are unused here, so disable them outright; the
+          # during-scan flags stay false in case one is re-enabled.
           libraries = {
             Movies = {
               enableRealtimeMonitor = lib.mkDefault true;
+              enableChapterImageExtraction = lib.mkDefault false;
+              enableTrickplayImageExtraction = lib.mkDefault false;
               extractChapterImagesDuringLibraryScan = lib.mkDefault false;
               extractTrickplayImagesDuringLibraryScan = lib.mkDefault false;
             };
             Shows = {
               enableRealtimeMonitor = lib.mkDefault true;
+              enableChapterImageExtraction = lib.mkDefault false;
+              enableTrickplayImageExtraction = lib.mkDefault false;
               extractChapterImagesDuringLibraryScan = lib.mkDefault false;
               extractTrickplayImagesDuringLibraryScan = lib.mkDefault false;
             };
