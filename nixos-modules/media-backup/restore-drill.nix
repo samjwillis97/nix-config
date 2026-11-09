@@ -203,6 +203,12 @@ let
       systemd = {
         services = lib.mkIf websites {
           seerr.environment.HOST = lib.mkForce "0.0.0.0";
+          # Prowlarr rejects the download client nixflix tries to add on the
+          # host; teeny disables the same unit.
+          prowlarr-downloadclients = {
+            enable = false;
+            wantedBy = lib.mkForce [ ];
+          };
         };
 
         timers.media-backup.wantedBy = lib.mkForce [ ];
@@ -278,7 +284,9 @@ pkgs.testers.runNixOSTest {
     restore.succeed("runuser -u postgres -- psql -d prowlarr -tAc 'SELECT count(*) FROM \"Indexers\"' | grep -qE '^[1-9]'")
 
     print("Restored sizes:")
-    print(restore.succeed("du -sh /var/lib/jellyfin /var/lib/radarr /var/lib/sonarr /var/lib/prowlarr /var/lib/seerr /var/lib/decypharr /var/lib/sops-nix /data/media"))
+    print(restore.succeed("du -sh /var/lib/jellyfin /var/lib/radarr /var/lib/sonarr /var/lib/prowlarr /var/lib/seerr /var/lib/decypharr ${
+      if websites then "${secretsDir}/sops-age-key" else "/var/lib/sops-nix"
+    } /data/media"))
   ''
   + pkgs.lib.optionalString websites ''
     restore.wait_for_unit("jellyfin.service")
