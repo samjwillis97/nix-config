@@ -43,6 +43,18 @@
       pi = {
         enable = true;
       };
+
+      amp = {
+        enable = true;
+      };
+
+      claude = {
+        enable = true;
+      };
+
+      chrome = {
+        enable = true;
+      };
     };
   };
 }
