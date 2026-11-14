@@ -32,16 +32,16 @@
             height = 1440;
             refreshRate = 180;
             scale = 1;
-            x = 0;
+            x = 2560;
             y = 0;
           };
-          DP-2 = {
-            mode = "2560x1440@180.002";
+          HDMI-A-1 = {
+            mode = "2560x1440@144.000";
             width = 2560;
             height = 1440;
-            refreshRate = 180;
+            refreshRate = 144;
             scale = 1;
-            x = 2560;
+            x = 0;
             y = 0;
           };
         };
