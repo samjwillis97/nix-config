@@ -138,6 +138,41 @@ in
         };
       }
 
+      {
+        # nixflix's ExecStartPost polls each API for 90 seconds, but the units
+        # keep systemd's default 90-second start timeout, which also covers
+        # ExecStartPost. When a deploy restarts Postgres and the rest of the
+        # media stack, Sonarr and Radarr have taken 85 to 90 seconds to answer,
+        # so systemd killed them and every unit requiring them failed. nixflix's
+        # consumers order directly after these services, so the services must
+        # stay activating until the API answers: wait on the anonymous /ping
+        # endpoint first, with a longer start timeout.
+        systemd.services = lib.genAttrs [ "sonarr" "radarr" "prowlarr" ] (
+          name:
+          let
+            inherit (config.nixflix.${name}.config.hostConfig) port urlBase;
+          in
+          {
+            serviceConfig = {
+              TimeoutStartSec = 360;
+              ExecStartPost = lib.mkBefore [
+                (pkgs.writeShellScript "${name}-wait-for-ping" ''
+                  for _ in $(${pkgs.coreutils}/bin/seq 1 300); do
+                    if ${pkgs.curl}/bin/curl -sf --max-time 5 "http://127.0.0.1:${toString port}${urlBase}/ping" >/dev/null 2>&1; then
+                      exit 0
+                    fi
+                    ${pkgs.coreutils}/bin/sleep 1
+                  done
+
+                  echo "${name} did not answer /ping" >&2
+                  exit 1
+                '')
+              ];
+            };
+          }
+        );
+      }
+
       (lib.mkIf cfg.ingress.enable {
         my.ingress.routes.seerr = {
           upstream = "http://127.0.0.1:${toString config.nixflix.seerr.port}";
