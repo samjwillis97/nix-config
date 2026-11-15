@@ -491,6 +491,30 @@ route in the control plane, or change ACLs. Completing those control-plane and
 networking steps is an operator responsibility; do not describe this option as
 an already-working exit-node deployment.
 
+## AdGuard Home DNS ad blocker
+
+The wrapper is [`nixos-modules/adguardhome.nix`](../nixos-modules/adguardhome.nix),
+enabled on `teeny` through `my.adguardhome`. It runs the NixOS
+`services.adguardhome` service with a fully declarative configuration:
+`mutableSettings` is off, so the settings in the module are re-applied on every
+start and changes made in the web UI do not persist. Edit the module to change
+upstream resolvers or blocklists. Query-log and statistics data live in
+`/var/lib/private/AdGuardHome` and are not backed up by this repository.
+
+- **DNS listeners.** DNS binds only to the addresses in
+  `my.adguardhome.listenAddresses`, never a wildcard: Podman's DNS
+  (aardvark-dns, used by the Supernote network) binds port 53 on the container
+  bridge addresses and a wildcard listener would collide with it. The LAN
+  address on `teeny` must therefore stay reserved in the router's DHCP
+  settings, or the listener fails to bind.
+- **Firewall.** `openFirewall` opens TCP/UDP 53 to the LAN. The web UI
+  (`webPort`, default 3001) is **not** opened and has no login; it is reachable
+  only over trusted interfaces such as `tailscale0`.
+- **Using it.** Set the router's DHCP-advertised DNS server to the LAN address,
+  or use the Tailscale address as a custom nameserver in the Tailscale admin
+  console. `teeny` itself keeps its own upstream `networking.nameservers`, so
+  it does not depend on the blocker to resolve.
+
 ## Container and VM entry points
 
 The generic container module is [`nixos-modules/virtualisation/default.nix`](../nixos-modules/virtualisation/default.nix).
