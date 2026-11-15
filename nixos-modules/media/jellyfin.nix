@@ -2,6 +2,7 @@
   inputs,
   config,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -168,8 +169,42 @@ in
       # nixflix allows 5 minutes, but a switch on teeny restarts Jellyfin under
       # load and it can still be initialising (HTTP 503) at that point. Being
       # killed mid-start restarts it from scratch, so the activation never ends.
+      #
+      # nixflix's readiness check gives up after 240 polls, about 6.5 minutes,
+      # and a cold start during a switch has taken 6.5 to 7.5 minutes. Wait in
+      # jellyfin.service until the startup API answers, bounded only by
+      # TimeoutStartSec. The API config units are otherwise ordered only after
+      # units that a switch does not restart, so they ran their own 240-poll
+      # wait alongside Jellyfin's restart and gave up; order them after it.
       {
-        systemd.services.jellyfin.serviceConfig.TimeoutStartSec = lib.mkForce 600;
+        systemd.services.jellyfin = {
+          before = [
+            "jellyfin-setup-wizard.service"
+            "jellyfin-system-config.service"
+            "jellyfin-metadata-config.service"
+            "jellyfin-plugins.service"
+            "jellyfin-branding-config.service"
+            "jellyfin-libraries.service"
+            "jellyfin-livetv.service"
+            "jellyfin-users-config.service"
+          ];
+
+          serviceConfig = {
+            TimeoutStartSec = lib.mkForce 600;
+            ExecStartPost = lib.mkBefore [
+              (pkgs.writeShellScript "jellyfin-wait-for-startup" ''
+                base="http://127.0.0.1:${toString config.my.media.jellyfin.httpPort}"
+                status() {
+                  ${pkgs.curl}/bin/curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$base/$1" || true
+                }
+                until [ "$(status System/Info/Public)" = 200 ] &&
+                  [[ "$(status Startup/Configuration)" =~ ^(200|204|401)$ ]]; do
+                  ${pkgs.coreutils}/bin/sleep 2
+                done
+              '')
+            ];
+          };
+        };
       }
 
       (lib.mkIf config.my.media.jellyfin.ingress.enable {
