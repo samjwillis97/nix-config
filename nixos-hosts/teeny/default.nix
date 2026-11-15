@@ -83,6 +83,20 @@
         };
       };
 
+      # Network-wide DNS ad blocking. Point the router's DHCP DNS (or
+      # individual clients) at the LAN address below; Tailscale clients can use
+      # the Tailscale address as a custom nameserver. The LAN address must stay
+      # reserved for teeny in the router's DHCP settings.
+      adguardhome = {
+        enable = true;
+        openFirewall = true;
+        listenAddresses = [
+          "127.0.0.1"
+          "192.168.4.97"
+          "100.121.18.32"
+        ];
+      };
+
       buildkite = {
         enable = true;
         tokenFile = config.sops.secrets."buildkite-agent-token".path;
