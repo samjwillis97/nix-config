@@ -176,7 +176,19 @@ in
       # TimeoutStartSec. The API config units are otherwise ordered only after
       # units that a switch does not restart, so they ran their own 240-poll
       # wait alongside Jellyfin's restart and gave up; order them after it.
+      #
+      # When a nixpkgs bump restarts the whole media stack, a cold start has
+      # run past 10 minutes on teeny's 4 CPUs, so the 600-second timeout
+      # killed it and the restart from scratch outlived the deploy. Killing a
+      # slow start never helps, so the bound only catches a hung Jellyfin.
+      #
+      # jellyfin-plugins stops and restarts Jellyfin whenever a plugin's store
+      # path changes, which a nixpkgs bump does, and waits for it within its
+      # own 300-second timeout. A restart takes about 6 minutes, so give it
+      # the same bound.
       {
+        systemd.services.jellyfin-plugins.serviceConfig.TimeoutStartSec = lib.mkForce 1800;
+
         systemd.services.jellyfin = {
           before = [
             "jellyfin-setup-wizard.service"
@@ -190,7 +202,7 @@ in
           ];
 
           serviceConfig = {
-            TimeoutStartSec = lib.mkForce 600;
+            TimeoutStartSec = lib.mkForce 1800;
             ExecStartPost = lib.mkBefore [
               (pkgs.writeShellScript "jellyfin-wait-for-startup" ''
                 base="http://127.0.0.1:${toString config.my.media.jellyfin.httpPort}"
