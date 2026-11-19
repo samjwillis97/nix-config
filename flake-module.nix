@@ -258,7 +258,12 @@ in
         # block activation until it does. The default 240s timeout aborts
         # mid-activation and leaves a rollback holding the switch lock, which
         # then fails the next deploy.
-        activationTimeout = 900;
+        #
+        # A nixpkgs bump restarts the whole stack: Jellyfin's cold start has
+        # taken over 10 minutes under that load, then jellyfin-plugins restarts
+        # it for the new plugin store path (about 6 more), and its config units
+        # and Seerr follow. 900s ran out during the first of those.
+        activationTimeout = 2400;
 
         profiles.system = {
           sshUser = "deploy";
